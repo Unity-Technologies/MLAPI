@@ -378,7 +378,10 @@ namespace Unity.Netcode.Transports.UNET
 
         public ConnectionConfig GetConfig()
         {
-            var connectionConfig = new ConnectionConfig();
+            var connectionConfig = new ConnectionConfig
+            {
+                FragmentSize = 1024
+            };
 
             // Built-in netcode channels
             for (int i = 0; i < NETCODE_CHANNELS.Length; i++)

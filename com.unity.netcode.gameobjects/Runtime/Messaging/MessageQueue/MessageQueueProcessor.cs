@@ -297,14 +297,6 @@ namespace Unity.Netcode
             var sendBuffer = new ArraySegment<byte>(bytes, 0, length);
 
             var channel = sendStream.NetworkChannel;
-            // If the length is greater than the fragmented threshold, switch to a fragmented channel.
-            // This is kind of a hack to get around issues with certain usages patterns on fragmentation with UNet.
-            // We send everything unfragmented to avoid those issues, and only switch to the fragmented channel
-            // if we have no other choice.
-            if (length > k_FragmentationThreshold)
-            {
-                channel = NetworkChannel.Fragmented;
-            }
             m_MessageQueueContainer.NetworkManager.NetworkConfig.NetworkTransport.Send(clientId, sendBuffer, channel);
         }
 
@@ -316,14 +308,6 @@ namespace Unity.Netcode
         private void SendFrameQueueItem(MessageFrameItem item)
         {
             var channel = item.NetworkChannel;
-            // If the length is greater than the fragmented threshold, switch to a fragmented channel.
-            // This is kind of a hack to get around issues with certain usages patterns on fragmentation with UNet.
-            // We send everything unfragmented to avoid those issues, and only switch to the fragmented channel
-            // if we have no other choice.
-            if (item.MessageData.Count > k_FragmentationThreshold)
-            {
-                channel = NetworkChannel.Fragmented;
-            }
             switch (item.MessageType)
             {
                 case MessageQueueContainer.MessageType.ServerRpc:
