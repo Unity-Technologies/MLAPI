@@ -17,7 +17,7 @@ namespace Unity.Netcode
 
     public sealed class NetworkObject : MonoBehaviour
     {
-        public List<InterestNode> InterestNodes = new List<InterestNode>();
+        public List<InterestNode<NetworkClient, NetworkObject>> InterestNodes = new List<InterestNode<NetworkClient, NetworkObject>>();
 
         [HideInInspector]
         [SerializeField]
@@ -188,11 +188,11 @@ namespace Unity.Netcode
             get
             {
                 InterestSettings result = null;
-                if (InterestSettingsOverride)
+                if (InterestSettingsOverride != null)
                 {
                     result = InterestSettingsOverride;
                 }
-                else if (NetworkManager.InterestSettings)
+                else if (NetworkManager.InterestSettings != null)
                 {
                     result = NetworkManager.InterestSettings;
                 }

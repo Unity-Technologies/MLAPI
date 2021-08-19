@@ -40,7 +40,7 @@ namespace Unity.Netcode
 
         internal MessageQueueContainer MessageQueueContainer { get; private set; }
 
-        internal InterestManager InterestManager { get; private set; }
+        internal InterestManager<NetworkClient, NetworkObject> InterestManager { get; private set; }
         internal SnapshotSystem SnapshotSystem { get; private set; }
         internal NetworkBehaviourUpdater BehaviourUpdater { get; private set; }
 
@@ -444,7 +444,7 @@ namespace Unity.Netcode
                 MessageQueueContainer.Dispose();
                 MessageQueueContainer = null;
             }
-            InterestManager = new InterestManager();
+            InterestManager = new InterestManager<NetworkClient, NetworkObject>();
 
             // The MessageQueueContainer must be initialized within the Init method ONLY
             // It should ONLY be shutdown and destroyed in the Shutdown method (other than just above)

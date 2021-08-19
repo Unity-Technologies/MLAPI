@@ -1,13 +1,10 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using MLAPI.RuntimeTests;
 using UnityEngine;
-using UnityEngine.TestTools;
 using NUnit.Framework;
-using Unity.Netcode;
 using Unity.Netcode.Interest;
-using Unity.Netcode.RuntimeTests;
 using Debug = UnityEngine.Debug;
 
 namespace Unity.Netcode.RuntimeTests
@@ -34,7 +31,7 @@ namespace Unity.Netcode.RuntimeTests
             NetworkManagerHelper.ShutdownNetworkManager();
         }
 
-        public class OddEvenInterestKernel : InterestKernel
+        public class OddEvenInterestKernel : InterestKernel<NetworkClient, NetworkObject>
         {
             public bool IsOdd = true;
             public override void QueryFor(in NetworkClient client, in NetworkObject obj, HashSet<NetworkObject> results)
@@ -46,12 +43,12 @@ namespace Unity.Netcode.RuntimeTests
             }
         }
 
-    public class OddsEvensNode : InterestNode
+    public class OddsEvensNode : InterestNode<NetworkClient, NetworkObject>
     {
-        public void OnEnable()
+        public OddsEvensNode()
         {
-            m_Odds = CreateInstance<InterestNodeStatic>();
-            m_Evens = CreateInstance<InterestNodeStatic>();
+            m_Odds = new InterestNodeStatic<NetworkClient, NetworkObject>();
+            m_Evens = new InterestNodeStatic<NetworkClient, NetworkObject>();
         }
 
         public override void AddObject(in NetworkObject obj)
@@ -98,11 +95,11 @@ namespace Unity.Netcode.RuntimeTests
             AddObject(obj);
         }
 
-        private InterestNodeStatic m_Odds;
-        private InterestNodeStatic m_Evens;
+        private InterestNodeStatic<NetworkClient, NetworkObject> m_Odds;
+        private InterestNodeStatic<NetworkClient, NetworkObject> m_Evens;
     }
 
-        private (NetworkObject, Guid) MakeGameInterestObjectHelper(InterestNode comn = null)
+        private (NetworkObject, Guid) MakeGameInterestObjectHelper(InterestNode<NetworkClient, NetworkObject> comn = null)
         {
             Guid objGuid = NetworkManagerHelper.AddGameNetworkObject("");
             NetworkObject no = (NetworkObject)NetworkManagerHelper.InstantiatedNetworkObjects[objGuid];
@@ -115,7 +112,7 @@ namespace Unity.Netcode.RuntimeTests
             return (no, objGuid);
         }
 
-        private (NetworkObject, Guid) MakeGameInterestObjectHelper(Vector3 coords, InterestNode comn = null)
+        private (NetworkObject, Guid) MakeGameInterestObjectHelper(Vector3 coords, InterestNode<NetworkClient, NetworkObject> comn = null)
         {
             Guid objGuid = NetworkManagerHelper.AddGameNetworkObject("");
             NetworkObject no = (NetworkObject)NetworkManagerHelper.InstantiatedNetworkObjects[objGuid];
@@ -133,7 +130,7 @@ namespace Unity.Netcode.RuntimeTests
         // Start is called before the first frame update
         public void InterestCustomStorageTests()
         {
-            var oddsEvensNode = ScriptableObject.CreateInstance<OddsEvensNode>();
+            var oddsEvensNode = new OddsEvensNode();
 
             var results = new HashSet<NetworkObject>();
             var nc = new NetworkClient()
@@ -204,11 +201,11 @@ namespace Unity.Netcode.RuntimeTests
         // Start is called before the first frame update
         public void InterestRadiusCheck()
         {
-            InterestNodeStatic naiveRadiusNode = ScriptableObject.CreateInstance<InterestNodeStatic>();
-            var naiveRadiusKernel = ScriptableObject.CreateInstance<RadiusInterestKernel>();
+            InterestNodeStatic<NetworkClient, NetworkObject> naiveRadiusNode = new InterestNodeStatic<NetworkClient, NetworkObject>();
+            var naiveRadiusKernel = new RadiusInterestKernel();
             naiveRadiusKernel.Radius = 1.5f;
             naiveRadiusNode.InterestKernels.Add(naiveRadiusKernel);
-            var staticNode = ScriptableObject.CreateInstance<InterestNodeStatic>();
+            var staticNode = new InterestNodeStatic<NetworkClient, NetworkObject>();
 
             var results = new HashSet<NetworkObject>();
             var nc = new NetworkClient()
@@ -271,10 +268,10 @@ namespace Unity.Netcode.RuntimeTests
             NetworkManager.Singleton.InterestManager.QueryFor(nc, results);
             var objectsBeforeAdd = results.Count;
 
-            var dualNode = ScriptableObject.CreateInstance<InterestNodeStatic>();
-            var oddKernel = ScriptableObject.CreateInstance<OddEvenInterestKernel>();
+            var dualNode = new InterestNodeStatic<NetworkClient, NetworkObject>();
+            var oddKernel = new OddEvenInterestKernel();
             oddKernel.IsOdd = true;
-            var evenKernel = ScriptableObject.CreateInstance<OddEvenInterestKernel>();
+            var evenKernel = new OddEvenInterestKernel();
             evenKernel.IsOdd = false;
             dualNode.InterestKernels.Add(oddKernel);
             dualNode.InterestKernels.Add(evenKernel);
@@ -327,12 +324,12 @@ namespace Unity.Netcode.RuntimeTests
             var objsToMakePerNode = 10;
             var nodesToMake = 100;
             var objsToMake = objsToMakePerNode * nodesToMake;
-            List<InterestNode> nodes = new List<InterestNode>();
+            List<InterestNode<NetworkClient, NetworkObject>> nodes = new List<InterestNode<NetworkClient, NetworkObject>>();
             List<NetworkObject> objs = new List<NetworkObject>();
 
             for (var i = 0; i < nodesToMake; ++i)
             {
-                nodes.Add(ScriptableObject.CreateInstance<InterestNodeStatic>());
+                nodes.Add(new InterestNodeStatic<NetworkClient, NetworkObject>());
                 for (var j = 0; j < objsToMakePerNode; j++)
                 {
                     var (obj, guid) = MakeGameInterestObjectHelper(nodes[i]);
@@ -405,11 +402,11 @@ namespace Unity.Netcode.RuntimeTests
         [Test]
         public void TestInterestSettings()
         {
-            var rootSettings = ScriptableObject.CreateInstance<TestInterestSettings>();
+            var rootSettings = new TestInterestSettings();
             rootSettings.SomeSetting = 1;
             NetworkManager.Singleton.InterestSettings = rootSettings;
 
-            var objSettings = ScriptableObject.CreateInstance<TestInterestSettings>();
+            var objSettings = new TestInterestSettings();
             objSettings.SomeSetting = 2;
             var (object1Obj, object1Guid) = MakeGameInterestObjectHelper();
             object1Obj.InterestSettings = objSettings;

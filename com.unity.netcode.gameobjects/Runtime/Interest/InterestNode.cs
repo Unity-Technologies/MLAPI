@@ -4,16 +4,16 @@ using UnityEngine;
 
 namespace Unity.Netcode.Interest
 {
-    public abstract class InterestNode : ScriptableObject
+    public abstract class InterestNode<TClient, TObject>
     {
-        public abstract void QueryFor(in NetworkClient client, HashSet<NetworkObject> results);
-        public abstract void AddObject(in NetworkObject obj);
-        public abstract void RemoveObject(in NetworkObject obj);
-        public abstract void UpdateObject(in NetworkObject obj);
+        public abstract void QueryFor(in TClient client, HashSet<TObject> results);
+        public abstract void AddObject(in TObject obj);
+        public abstract void RemoveObject(in TObject obj);
+        public abstract void UpdateObject(in TObject obj);
     };
 
-    public abstract class InterestKernel : ScriptableObject
+    public abstract class InterestKernel<TClient, TObject>
     {
-        public abstract void QueryFor(in NetworkClient client, in NetworkObject obj, HashSet<NetworkObject> results);
+        public abstract void QueryFor(in TClient client, in TObject obj, HashSet<TObject> results);
     }
 }

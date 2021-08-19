@@ -4,30 +4,29 @@ using UnityEngine;
 
 namespace Unity.Netcode.Interest
 {
-    [CreateAssetMenu(fileName = "StaticInterestNode", menuName = "Interest/Nodes/Static", order = 1)]
-    public class InterestNodeStatic : InterestNode
+    public class InterestNodeStatic <TClient, TObject> : InterestNode<TClient, TObject>
     {
-        public List<InterestKernel> InterestKernels = new List<InterestKernel>();
+        public List<InterestKernel<TClient, TObject>> InterestKernels = new List<InterestKernel<TClient, TObject>>();
 
         // these are the objects under my purview
-        protected HashSet<NetworkObject> ManagedObjects;
+        protected HashSet<TObject> ManagedObjects;
 
-        public void OnEnable()
+        public InterestNodeStatic()
         {
-            ManagedObjects = new HashSet<NetworkObject>();
+            ManagedObjects = new HashSet<TObject>();
         }
 
-        public override void AddObject(in NetworkObject obj)
+        public override void AddObject(in TObject obj)
         {
             ManagedObjects.Add(obj);
         }
 
-        public override void RemoveObject(in NetworkObject obj)
+        public override void RemoveObject(in TObject obj)
         {
             ManagedObjects.Remove(obj);
         }
 
-        public override void QueryFor(in NetworkClient client, HashSet<NetworkObject> results)
+        public override void QueryFor(in TClient client, HashSet<TObject> results)
         {
             if (InterestKernels.Count > 0)
             {
@@ -45,7 +44,7 @@ namespace Unity.Netcode.Interest
             }
         }
 
-        public override void UpdateObject(in NetworkObject obj)
+        public override void UpdateObject(in TObject obj)
         {
         }
     }

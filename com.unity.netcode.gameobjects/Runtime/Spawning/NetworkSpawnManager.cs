@@ -362,12 +362,13 @@ namespace Unity.Netcode
             networkObject.ApplyNetworkParenting();
             NetworkObject.CheckOrphanChildren();
             networkObject.InvokeBehaviourNetworkSpawn();
-			NetworkManager.InterestManager.AddObject(networkObject);
+			NetworkManager.InterestManager.AddObject(networkObject, networkObject.InterestNodes);
         }
 
         internal void SendSpawnCallForObject(ulong clientId, ulong ownerClientId, NetworkObject networkObject)
         {
             if (!NetworkManager.NetworkConfig.UseSnapshotSpawn)
+
 
             {
                 //Currently, if this is called and the clientId (destination) is the server's client Id, this case
@@ -689,7 +690,7 @@ namespace Unity.Netcode
 
             var gobj = networkObject.gameObject;
             NetworkObject no = gobj.GetComponent<NetworkObject>();
-            NetworkManager.InterestManager.RemoveObject(no);
+            NetworkManager.InterestManager.RemoveObject(no, no.InterestNodes);
 
             if (destroyGameObject && gobj != null)
             {

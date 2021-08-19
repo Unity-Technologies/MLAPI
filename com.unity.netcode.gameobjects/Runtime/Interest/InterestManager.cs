@@ -1,28 +1,26 @@
 using System.Collections.Generic;
 using Unity.Netcode.Interest;
-using UnityEngine;
 
 namespace Unity.Netcode
 {
     // interest *system* instead of interest node ?
-    public class InterestManager
+    public class InterestManager<TClient, TObject>
     {
-        private readonly InterestNodeStatic m_DefaultInterestNode;
+        private readonly InterestNodeStatic<TClient, TObject> m_DefaultInterestNode;
 
         public InterestManager()
         {
-            m_ChildNodes = new HashSet<InterestNode>();
+            m_ChildNodes = new HashSet<InterestNode<TClient, TObject>>();
 
             // This is the node objects will be added to if no replication group is
             //  specified, which means they always get replicated
-            m_DefaultInterestNode = ScriptableObject.CreateInstance<InterestNodeStatic>();
+            //??ScriptableObject.CreateInstance<InterestNodeStatic<NetworkClient, NetworkObject>>();
+            m_DefaultInterestNode = new InterestNodeStatic<TClient, TObject>();
             m_ChildNodes.Add(m_DefaultInterestNode);
         }
 
-        public void AddObject(in NetworkObject obj)
+        public void AddObject(in TObject obj, List<InterestNode<TClient, TObject>> nodes) // ?? another class ??
         {
-            var nodes = obj.InterestNodes;
-
             // If this new object has no associated Interest Nodes, then we put it in the
             //  default node, which all clients will then get.
             //
@@ -52,10 +50,8 @@ namespace Unity.Netcode
             }
         }
 
-        public void RemoveObject(in NetworkObject oldObject)
+        public void RemoveObject(in TObject oldObject, List<InterestNode<TClient, TObject>> nodes)
         {
-            var nodes = oldObject.InterestNodes;
-
             // if the node never had an InterestNode, then it was using the default
             //  interest node
             if (nodes.Count == 0)
@@ -75,7 +71,7 @@ namespace Unity.Netcode
             }
         }
 
-        public void QueryFor(in NetworkClient client, HashSet<NetworkObject> results)
+        public void QueryFor(in TClient client, HashSet<TObject> results)
         {
             foreach (var c in m_ChildNodes)
             {
@@ -87,6 +83,6 @@ namespace Unity.Netcode
         {
         }
 
-        private HashSet<InterestNode> m_ChildNodes;
+        private HashSet<InterestNode<TClient, TObject>> m_ChildNodes;
     }
 }
