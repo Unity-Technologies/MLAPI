@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Netcode.Interest;
 using UnityEngine;
 using Unity.Profiling;
 using Debug = UnityEngine.Debug;
@@ -39,7 +40,7 @@ namespace Unity.Netcode
 
         internal MessageQueueContainer MessageQueueContainer { get; private set; }
 
-
+        internal InterestManager InterestManager { get; private set; }
         internal SnapshotSystem SnapshotSystem { get; private set; }
         internal NetworkBehaviourUpdater BehaviourUpdater { get; private set; }
 
@@ -244,6 +245,10 @@ namespace Unity.Netcode
 
         internal static event Action OnSingletonReady;
 
+        // the interest settings objects receive unless they have a pre-prefab override
+        public InterestSettings InterestSettings;
+
+
 #if UNITY_EDITOR
         private void OnValidate()
         {
@@ -439,6 +444,7 @@ namespace Unity.Netcode
                 MessageQueueContainer.Dispose();
                 MessageQueueContainer = null;
             }
+            InterestManager = new InterestManager();
 
             // The MessageQueueContainer must be initialized within the Init method ONLY
             // It should ONLY be shutdown and destroyed in the Shutdown method (other than just above)
@@ -876,6 +882,12 @@ namespace Unity.Netcode
             {
                 NetworkTickSystem.Tick -= OnNetworkManagerTick;
                 NetworkTickSystem = null;
+            }
+
+            if (InterestManager != null)
+            {
+                InterestManager.Dispose();
+                InterestManager = null;
             }
 
             IsListening = false;

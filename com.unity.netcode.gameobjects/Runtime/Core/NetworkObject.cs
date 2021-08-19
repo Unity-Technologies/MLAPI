@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Unity.Netcode.Interest;
+
 using UnityEngine;
 
 namespace Unity.Netcode
@@ -12,8 +14,11 @@ namespace Unity.Netcode
     /// </summary>
     [AddComponentMenu("Netcode/" + nameof(NetworkObject), -99)]
     [DisallowMultipleComponent]
+
     public sealed class NetworkObject : MonoBehaviour
     {
+        public List<InterestNode> InterestNodes = new List<InterestNode>();
+
         [HideInInspector]
         [SerializeField]
         internal uint GlobalObjectIdHash;
@@ -177,6 +182,26 @@ namespace Unity.Netcode
         /// </summary>
         public bool AutoObjectParentSync = true;
 
+        public InterestSettings InterestSettingsOverride;
+        public InterestSettings InterestSettings
+        {
+            get
+            {
+                InterestSettings result = null;
+                if (InterestSettingsOverride)
+                {
+                    result = InterestSettingsOverride;
+                }
+                else if (NetworkManager.InterestSettings)
+                {
+                    result = NetworkManager.InterestSettings;
+                }
+
+                return result;
+            }
+            set => InterestSettingsOverride = value;
+        }
+
         internal readonly HashSet<ulong> Observers = new HashSet<ulong>();
 
         /// <summary>
@@ -192,6 +217,7 @@ namespace Unity.Netcode
 
             return Observers.GetEnumerator();
         }
+
 
         /// <summary>
         /// Whether or not this object is visible to a specific client
@@ -1071,6 +1097,16 @@ namespace Unity.Netcode
             }
 
             return GlobalObjectIdHash;
+        }
+
+        // Trigger the Interest system to do an update sweep on any Interest nodes
+        //  I am associated with
+        public void UpdateInterest()
+        {
+            foreach (var node in InterestNodes)
+            {
+                node?.UpdateObject(this);
+            }
         }
     }
 }

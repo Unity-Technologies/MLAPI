@@ -362,11 +362,13 @@ namespace Unity.Netcode
             networkObject.ApplyNetworkParenting();
             NetworkObject.CheckOrphanChildren();
             networkObject.InvokeBehaviourNetworkSpawn();
+			NetworkManager.InterestManager.AddObject(networkObject);
         }
 
         internal void SendSpawnCallForObject(ulong clientId, ulong ownerClientId, NetworkObject networkObject)
         {
             if (!NetworkManager.NetworkConfig.UseSnapshotSpawn)
+
             {
                 //Currently, if this is called and the clientId (destination) is the server's client Id, this case
                 //will be checked within the below Send function.  To avoid unwarranted allocation of a PooledNetworkBuffer
@@ -686,6 +688,8 @@ namespace Unity.Netcode
             }
 
             var gobj = networkObject.gameObject;
+            NetworkObject no = gobj.GetComponent<NetworkObject>();
+            NetworkManager.InterestManager.RemoveObject(no);
 
             if (destroyGameObject && gobj != null)
             {
