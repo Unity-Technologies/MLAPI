@@ -361,6 +361,8 @@ namespace Unity.Netcode.Prototyping
             ApplyNetworkState(newState);
         }
 
+
+
         private void Awake()
         {
             m_Transform = transform;

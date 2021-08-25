@@ -121,21 +121,10 @@ namespace Unity.Netcode
         {
             switch (Settings.WritePermission)
             {
-                case NetworkVariablePermission.Everyone:
-                    return true;
-                case NetworkVariablePermission.ServerOnly:
+                case NetworkVariableWritePermission.ServerOnly:
                     return false;
-                case NetworkVariablePermission.OwnerOnly:
+                case NetworkVariableWritePermission.OwnerOnly:
                     return m_NetworkBehaviour.OwnerClientId == clientId;
-                case NetworkVariablePermission.Custom:
-                    {
-                        if (Settings.WritePermissionCallback == null)
-                        {
-                            return false;
-                        }
-
-                        return Settings.WritePermissionCallback(clientId);
-                    }
             }
 
             return true;
@@ -146,21 +135,10 @@ namespace Unity.Netcode
         {
             switch (Settings.ReadPermission)
             {
-                case NetworkVariablePermission.Everyone:
+                case NetworkVariableReadPermission.Everyone:
                     return true;
-                case NetworkVariablePermission.ServerOnly:
-                    return false;
-                case NetworkVariablePermission.OwnerOnly:
+                case NetworkVariableReadPermission.OwnerOnly:
                     return m_NetworkBehaviour.OwnerClientId == clientId;
-                case NetworkVariablePermission.Custom:
-                    {
-                        if (Settings.ReadPermissionCallback == null)
-                        {
-                            return false;
-                        }
-
-                        return Settings.ReadPermissionCallback(clientId);
-                    }
             }
 
             return true;

@@ -33,15 +33,15 @@ namespace Unity.Netcode.RuntimeTests
     public class NetworkVariableTest : NetworkBehaviour
     {
         public readonly NetworkList<int> TheList = new NetworkList<int>(
-            new NetworkVariableSettings { WritePermission = NetworkVariablePermission.ServerOnly }
+            new NetworkVariableSettings { WritePermission = NetworkVariableWritePermission.ServerOnly }
         );
 
         public readonly NetworkSet<int> TheSet = new NetworkSet<int>(
-            new NetworkVariableSettings { WritePermission = NetworkVariablePermission.ServerOnly }
+            new NetworkVariableSettings { WritePermission = NetworkVariableWritePermission.ServerOnly }
         );
 
         public readonly NetworkDictionary<int, int> TheDictionary = new NetworkDictionary<int, int>(
-            new NetworkVariableSettings { WritePermission = NetworkVariablePermission.ServerOnly }
+            new NetworkVariableSettings { WritePermission = NetworkVariableWritePermission.ServerOnly }
         );
 
         private void ListChanged(NetworkListEvent<int> e)

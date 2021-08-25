@@ -14,11 +14,11 @@ namespace Unity.Netcode
         /// <summary>
         /// Defines the write permissions for this var
         /// </summary>
-        public NetworkVariablePermission WritePermission = NetworkVariablePermission.ServerOnly;
+        public NetworkVariableWritePermission WritePermission = NetworkVariableWritePermission.ServerOnly;
         /// <summary>
         /// Defines the read permissions for this var
         /// </summary>
-        public NetworkVariablePermission ReadPermission = NetworkVariablePermission.Everyone;
+        public NetworkVariableReadPermission ReadPermission = NetworkVariableReadPermission.Everyone;
         /// <summary>
         /// The delegate used to evaluate write permission when the "Custom" mode is used
         /// </summary>

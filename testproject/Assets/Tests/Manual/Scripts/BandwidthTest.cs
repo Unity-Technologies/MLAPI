@@ -21,7 +21,7 @@ namespace TestProject.ManualTests
         private void Awake()
         {
             m_Ids = new NetworkList<int>();
-            m_Ids.Settings.WritePermission = NetworkVariablePermission.ServerOnly;
+            m_Ids.Settings.WritePermission = NetworkVariableWritePermission.ServerOnly;
             m_Ids.OnListChanged += ListChanged;
 
             Debug.Log("Awake");

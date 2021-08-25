@@ -109,8 +109,8 @@ namespace Unity.Netcode.RuntimeTests
 
             // NetworkVariable NetworkVariableSettings Constructor Test Coverage
             var settings = new NetworkVariableSettings();
-            settings.ReadPermission = NetworkVariablePermission.ServerOnly;
-            settings.WritePermission = NetworkVariablePermission.ServerOnly;
+            settings.ReadPermission = NetworkVariableReadPermission.OwnerOnly;
+            settings.WritePermission = NetworkVariableWritePermission.ServerOnly;
             m_NetworkVariableBool = new NetworkVariableBool(settings);
             m_NetworkVariableByte = new NetworkVariableByte(settings);
             m_NetworkVariableColor = new NetworkVariableColor(settings);

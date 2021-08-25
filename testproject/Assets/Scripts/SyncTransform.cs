@@ -70,8 +70,7 @@ namespace Unity.Netcode
 
         private void Start()
         {
-            m_VarPos.Settings.WritePermission = NetworkVariablePermission.Everyone;
-            m_VarRot.Settings.WritePermission = NetworkVariablePermission.Everyone;
+            m_VarPos.Settings.WritePermission = m_VarRot.Settings.WritePermission = NetworkVariableWritePermission.ServerOnly;
         }
 
         private void FixedUpdate()
