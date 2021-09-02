@@ -207,6 +207,11 @@ namespace Unity.Netcode
         /// <param name="clientId">The client to show the <see cref="NetworkObject"/> to</param>
         public void NetworkShow(ulong clientId)
         {
+            if (clientId == OwnerClientId)
+            {
+                NetworkLog.LogWarning($"Trying to enable NetworkID {clientId} to view itself; ignoring");
+                return;
+            }
             if (!IsSpawned)
             {
                 throw new SpawnStateException("Object is not spawned");

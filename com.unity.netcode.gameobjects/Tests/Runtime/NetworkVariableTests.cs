@@ -81,10 +81,10 @@ namespace Unity.Netcode.RuntimeTests
         private NetworkVariableTest m_Player1OnClient1;
 
         // Player2 component on client1
-        private NetworkVariableTest m_Player1OnClient2;
+        private NetworkVariableTest m_Player2OnClient2;
 
         // client2's version of client1's player object
-        private NetworkVariableTest m_Player1FromClient2;
+        private NetworkVariableTest m_Player1OnClient2;
 
         private bool m_TestWithHost;
 
@@ -123,7 +123,7 @@ namespace Unity.Netcode.RuntimeTests
                 x => x.IsPlayerObject && x.OwnerClientId == m_ClientNetworkManagers[1].LocalClientId,
                 m_ClientNetworkManagers[1], result));
 
-            m_Player1OnClient2 = result.Result.GetComponent<NetworkVariableTest>();
+            m_Player2OnClient2 = result.Result.GetComponent<NetworkVariableTest>();
 
             // This is client2's view of client 1's object
             yield return MultiInstanceHelpers.Run(MultiInstanceHelpers.GetNetworkObjectByRepresentation(
@@ -131,7 +131,7 @@ namespace Unity.Netcode.RuntimeTests
                 m_ClientNetworkManagers[1], result));
 
             //            var client2client1 = result.Result;
-            m_Player1FromClient2 = result.Result.GetComponent<NetworkVariableTest>();
+            m_Player1OnClient2 = result.Result.GetComponent<NetworkVariableTest>();
 
             m_Player1OnServer.TheList.Clear();
             m_Player1OnServer.TheSet.Clear();
@@ -222,7 +222,7 @@ namespace Unity.Netcode.RuntimeTests
                 () =>
                 {
                     m_Player1OnClient1.ClientVar.Value = k_TestVal2;
-                    m_Player1OnClient2.ClientVar.Value = k_TestVal3;
+                    m_Player2OnClient2.ClientVar.Value = k_TestVal3;
                 },
                 () =>
                 {
@@ -231,7 +231,7 @@ namespace Unity.Netcode.RuntimeTests
                         m_Player1OnServer.ClientVar.Value == k_TestVal2 &&
                         m_Player2OnServer.ClientVar.Value == k_TestVal3 &&
                         m_Player1OnClient1.ClientVar.Value == k_TestVal2 &&
-                        m_Player1OnClient2.ClientVar.Value == k_TestVal3;
+                        m_Player2OnClient2.ClientVar.Value == k_TestVal3;
                 }
             );
         }
@@ -253,9 +253,9 @@ namespace Unity.Netcode.RuntimeTests
                     // ...and we should see the writes to the private var only on the server & the owner,
                     //  but the public variable everywhere
                     return
-                        m_Player1FromClient2.ClientVarPrivate.Value != k_TestVal1 &&
+                        m_Player1OnClient2.ClientVarPrivate.Value != k_TestVal1 &&
                         m_Player1OnClient1.ClientVarPrivate.Value == k_TestVal1 &&
-                        m_Player1FromClient2.ClientVar.Value != k_TestVal2 &&
+                        m_Player1OnClient2.ClientVar.Value != k_TestVal2 &&
                         m_Player1OnClient1.ClientVar.Value == k_TestVal2 &&
                         m_Player1OnServer.ClientVarPrivate.Value == k_TestVal1 &&
                         m_Player1OnServer.ClientVar.Value == k_TestVal2;
