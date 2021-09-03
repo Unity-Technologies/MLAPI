@@ -1366,13 +1366,6 @@ namespace Unity.Netcode
                             }
                         }
                     }
-
-                    // TODO: Could(should?) be replaced with more memory per client, by storing the visibility
-
-                    foreach (var sobj in SpawnManager.SpawnedObjectsList)
-                    {
-                        sobj.Observers.Remove(clientId);
-                    }
                 }
 
                 for (int i = 0; i < ConnectedClientsList.Count; i++)
@@ -1471,7 +1464,6 @@ namespace Unity.Netcode
                 }
                 else // Server just adds itself as an observer to all spawned NetworkObjects
                 {
-                    SpawnManager.UpdateObservedNetworkObjects(ownerClientId);
                     InvokeOnClientConnectedCallback(ownerClientId);
                 }
 
@@ -1501,8 +1493,7 @@ namespace Unity.Netcode
             {
                 if (clientPair.Key == clientId ||
                     clientPair.Key == ServerClientId || // Server already spawned it
-                    ConnectedClients[clientId].PlayerObject == null ||
-                    !ConnectedClients[clientId].PlayerObject.Observers.Contains(clientPair.Key))
+                    ConnectedClients[clientId].PlayerObject == null)
                 {
                     continue; //The new client.
                 }

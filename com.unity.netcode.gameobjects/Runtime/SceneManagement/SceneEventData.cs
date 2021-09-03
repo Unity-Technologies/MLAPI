@@ -414,14 +414,11 @@ namespace Unity.Netcode
             {
                 foreach (var keyValuePairBySceneHandle in keyValuePairByGlobalObjectIdHash.Value)
                 {
-                    if (keyValuePairBySceneHandle.Value.Observers.Contains(TargetClientId))
-                    {
-                        // Write our server relative scene handle for the NetworkObject being serialized
-                        writer.WriteInt32Packed(keyValuePairBySceneHandle.Key);
-                        // Serialize the NetworkObject
-                        keyValuePairBySceneHandle.Value.SerializeSceneObject(writer, TargetClientId);
-                        numberOfObjects++;
-                    }
+                    // Write our server relative scene handle for the NetworkObject being serialized
+                    writer.WriteInt32Packed(keyValuePairBySceneHandle.Key);
+                    // Serialize the NetworkObject
+                    keyValuePairBySceneHandle.Value.SerializeSceneObject(writer, TargetClientId);
+                    numberOfObjects++;
                 }
             }
 

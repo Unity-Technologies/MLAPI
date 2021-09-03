@@ -1128,9 +1128,6 @@ namespace Unity.Netcode
         /// <param name="clientId">newly joined client identifier</param>
         internal void SynchronizeNetworkObjects(ulong clientId)
         {
-            // Update the clients
-            m_NetworkManager.SpawnManager.UpdateObservedNetworkObjects(clientId);
-
             ClientSynchEventData.InitializeForSynch();
             ClientSynchEventData.TargetClientId = clientId;
             ClientSynchEventData.LoadSceneMode = LoadSceneMode.Single;

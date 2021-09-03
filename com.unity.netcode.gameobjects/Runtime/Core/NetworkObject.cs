@@ -1,7 +1,5 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -165,218 +163,11 @@ namespace Unity.Netcode
         /// </summary>
         public bool AutoObjectParentSync = true;
 
-        internal readonly HashSet<ulong> Observers = new HashSet<ulong>();
-
-        /// <summary>
-        /// Returns Observers enumerator
-        /// </summary>
-        /// <returns>Observers enumerator</returns>
-        public HashSet<ulong>.Enumerator GetObservers()
-        {
-            if (!IsSpawned)
-            {
-                throw new SpawnStateException("Object is not spawned");
-            }
-
-            return Observers.GetEnumerator();
-        }
-
-        /// <summary>
-        /// Whether or not this object is visible to a specific client
-        /// </summary>
-        /// <param name="clientId">The clientId of the client</param>
-        /// <returns>True if the client knows about the object</returns>
-        public bool IsNetworkVisibleTo(ulong clientId)
-        {
-            if (!IsSpawned)
-            {
-                throw new SpawnStateException("Object is not spawned");
-            }
-
-            return Observers.Contains(clientId);
-        }
-
         private void Awake()
         {
             SetCachedParent(transform.parent);
         }
 
-        /// <summary>
-        /// Shows a previously hidden <see cref="NetworkObject"/> to a client
-        /// </summary>
-        /// <param name="clientId">The client to show the <see cref="NetworkObject"/> to</param>
-        public void NetworkShow(ulong clientId)
-        {
-            if (!IsSpawned)
-            {
-                throw new SpawnStateException("Object is not spawned");
-            }
-
-            if (!NetworkManager.IsServer)
-            {
-                throw new NotServerException("Only server can change visibility");
-            }
-
-            if (Observers.Contains(clientId))
-            {
-                throw new VisibilityChangeException("The object is already visible");
-            }
-
-            if (NetworkManager.NetworkConfig.UseSnapshotSpawn)
-            {
-                SnapshotSpawn(clientId);
-            }
-
-            Observers.Add(clientId);
-
-            NetworkManager.SpawnManager.SendSpawnCallForObject(clientId, this);
-        }
-
-        /// <summary>
-        /// Shows a list of previously hidden <see cref="NetworkObject"/>s to a client
-        /// </summary>
-        /// <param name="networkObjects">The <see cref="NetworkObject"/>s to show</param>
-        /// <param name="clientId">The client to show the objects to</param>
-        public static void NetworkShow(List<NetworkObject> networkObjects, ulong clientId)
-        {
-            if (networkObjects == null || networkObjects.Count == 0)
-            {
-                throw new ArgumentNullException("At least one " + nameof(NetworkObject) + " has to be provided");
-            }
-
-            NetworkManager networkManager = networkObjects[0].NetworkManager;
-
-            if (!networkManager.IsServer)
-            {
-                throw new NotServerException("Only server can change visibility");
-            }
-
-            // Do the safety loop first to prevent putting the netcode in an invalid state.
-            for (int i = 0; i < networkObjects.Count; i++)
-            {
-                if (!networkObjects[i].IsSpawned)
-                {
-                    throw new SpawnStateException("Object is not spawned");
-                }
-
-                if (networkObjects[i].Observers.Contains(clientId))
-                {
-                    throw new VisibilityChangeException($"{nameof(NetworkObject)} with NetworkId: {networkObjects[i].NetworkObjectId} is already visible");
-                }
-
-                if (networkObjects[i].NetworkManager != networkManager)
-                {
-                    throw new ArgumentNullException("All " + nameof(NetworkObject) + "s must belong to the same " + nameof(NetworkManager));
-                }
-            }
-
-            foreach (var networkObject in networkObjects)
-            {
-                networkObject.NetworkShow(clientId);
-            }
-        }
-
-        /// <summary>
-        /// Hides a object from a specific client
-        /// </summary>
-        /// <param name="clientId">The client to hide the object for</param>
-        public void NetworkHide(ulong clientId)
-        {
-            if (!IsSpawned)
-            {
-                throw new SpawnStateException("Object is not spawned");
-            }
-
-            if (!NetworkManager.IsServer)
-            {
-                throw new NotServerException("Only server can change visibility");
-            }
-
-            if (!Observers.Contains(clientId))
-            {
-                throw new VisibilityChangeException("The object is already hidden");
-            }
-
-            if (clientId == NetworkManager.ServerClientId)
-            {
-                throw new VisibilityChangeException("Cannot hide an object from the server");
-            }
-
-
-            Observers.Remove(clientId);
-
-            if (NetworkManager.NetworkConfig.UseSnapshotSpawn)
-            {
-                SnapshotDespawn(clientId);
-            }
-            else
-            {
-                // Send destroy call
-                var context = NetworkManager.MessageQueueContainer.EnterInternalCommandContext(
-                    MessageQueueContainer.MessageType.DestroyObject, NetworkChannel.Internal,
-                    new[] { clientId }, NetworkUpdateStage.PostLateUpdate);
-                if (context != null)
-                {
-                    using var nonNullContext = (InternalCommandContext)context;
-                    var bufferSizeCapture = new CommandContextSizeCapture(nonNullContext);
-                    bufferSizeCapture.StartMeasureSegment();
-
-                    nonNullContext.NetworkWriter.WriteUInt64Packed(NetworkObjectId);
-
-                    var size = bufferSizeCapture.StopMeasureSegment();
-                    NetworkManager.NetworkMetrics.TrackObjectDestroySent(clientId, NetworkObjectId, name, size);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Hides a list of objects from a client
-        /// </summary>
-        /// <param name="networkObjects">The objects to hide</param>
-        /// <param name="clientId">The client to hide the objects from</param>
-        public static void NetworkHide(List<NetworkObject> networkObjects, ulong clientId)
-        {
-            if (networkObjects == null || networkObjects.Count == 0)
-            {
-                throw new ArgumentNullException("At least one " + nameof(NetworkObject) + " has to be provided");
-            }
-
-            NetworkManager networkManager = networkObjects[0].NetworkManager;
-
-            if (!networkManager.IsServer)
-            {
-                throw new NotServerException("Only server can change visibility");
-            }
-
-            if (clientId == networkManager.ServerClientId)
-            {
-                throw new VisibilityChangeException("Cannot hide an object from the server");
-            }
-
-            // Do the safety loop first to prevent putting the netcode in an invalid state.
-            for (int i = 0; i < networkObjects.Count; i++)
-            {
-                if (!networkObjects[i].IsSpawned)
-                {
-                    throw new SpawnStateException("Object is not spawned");
-                }
-
-                if (!networkObjects[i].Observers.Contains(clientId))
-                {
-                    throw new VisibilityChangeException($"{nameof(NetworkObject)} with {nameof(NetworkObjectId)}: {networkObjects[i].NetworkObjectId} is already hidden");
-                }
-
-                if (networkObjects[i].NetworkManager != networkManager)
-                {
-                    throw new ArgumentNullException("All " + nameof(NetworkObject) + "s must belong to the same " + nameof(NetworkManager));
-                }
-            }
-
-            foreach (var networkObject in networkObjects)
-            {
-                networkObject.NetworkHide(clientId);
-            }
-        }
 
         private void OnDestroy()
         {
@@ -479,10 +270,7 @@ namespace Unity.Netcode
             ulong ownerId = ownerClientId != null ? ownerClientId.Value : NetworkManager.ServerClientId;
             for (int i = 0; i < NetworkManager.ConnectedClientsList.Count; i++)
             {
-                if (Observers.Contains(NetworkManager.ConnectedClientsList[i].ClientId))
-                {
-                    NetworkManager.SpawnManager.SendSpawnCallForObject(NetworkManager.ConnectedClientsList[i].ClientId, this);
-                }
+                NetworkManager.SpawnManager.SendSpawnCallForObject(NetworkManager.ConnectedClientsList[i].ClientId, this);
             }
         }
 
@@ -721,7 +509,7 @@ namespace Unity.Netcode
 
             var context = NetworkManager.MessageQueueContainer.EnterInternalCommandContext(
                 MessageQueueContainer.MessageType.ParentSync, NetworkChannel.Internal,
-                NetworkManager.ConnectedClientsIds.Where((id) => Observers.Contains(id)).ToArray(),
+                NetworkManager.ConnectedClientsIds,
                 NetworkUpdateLoop.UpdateStage);
 
             if (context != null)

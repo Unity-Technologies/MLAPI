@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
@@ -62,32 +61,6 @@ namespace Unity.Netcode.Editor
                 EditorGUILayout.Toggle(nameof(NetworkObject.DestroyWithScene), m_NetworkObject.DestroyWithScene);
                 EditorGUILayout.TextField(nameof(NetworkObject.NetworkManager), m_NetworkObject.NetworkManager == null ? "null" : m_NetworkObject.NetworkManager.gameObject.name);
                 GUI.enabled = guiEnabled;
-
-                if (m_NetworkObject.NetworkManager != null && m_NetworkObject.NetworkManager.IsServer)
-                {
-                    m_ShowObservers = EditorGUILayout.Foldout(m_ShowObservers, "Observers");
-
-                    if (m_ShowObservers)
-                    {
-                        HashSet<ulong>.Enumerator observerClientIds = m_NetworkObject.GetObservers();
-
-                        EditorGUI.indentLevel += 1;
-
-                        while (observerClientIds.MoveNext())
-                        {
-                            if (m_NetworkObject.NetworkManager.ConnectedClients[observerClientIds.Current].PlayerObject != null)
-                            {
-                                EditorGUILayout.ObjectField($"ClientId: {observerClientIds.Current}", m_NetworkObject.NetworkManager.ConnectedClients[observerClientIds.Current].PlayerObject, typeof(GameObject), false);
-                            }
-                            else
-                            {
-                                EditorGUILayout.TextField($"ClientId: {observerClientIds.Current}", EditorStyles.label);
-                            }
-                        }
-
-                        EditorGUI.indentLevel -= 1;
-                    }
-                }
             }
             else
             {

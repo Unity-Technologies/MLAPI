@@ -352,17 +352,6 @@ namespace Unity.Netcode
                 }
             }
 
-            if (NetworkManager.IsServer)
-            {
-                for (int i = 0; i < NetworkManager.ConnectedClientsList.Count; i++)
-                {
-                    if (networkObject.CheckObjectVisibility == null || networkObject.CheckObjectVisibility(NetworkManager.ConnectedClientsList[i].ClientId))
-                    {
-                        networkObject.Observers.Add(NetworkManager.ConnectedClientsList[i].ClientId);
-                    }
-                }
-            }
-
             networkObject.SetCachedParent(networkObject.transform.parent);
             networkObject.ApplyNetworkParenting();
             NetworkObject.CheckOrphanChildren();
@@ -661,10 +650,7 @@ namespace Unity.Netcode
                                 // as the other clients have them already despawned
                                 foreach (var clientId in NetworkManager.ConnectedClientsIds)
                                 {
-                                    if (networkObject.IsNetworkVisibleTo(clientId))
-                                    {
-                                        m_TargetClientIds.Add(clientId);
-                                    }
+                                    m_TargetClientIds.Add(clientId);
                                 }
 
                                 ulong[] clientIds = NetworkManager.ConnectedClientsIds;
@@ -729,7 +715,6 @@ namespace Unity.Netcode
             {
                 if (sobj.CheckObjectVisibility == null || sobj.CheckObjectVisibility(clientId))
                 {
-                    sobj.Observers.Add(clientId);
                     sobj.SerializeSceneObject(writer, clientId);
                     numberOfObjects++;
                 }
@@ -742,35 +727,6 @@ namespace Unity.Netcode
             writer.WriteUInt16(numberOfObjects);
             // Set our position back to the tail
             stream.Position = tailPosition;
-        }
-
-        /// <summary>
-        /// Updates all spawned <see cref="NetworkObject.Observers"/> for the specified client
-        /// Note: if the clientId is the server then it is observable to all spawned <see cref="NetworkObject"/>'s
-        /// </summary>
-        internal void UpdateObservedNetworkObjects(ulong clientId)
-        {
-            foreach (var sobj in SpawnedObjectsList)
-            {
-                if (sobj.CheckObjectVisibility == null || NetworkManager.IsServer)
-                {
-                    if (!sobj.Observers.Contains(clientId))
-                    {
-                        sobj.Observers.Add(clientId);
-                    }
-                }
-                else
-                {
-                    if (sobj.CheckObjectVisibility(clientId))
-                    {
-                        sobj.Observers.Add(clientId);
-                    }
-                    else if (sobj.Observers.Contains(clientId))
-                    {
-                        sobj.Observers.Remove(clientId);
-                    }
-                }
-            }
         }
     }
 }
