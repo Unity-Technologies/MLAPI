@@ -237,8 +237,15 @@ namespace Unity.Netcode.RuntimeTests
         {
             m_TestWithHost = useHost;
 
-            // server must not be allowed to write to a client auth variable
-            Assert.Throws<InvalidOperationException>(() => m_Player1OnServer.ClientVar.Value = k_TestVal1);
+            if (!m_TestWithHost)
+            {
+                // server must not be allowed to write to a client auth variable
+                Assert.Throws<InvalidOperationException>(() => m_Player1OnServer.ClientVar.Value = k_TestVal1);
+            }
+            else
+            {
+                Assert.AreEqual(m_Player1OnServer.ClientVar.Value, k_TestVal1);
+            }
         }
 
         [UnityTest]
