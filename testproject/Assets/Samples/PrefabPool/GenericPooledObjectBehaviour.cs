@@ -23,10 +23,14 @@ public class GenericPooledObjectBehaviour : NetworkBehaviour
     private float m_VisibilitySpawn;
     private bool m_ShouldDespawn;
 
+    [HideInInspector]
+    public bool MovementEnabled;
+
     private void Start()
     {
         m_RigidBody = GetComponent<Rigidbody>();
         m_MeshRenderer = GetComponent<MeshRenderer>();
+        MovementEnabled = true;
     }
 
     /// <summary>
@@ -101,7 +105,7 @@ public class GenericPooledObjectBehaviour : NetworkBehaviour
     {
         if (NetworkManager != null && NetworkManager.IsListening)
         {
-            if (IsOwner)
+            if (IsOwner && MovementEnabled)
             {
                 m_RigidBody.MovePosition(transform.position + m_Direction * (m_Velocity * Time.fixedDeltaTime));
 

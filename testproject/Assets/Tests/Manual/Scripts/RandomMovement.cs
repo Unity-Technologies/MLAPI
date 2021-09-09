@@ -8,8 +8,8 @@ namespace TestProject.ManualTests
     /// </summary>
     public class RandomMovement : NetworkBehaviour, IPlayerMovement
     {
-        private Vector3 m_Direction;
-        private Rigidbody m_Rigidbody;
+        protected Vector3 m_Direction;
+        protected Rigidbody m_Rigidbody;
 
 
         public override void OnNetworkSpawn()
@@ -24,6 +24,12 @@ namespace TestProject.ManualTests
             }
         }
 
+        protected virtual void OnServerMovePlayer(Vector3 moveTowards)
+        {
+            m_MoveTowardsPosition = moveTowards;
+        }
+
+
         /// <summary>
         /// Notify the server of any client side change in direction or speed
         /// </summary>
@@ -31,12 +37,12 @@ namespace TestProject.ManualTests
         [ServerRpc(RequireOwnership = false)]
         private void MovePlayerServerRpc(Vector3 moveTowards)
         {
-            m_MoveTowardsPosition = moveTowards;
+            OnServerMovePlayer(moveTowards);
         }
 
         private Vector3 m_MoveTowardsPosition;
 
-        public void Move(int speed)
+        protected virtual void OnMoveObject(int speed)
         {
             // Server sets this locally
             if (IsServer && IsOwner)
@@ -54,8 +60,13 @@ namespace TestProject.ManualTests
             }
         }
 
-        // We just apply our current direction with magnitude to our current position during fixed update
-        private void FixedUpdate()
+
+        public void Move(int speed)
+        {
+            OnMoveObject(speed);
+        }
+
+        protected virtual void OnFixedUpdateMovement()
         {
             if (IsServer && NetworkObject && NetworkObject.NetworkManager && NetworkObject.NetworkManager.IsListening)
             {
@@ -70,17 +81,31 @@ namespace TestProject.ManualTests
             }
         }
 
+
+        // We just apply our current direction with magnitude to our current position during fixed update
+        private void FixedUpdate()
+        {
+            OnFixedUpdateMovement();
+        }
+
+
+        protected void OnClientChangeDirection(Vector3 direction)
+        {
+            m_Direction = direction;
+        }
+
+
         /// <summary>
         /// Handles server notification to client that we need to change direction
         /// </summary>
         /// <param name="direction"></param>
         [ClientRpc]
-        private void ChangeDirectionClientRpc(Vector3 direction)
+        protected void ChangeDirectionClientRpc(Vector3 direction)
         {
-            m_Direction = direction;
+            OnClientChangeDirection(direction);
         }
 
-        private void OnCollisionStay(Collision collision)
+        protected virtual void HandleCollision(Collision collision)
         {
             if (IsServer)
             {
@@ -104,14 +129,18 @@ namespace TestProject.ManualTests
             }
         }
 
-        private void ChangeDirection(bool moveRight, bool moveDown)
+        private void OnCollisionStay(Collision collision)
+        {
+            HandleCollision(collision);
+        }
+
+        protected virtual void ChangeDirection(bool moveRight, bool moveDown)
         {
             float ang = Random.Range(0, 2 * Mathf.PI);
-
-            m_Direction.x = Mathf.Cos(ang);
+            m_Direction.x = Mathf.Cos(ang) * (moveRight ? -1 : 1);
             m_Direction.y = 0.0f;
             ang = Random.Range(0, 2 * Mathf.PI);
-            m_Direction.z = Mathf.Sin(ang);
+            m_Direction.z = Mathf.Sin(ang) * (moveDown ? -1 : 1);
             m_Direction.Normalize();
         }
     }

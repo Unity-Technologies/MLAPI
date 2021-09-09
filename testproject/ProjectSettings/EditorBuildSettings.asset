@@ -80,4 +80,10 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Tests/Manual/DontDestroyOnLoad/DontDestroyOnLoad_DestroyNetworkManagerTest.unity
     guid: 7dc1ab12373402546befc7d54e447258
+  - enabled: 1
+    path: Assets/Samples/AdditiveSceneParenting/AdditiveSceneParentingExample.unity
+    guid: d6499348ffd561146b2012f4921282af
+  - enabled: 1
+    path: Assets/Samples/AdditiveSceneParenting/AdditiveScene-1.unity
+    guid: 191a01f165b91bf498406f93b85c3839
   m_configObjects: {}
