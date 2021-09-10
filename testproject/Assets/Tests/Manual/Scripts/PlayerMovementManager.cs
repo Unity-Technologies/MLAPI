@@ -26,7 +26,7 @@ namespace TestProject.ManualTests
             m_Rigidbody = GetComponent<Rigidbody>();
             if (m_Rigidbody != null)
             {
-                m_Rigidbody.isKinematic = !NetworkObject.NetworkManager.IsServer;
+                m_Rigidbody.isKinematic = !IsOwner;
             }
         }
 
@@ -42,7 +42,7 @@ namespace TestProject.ManualTests
                     }
                 }
 
-                if (NetworkObject != null && NetworkObject.NetworkManager != null && NetworkObject.NetworkManager.IsListening)
+                if (NetworkObject != null && NetworkObject.NetworkManager != null && IsOwner)
                 {
                     if (m_RandomMovement.enabled)
                     {

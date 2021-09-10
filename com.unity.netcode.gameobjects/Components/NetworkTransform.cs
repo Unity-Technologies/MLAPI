@@ -350,12 +350,13 @@ namespace Unity.Netcode.Components
 
         private void OnNetworkStateChanged(NetworkState oldState, NetworkState newState)
         {
-            if (!NetworkObject.IsSpawned)
+            // skip if we're not spawned, or the server, or the owner of this object making the change
+            if (!NetworkObject.IsSpawned || IsServer || IsOwner)
             {
-                // todo MTT-849 should never happen but yet it does! maybe revisit/dig after NetVar updates and snapshot system lands?
                 return;
             }
 
+            // as a non-server, non-owner client, apply networkstate locally to make transform move
             ApplyNetworkState(newState);
         }
 
@@ -370,6 +371,16 @@ namespace Unity.Netcode.Components
             ReplNetworkState.OnValueChanged -= OnNetworkStateChanged;
         }
 
+        [ServerRpc(Delivery = RpcDelivery.Reliable)]
+        private void SubmitNetworkStateServerRpc(NetworkState networkState)
+        {
+            // as a server, apply whatever networkstate owner client sent to us, to make NetworkTransform move locally on the server
+            ApplyNetworkState(networkState);
+
+            // as a server, update netvar<networkstate> to cause it to be replicated down to clients
+            UpdateNetworkVariable(ref networkState);
+        }
+
         private void FixedUpdate()
         {
             if (!NetworkObject.IsSpawned)
@@ -377,23 +388,27 @@ namespace Unity.Netcode.Components
                 return;
             }
 
-            if (IsServer)
+            // if I'm the owner client
+            if (NetworkObject.IsOwner)
             {
-                // try to update local NetworkState
                 if (UpdateNetworkState(ref LocalNetworkState))
                 {
-                    // if updated (dirty), change NetVar, mark it dirty
-                    ReplNetworkState.Value = LocalNetworkState;
-                    ReplNetworkState.SetDirty(true);
+                    if (IsServer)
+                    {
+                        UpdateNetworkVariable(ref LocalNetworkState);
+                    }
+                    else
+                    {
+                        SubmitNetworkStateServerRpc(LocalNetworkState);
+                    }
                 }
             }
-            // try to update previously consumed NetworkState
-            // if we have any changes, that means made some updates locally
-            // we apply the latest ReplNetworkState again to revert our changes
-            else if (UpdateNetworkState(ref PrevNetworkState))
-            {
-                ApplyNetworkState(ReplNetworkState.Value);
-            }
+        }
+
+        private void UpdateNetworkVariable(ref NetworkState networkState)
+        {
+            ReplNetworkState.Value = networkState;
+            ReplNetworkState.SetDirty(true);
         }
 
         /// <summary>

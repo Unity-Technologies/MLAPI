@@ -24,31 +24,15 @@ namespace TestProject.ManualTests
             }
         }
 
-        /// <summary>
-        /// Notify the server of any client side change in direction or speed
-        /// </summary>
-        /// <param name="moveTowards"></param>
-        [ServerRpc(RequireOwnership = false)]
-        private void MovePlayerServerRpc(Vector3 moveTowards)
-        {
-            m_MoveTowardsPosition = moveTowards;
-        }
-
         private Vector3 m_MoveTowardsPosition;
 
         public void Move(int speed)
         {
-            // Server sets this locally
-            if (IsServer && IsOwner)
+            if (IsOwner)
             {
                 m_MoveTowardsPosition = (m_Direction * speed);
             }
-            else if (!IsServer && IsOwner)
-            {
-                // Client must sent Rpc
-                MovePlayerServerRpc(m_Direction * speed * 1.05f);
-            }
-            else if (IsServer && !IsOwner)
+            else
             {
                 m_MoveTowardsPosition = Vector3.Lerp(m_MoveTowardsPosition, Vector3.zero, 0.01f);
             }
@@ -57,50 +41,25 @@ namespace TestProject.ManualTests
         // We just apply our current direction with magnitude to our current position during fixed update
         private void FixedUpdate()
         {
-            if (IsServer && NetworkObject && NetworkObject.NetworkManager && NetworkObject.NetworkManager.IsListening)
+            if (IsOwner)
             {
-                if (m_Rigidbody == null)
-                {
-                    m_Rigidbody = GetComponent<Rigidbody>();
-                }
-                if (m_Rigidbody != null)
-                {
-                    m_Rigidbody.MovePosition(transform.position + (m_MoveTowardsPosition * Time.fixedDeltaTime));
-                }
+                m_Rigidbody.MovePosition(transform.position + (m_MoveTowardsPosition * Time.fixedDeltaTime));
             }
-        }
-
-        /// <summary>
-        /// Handles server notification to client that we need to change direction
-        /// </summary>
-        /// <param name="direction"></param>
-        [ClientRpc]
-        private void ChangeDirectionClientRpc(Vector3 direction)
-        {
-            m_Direction = direction;
         }
 
         private void OnCollisionStay(Collision collision)
         {
-            if (IsServer)
+            if (collision.gameObject.CompareTag("Floor") || collision.gameObject.CompareTag("GenericObject"))
             {
-                if (collision.gameObject.CompareTag("Floor") || collision.gameObject.CompareTag("GenericObject"))
-                {
-                    return;
-                }
-                Vector3 collisionPoint = collision.collider.ClosestPoint(transform.position);
-                bool moveRight = collisionPoint.x < transform.position.x;
-                bool moveDown = collisionPoint.z > transform.position.z;
+                return;
+            }
+            Vector3 collisionPoint = collision.collider.ClosestPoint(transform.position);
+            bool moveRight = collisionPoint.x < transform.position.x;
+            bool moveDown = collisionPoint.z > transform.position.z;
 
+            if (IsOwner)
+            {
                 ChangeDirection(moveRight, moveDown);
-
-                // If we are not the owner then we need to notify the client that their direction
-                // must change
-                if (!IsOwner)
-                {
-                    m_MoveTowardsPosition = m_Direction * m_MoveTowardsPosition.magnitude;
-                    ChangeDirectionClientRpc(m_Direction);
-                }
             }
         }
 
