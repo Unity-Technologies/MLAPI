@@ -7,14 +7,20 @@ test_platforms:
     type: Unity::VM
     image: package-ci/win10:stable
     flavor: b1.large
+    pathsep: \
+    standalone: StandaloneWindows64 
   - name: mac
     type: Unity::VM::osx
     image: package-ci/mac:stable
     flavor: m1.mac
+    pathsep: /
+    standalone: StandaloneOSX
   - name: ubuntu
     type: Unity::VM
     image: package-ci/ubuntu:stable
     flavor: b1.large
+    pathsep: /
+    standalone: StandaloneLinux64
 
 # Projects within the repository that will be tested. Name will be used
 # for job ids, so it should not contain spaces/non-supported characters
@@ -24,18 +30,18 @@ projects:
     validate: true
     # Packages within a project that will be tested
     packages:
-      - name: com.unity.netcode.gameobjects
-        path: com.unity.netcode.gameobjects
-      - name: com.unity.netcode.adapter.utp
-        path: com.unity.netcode.adapter.utp
+    - name: com.unity.netcode.gameobjects
+      path: com.unity.netcode.gameobjects
+    - name: com.unity.multiplayer.transport.utp
+      path: com.unity.multiplayer.transport.utp
     test_editors:
-      - 2021.1
-      - 2021.2
-      - 2020.3
-      - trunk
+    - 2021.1
+    - 2021.2
+    - 2020.3
+    - trunk
   - name: testproject-tools-integration
     path: testproject-tools-integration
     validate: false
     test_editors:
-      - 2021.2
-      - trunk
+    - 2021.2
+    - trunk
