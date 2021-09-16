@@ -19,7 +19,15 @@ namespace TestProject.RuntimeTests.Support
         public NetworkObject Instantiate(ulong ownerClientId, Vector3 position, Quaternion rotation)
         {
             WasSpawned = true;
-            Assert.AreEqual(SpawnRpcDespawn.TestStage, NetworkUpdateLoop.UpdateStage);
+
+            if (NetworkManager.Singleton.NetworkConfig.UseSnapshotSpawn)
+            {
+                Assert.AreEqual(NetworkUpdateStage.EarlyUpdate, NetworkUpdateLoop.UpdateStage);
+            }
+            else
+            {
+                Assert.AreEqual(SpawnRpcDespawn.TestStage, NetworkUpdateLoop.UpdateStage);
+            }
 
 
             // See if there is a valid registered NetworkPrefabOverrideLink associated with the provided prefabHash
@@ -60,7 +68,14 @@ namespace TestProject.RuntimeTests.Support
             WasDestroyed = true;
             if (networkObject.NetworkManager.IsClient)
             {
-                Assert.AreEqual(NetworkUpdateStage.PostLateUpdate, NetworkUpdateLoop.UpdateStage);
+                if (NetworkManager.Singleton.NetworkConfig.UseSnapshotSpawn)
+                {
+                    Assert.AreEqual(NetworkUpdateStage.EarlyUpdate, NetworkUpdateLoop.UpdateStage);
+                }
+                else
+                {
+                    Assert.AreEqual(NetworkUpdateStage.PostLateUpdate, NetworkUpdateLoop.UpdateStage);
+                }
             }
 
             Object.Destroy(networkObject.gameObject);

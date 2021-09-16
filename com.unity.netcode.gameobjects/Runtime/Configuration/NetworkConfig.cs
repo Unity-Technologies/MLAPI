@@ -144,7 +144,7 @@ namespace Unity.Netcode
         /// <summary>
         /// Whether or not to enable Snapshot System for spawn and despawn commands. Working but experimental.
         /// </summary>
-        public bool UseSnapshotSpawn { get; } = false;
+        public bool UseSnapshotSpawn { get; } = true;
         /// <summary>
         /// When Snapshot System spawn is enabled: max size of Snapshot Messages. Meant to fit MTU.
         /// </summary>
