@@ -14,9 +14,17 @@ namespace Unity.Netcode
 
         private protected NetworkBehaviour m_NetworkBehaviour;
 
+        public NetworkBehaviour NetworkBehaviour => m_NetworkBehaviour;
+
         public void Initialize(NetworkBehaviour networkBehaviour)
         {
             m_NetworkBehaviour = networkBehaviour;
+            OnInitialize();
+        }
+
+        protected virtual void OnInitialize()
+        {
+
         }
 
         protected NetworkVariableBase(NetworkVariableReadPermission readPermIn = NetworkVariableReadPermission.Everyone)
