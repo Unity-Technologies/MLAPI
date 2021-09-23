@@ -101,4 +101,28 @@ namespace Unity.Netcode.Editor
             }
         }
     }
+
+    /// <summary>
+    /// This assures that a user cannot place a GameObject with a NetworkObject component under a GameObject
+    /// with a NetworkManager component
+    /// </summary>
+    [InitializeOnLoad]
+    public static class NetworkObjectHierarchyMonitor
+    {
+        static NetworkObjectHierarchyMonitor()
+        {
+            EditorApplication.hierarchyChanged += OnHierarchyChanged;
+        }
+
+        private static void OnHierarchyChanged()
+        {
+            // Get all NetworkObjects in the Hierarchy
+            var allNetworkObjects = Resources.FindObjectsOfTypeAll<NetworkObject>();
+            foreach (var networkObject in allNetworkObjects)
+            {
+                // Check to see if the NetworkObject has been placed under a GameObject with a NetworkObject component
+                networkObject.CheckForNetworkManagerParent();
+            }
+        }
+    }
 }

@@ -623,8 +623,29 @@ namespace Unity.Netcode
             return true;
         }
 
+        /// <summary>
+        /// Checks to make sure that a NetworkObject is not a child of a GameObject with a NetworkManager component
+        /// </summary>
+        internal void CheckForNetworkManagerParent()
+        {
+            // Only check NetworkObjects that have a parent
+            if (transform.parent != null)
+            {
+                // Check to see if any parent has the NetworkManager component
+                var networkManager = GetComponentInParent<NetworkManager>();
+                if (networkManager != null)
+                {
+                    // If it does log a console error and move the GameObject to root of the Hierarchy
+                    Debug.LogWarning($"{nameof(GameObject)}s with {nameof(NetworkObject)} components cannot be nested under a {nameof(GameObject)} with the {nameof(NetworkManager)} component!");
+                    transform.parent = null;
+                }
+            }
+        }
+
         private void OnTransformParentChanged()
         {
+            CheckForNetworkManagerParent();
+
             if (!AutoObjectParentSync)
             {
                 return;
