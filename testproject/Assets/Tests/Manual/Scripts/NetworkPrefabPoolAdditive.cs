@@ -155,7 +155,7 @@ namespace TestProject.ManualTests
                         {
                             if (DestroyOnUnload)
                             {
-                                networkObject.Despawn(true);
+                                networkObject.Despawn();
                             }
                             else if (SpawnInSourceScene)
                             {

@@ -64,7 +64,7 @@ namespace TestProject.RuntimeTests.Support
             Debug.Log("Running test...");
             GetComponent<NetworkObject>().Spawn();
             IncrementUpdateCount();
-            GetComponent<NetworkObject>().Despawn();
+            GetComponent<NetworkObject>().Despawn(false);
             m_Active = false;
         }
 

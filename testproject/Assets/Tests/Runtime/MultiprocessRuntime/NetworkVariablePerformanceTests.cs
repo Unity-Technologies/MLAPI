@@ -201,7 +201,7 @@ namespace Unity.Netcode.MultiprocessRuntimeTests
                 {
                     foreach (var spawnedObject in m_ServerSpawnedObjects)
                     {
-                        spawnedObject.NetworkObject.Despawn();
+                        spawnedObject.NetworkObject.Despawn(false);
                         s_ServerObjectPool.Release(spawnedObject);
                         StopSpawnedObject(spawnedObject);
                     }

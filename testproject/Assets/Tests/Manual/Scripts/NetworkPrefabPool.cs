@@ -266,7 +266,7 @@ namespace TestProject.ManualTests
                             {
                                 if (networkObject.IsSpawned)
                                 {
-                                    networkObject.Despawn(true);
+                                    networkObject.Despawn();
                                 }
                                 else if (!DontDestroy)
                                 {

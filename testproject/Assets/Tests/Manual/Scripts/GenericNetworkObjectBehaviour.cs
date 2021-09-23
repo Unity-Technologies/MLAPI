@@ -145,7 +145,7 @@ namespace TestProject.ManualTests
                 m_ShouldDespawn = false;
                 if (NetworkObject.NetworkManager != null)
                 {
-                    NetworkObject.Despawn(true);
+                    NetworkObject.Despawn();
                 }
             }
             else if (!IsServer)

@@ -1574,7 +1574,7 @@ namespace Unity.Netcode
                 }
                 else if (m_NetworkManager.IsServer)
                 {
-                    sobj.Despawn(true);
+                    sobj.Despawn();
                 }
             }
         }

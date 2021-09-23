@@ -20,12 +20,14 @@ namespace Unity.Netcode
         public uint TickRate { get; }
 
         /// <summary>
-        /// The current local time. This is the time at which predicted or client authoritative objects move. This value is accurate when called in Update or during the <see cref="Tick"/> event but does not work correctly for FixedUpdate.
+        /// The current local time. This is the time at which predicted or client authoritative objects move.
+        ///  This value is accurate when called in Update or during the <see cref="Tick"/> event but does not work correctly for FixedUpdate.
         /// </summary>
         public NetworkTime LocalTime { get; internal set; }
 
         /// <summary>
-        /// The current server time. This value is mostly used for internal purposes and to interpolate state received from the server. This value is accurate when called in Update or during the <see cref="Tick"/> event but does not work correctly for FixedUpdate.
+        /// The current server time. This value is mostly used for internal purposes and to interpolate state received from the server.
+        ///  This value is accurate when called in Update or during the <see cref="Tick"/> event but does not work correctly for FixedUpdate.
         /// </summary>
         public NetworkTime ServerTime { get; internal set; }
 

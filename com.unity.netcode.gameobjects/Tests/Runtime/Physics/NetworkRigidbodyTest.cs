@@ -63,7 +63,7 @@ namespace Unity.Netcode.RuntimeTests.Physics
             // client rigidbody has no authority and should have a kinematic mode of true
             Assert.True(clientPlayer.GetComponent<Rigidbody>().isKinematic);
 
-            // despawn the server player
+            // despawn the server player (but keep it around on the server)
             serverPlayer.GetComponent<NetworkObject>().Despawn(false);
 
             yield return null;

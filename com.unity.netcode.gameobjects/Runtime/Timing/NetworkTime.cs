@@ -40,7 +40,8 @@ namespace Unity.Netcode
         public double FixedTime => m_CachedTick * m_TickInterval;
 
         /// <summary>
-        /// Gets the fixed delta time. This value is based on the <see cref="TickRate"/> and stays constant. Similar to <see cref="Time.fixedDeltaTime"/> There is no equivalent to <see cref="Time.deltaTime"/>
+        /// Gets the fixed delta time. This value is based on the <see cref="TickRate"/> and stays constant.
+        /// Similar to <see cref="Time.fixedDeltaTime"/> There is no equivalent to <see cref="Time.deltaTime"/>
         /// </summary>
         public float FixedDeltaTime => (float)m_TickInterval;
 
