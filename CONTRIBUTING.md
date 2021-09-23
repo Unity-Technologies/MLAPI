@@ -5,6 +5,8 @@ Thank you for your interest in contributing to Unity Multiplayer Networking!
 Here are our guidlines for contributing:
 
 * [Code of Conduct](#coc)
+* [Coding Standards](#standards)
+* [Branching](#branch)
 * [Ways to Contribute](#ways)
 * [Issues and Bugs](#issue)
 * [Feature Requests](#feature)
@@ -15,6 +17,20 @@ Here are our guidlines for contributing:
 ## <a name="coc"></a> Code of Conduct
 
 Please help us keep Unity Netcode for GameObjects open and inclusive. Read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## <a name="standards"></a> Coding Standards
+
+Your contributions must follow the [Unity C# Coding Standards](CODING_STANDARDS.cs).
+
+Our standard extends the [Microsoft Framework Design Guidelines](https://docs.microsoft.com/en-us/dotnet/standard/design-guidelines/), which defines a number of rules not covered by [Unity C# Coding Standards](CODING_STANDARDS.cs).
+
+Unity C# Coding Standards includes a subset of the most used rules as well as any additions and exceptions to the Microsoft Framework Design Guidelines (FDG).
+
+If there is any disagreement between [Unity C# Coding Standards](CODING_STANDARDS.cs) and the [Microsoft Framework Design Guidelines](https://docs.microsoft.com/en-us/dotnet/standard/design-guidelines/), Unity C# Coding Standards always wins. Exceptions to the FDG are marked with [FDG Exception].
+
+## <a name="branch"></a> Branching
+
+External pull requests has to be based on and target the ``develop`` branch.
 
 ## <a name="ways"></a> Ways to Contribute
 
