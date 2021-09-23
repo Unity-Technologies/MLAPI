@@ -464,7 +464,7 @@ namespace Unity.Netcode
                 throw new NotServerException($"Only server can spawn {nameof(NetworkObject)}s");
             }
 
-            NetworkManager.SpawnManager.SpawnNetworkObjectLocally(this, NetworkManager.SpawnManager.GetNetworkObjectId(), false, playerObject, ownerClientId, destroyWithScene);
+            NetworkManager.SpawnManager.SpawnNetworkObjectLocally(this, NetworkManager.SpawnManager.GetNetworkObjectId(), false, playerObject, ownerClientId, destroyWithScene, false);
 
             if (NetworkManager.NetworkConfig.UseSnapshotSpawn)
             {
@@ -479,6 +479,9 @@ namespace Unity.Netcode
                     NetworkManager.SpawnManager.SendSpawnCallForObject(NetworkManager.ConnectedClientsList[i].ClientId, this);
                 }
             }
+
+            // Moving this to the end here to ensure it's invoked after any client spawn messages have been sent.
+            InvokeBehaviourNetworkSpawn();
         }
 
         /// <summary>

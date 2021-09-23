@@ -10,6 +10,7 @@ namespace TestProject.RuntimeTests.Support
         public static NetworkUpdateStage TestStage;
         public static int ClientUpdateCount;
         public static int ServerUpdateCount;
+        public static bool ClientNetworkSpawnRpcCalled;
         public static NetworkUpdateStage StageExecutedByReceiver;
 
         private bool m_Active = false;
@@ -35,6 +36,22 @@ namespace TestProject.RuntimeTests.Support
         {
             Debug.Log("Activated");
             m_Active = true;
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            if (!IsServer)
+            {
+                return;
+            }
+
+            TestClientRpc();
+        }
+
+        [ClientRpc]
+        private void TestClientRpc()
+        {
+            ClientNetworkSpawnRpcCalled = true;
         }
 
         public void NetworkStart()
@@ -64,7 +81,7 @@ namespace TestProject.RuntimeTests.Support
             Debug.Log("Running test...");
             GetComponent<NetworkObject>().Spawn();
             IncrementUpdateCount();
-            GetComponent<NetworkObject>().Despawn();
+            Destroy(gameObject);
             m_Active = false;
         }
 
