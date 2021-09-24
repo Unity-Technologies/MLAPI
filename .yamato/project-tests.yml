@@ -43,19 +43,14 @@ test_{{ project.name }}_{{ editor }}_{{ platform.name }}:
     - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
     - unity-downloader-cli -u {{ editor }} -c editor -w --fast
-    - {% if platform.name == "ubuntu" %}DISPLAY=:0 && {% endif %}{{ platform.editorpath }} -projectpath testproject -batchmode -nographics -quit -logfile BuildMultiprocessTestPlayer.log -executeMethod Unity.Netcode.MultiprocessRuntimeTests.BuildMultiprocessTestPlayer.BuildDebug
-{% if platform.name == "mac" %}    -  sudo codesign --force --deep --sign - ./testproject/Builds/MultiprocessTests/MultiprocessTestPlayer.app{% endif %}
     - {% if platform.name == "ubuntu" %}DISPLAY=:0 && {% endif %}upm-ci project test -u {{ editor }} --project-path {{ project.path }} --type project-tests
   artifacts:
     logs:
       paths:
         - "upm-ci~/test-results/**/*"
-        - BuildMultiprocessTestPlayer.log
   dependencies:
     - .yamato/project-pack.yml#pack_{{ project.name }}
 
 {% endfor -%}
 {% endfor -%}
 {% endfor -%}
-
-
