@@ -55,8 +55,8 @@ public class ExecuteStepInContext : CustomYieldInstruction
     private bool m_WaitMultipleUpdates;
     private bool m_IgnoreTimeoutException;
 
-    private float m_StartTime;
-    private bool isTimingOut => Time.time - m_StartTime > TestCoordinator.MaxWaitTimeoutSec;
+    private float m_Timeout;
+    private bool isTimingOut => m_Timeout < Time.time;
     private bool shouldExecuteLocally => (m_ActionContext == StepExecutionContext.Server && m_NetworkManager.IsServer) || (m_ActionContext == StepExecutionContext.Clients && !m_NetworkManager.IsServer);
 
     public static bool IsRegistering;
@@ -160,9 +160,10 @@ public class ExecuteStepInContext : CustomYieldInstruction
     /// <param name="networkManager"></param>
     /// <param name="waitMultipleUpdates"> waits multiple frames before allowing the execution to continue. This means ClientFinishedServerRpc must be called manually</param>
     /// <param name="additionalIsFinishedWaiter"></param>
-    public ExecuteStepInContext(StepExecutionContext actionContext, Action<byte[]> stepToExecute, bool ignoreTimeoutException = false, byte[] paramToPass = default, NetworkManager networkManager = null, bool waitMultipleUpdates = false, Func<bool> additionalIsFinishedWaiter = null)
+    public ExecuteStepInContext(StepExecutionContext actionContext, Action<byte[]> stepToExecute, bool ignoreTimeoutException = false, byte[] paramToPass = default,
+        NetworkManager networkManager = null, bool waitMultipleUpdates = false, Func<bool> additionalIsFinishedWaiter = null)
     {
-        m_StartTime = Time.time;
+        m_Timeout = Time.time + TestCoordinator.MaxWaitTimeoutSec;
         m_IsRegistering = IsRegistering;
         m_ActionContext = actionContext;
         m_StepToExecute = stepToExecute;
@@ -207,11 +208,10 @@ public class ExecuteStepInContext : CustomYieldInstruction
             {
                 if (networkManager.IsServer)
                 {
-                    TestCoordinator.Instance.TriggerActionIdClientRpc(currentActionId, paramToPass,
-                        clientRpcParams: new ClientRpcParams
-                        {
-                            Send = new ClientRpcSendParams { TargetClientIds = TestCoordinator.AllClientIdsExceptMine.ToArray() }
-                        });
+                    TestCoordinator.Instance.TriggerActionIdClientRpc(currentActionId, paramToPass, ignoreTimeoutException, clientRpcParams: new ClientRpcParams
+                    {
+                        Send = new ClientRpcSendParams { TargetClientIds = TestCoordinator.AllClientIdsExceptMine.ToArray() }
+                    });
                     foreach (var clientId in TestCoordinator.AllClientIdsExceptMine)
                     {
                         m_ClientIsFinishedChecks.Add(TestCoordinator.ConsumeClientIsFinished(clientId));
@@ -228,6 +228,7 @@ public class ExecuteStepInContext : CustomYieldInstruction
     public void Invoke(byte[] args)
     {
         m_StepToExecute.Invoke(args);
+
         if (!m_WaitMultipleUpdates)
         {
             if (!m_NetworkManager.IsServer)

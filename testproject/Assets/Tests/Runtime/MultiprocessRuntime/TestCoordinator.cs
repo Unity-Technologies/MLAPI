@@ -6,6 +6,7 @@ using Unity.Netcode;
 using NUnit.Framework;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
+using Unity.Netcode.MultiprocessRuntimeTests;
 
 /// <summary>
 /// TestCoordinator
@@ -39,6 +40,7 @@ public class TestCoordinator : NetworkBehaviour
 
     private void Awake()
     {
+        BaseMultiprocessTests.MultiProcessLog("Awake");
         if (Instance != null)
         {
             Debug.LogError("Multiple test coordinator, destroying this instance");
@@ -51,16 +53,20 @@ public class TestCoordinator : NetworkBehaviour
 
     public void Start()
     {
+        BaseMultiprocessTests.MultiProcessLog("Start");
         bool isClient = Environment.GetCommandLineArgs().Any(value => value == MultiprocessOrchestration.IsWorkerArg);
         if (isClient)
         {
-            Debug.Log("starting netcode client");
+            BaseMultiprocessTests.MultiProcessLog("starting netcode client");
             NetworkManager.Singleton.StartClient();
+            BaseMultiprocessTests.MultiProcessLog($"started netcode client {NetworkManager.Singleton.IsConnectedClient}");
         }
-
-        NetworkManager.OnClientDisconnectCallback += OnClientDisconnectCallback;
-
+        BaseMultiprocessTests.MultiProcessLog("Initialize All Steps");
         ExecuteStepInContext.InitializeAllSteps();
+        BaseMultiprocessTests.MultiProcessLog($"Initialize All Steps... done");
+        BaseMultiprocessTests.MultiProcessLog($"IsInvoking: {NetworkManager.Singleton.IsInvoking()}");
+        BaseMultiprocessTests.MultiProcessLog($"IsActiveAndEnabled: {NetworkManager.Singleton.isActiveAndEnabled}");
+        BaseMultiprocessTests.MultiProcessLog($"NetworkManager.NetworkConfig.NetworkTransport.name {NetworkManager.NetworkConfig.NetworkTransport.name}");
     }
 
     public void Update()
@@ -78,7 +84,7 @@ public class TestCoordinator : NetworkBehaviour
         else if (Time.time - m_TimeSinceLastConnected > MaxWaitTimeoutSec || m_ShouldShutdown)
         {
             // Make sure we don't have zombie processes
-            Debug.Log($"quitting application, shouldShutdown set to {m_ShouldShutdown}, is listening {NetworkManager.Singleton.IsListening}, is connected client {NetworkManager.Singleton.IsConnectedClient}");
+            BaseMultiprocessTests.MultiProcessLog($"quitting application, shouldShutdown set to {m_ShouldShutdown}, is listening {NetworkManager.Singleton.IsListening}, is connected client {NetworkManager.Singleton.IsConnectedClient}");
             if (!m_ShouldShutdown)
             {
                 QuitApplication();
@@ -101,10 +107,17 @@ public class TestCoordinator : NetworkBehaviour
         m_TestResultsLocal.Clear();
     }
 
-    public void OnDestroy()
+    public void OnEnable()
     {
-        if (NetworkObject != null && NetworkManager != null)
+        BaseMultiprocessTests.MultiProcessLog("OnEnable - Setting OnClientDisconnectCallback");
+        NetworkManager.OnClientDisconnectCallback += OnClientDisconnectCallback;
+    }
+
+    public void OnDisable()
+    {
+        if (IsSpawned && NetworkObject != null && NetworkObject.NetworkManager != null)
         {
+            BaseMultiprocessTests.MultiProcessLog("OnDisable - Removing OnClientDisconnectCallback");
             NetworkManager.OnClientDisconnectCallback -= OnClientDisconnectCallback;
         }
     }
@@ -244,9 +257,9 @@ public class TestCoordinator : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void TriggerActionIdClientRpc(string actionId, byte[] args, ClientRpcParams clientRpcParams = default)
+    public void TriggerActionIdClientRpc(string actionId, byte[] args, bool ignorException, ClientRpcParams clientRpcParams = default)
     {
-        Debug.Log($"received RPC from server, client side triggering action ID {actionId}");
+        BaseMultiprocessTests.MultiProcessLog($"received RPC from server, client side triggering action ID {actionId}");
         try
         {
             ExecuteStepInContext.AllActions[actionId].Invoke(args);
@@ -254,7 +267,14 @@ public class TestCoordinator : NetworkBehaviour
         catch (Exception e)
         {
             WriteErrorServerRpc(e.Message);
-            throw;
+            if (!ignorException)
+            {
+                throw;
+            }
+            else
+            {
+                Instance.ClientFinishedServerRpc();
+            }
         }
     }
 
@@ -294,7 +314,7 @@ public class TestCoordinator : NetworkBehaviour
         {
             NetworkManager.Singleton.Shutdown();
             m_ShouldShutdown = true; // wait until isConnectedClient is false to run Application Quit in next update
-            Debug.Log("Quitting player cleanly");
+            BaseMultiprocessTests.MultiProcessLog("Quitting player cleanly");
             Application.Quit();
         }
         catch (Exception e)
@@ -310,17 +330,49 @@ public class TestCoordinator : NetworkBehaviour
         m_TimeSinceLastKeepAlive = Time.time;
     }
 
+    private ulong[] m_TargetClient = new ulong[1] { 0 };
+    
     [ServerRpc(RequireOwnership = false)]
     public void WriteTestResultsServerRpc(float result, ServerRpcParams receiveParams = default)
     {
         var senderId = receiveParams.Receive.SenderClientId;
+        Debug.Log($"Server received result [{result}] from sender [{senderId}]");
         if (!m_TestResultsLocal.ContainsKey(senderId))
         {
             m_TestResultsLocal[senderId] = new List<float>();
         }
 
         m_TestResultsLocal[senderId].Add(result);
+
+        // Now send the results received verification
+        m_TargetClient[0] = senderId;
+        var clientParams = new ClientRpcParams();
+        clientParams.Send.TargetClientIds = m_TargetClient;
+        ServerReceivedResultsResponseClientRpc(result, clientParams);
     }
+
+    public delegate void OnServerReceivedResultsResponseDelegateHandler(float resultReceived);
+
+    public OnServerReceivedResultsResponseDelegateHandler OnServerReceivedResultsResponse;
+    private void ServerReceivedResultsResponse(float resultReceived)
+    {
+        BaseMultiprocessTests.MultiProcessLog($"ServerReceivedResultsReponse {resultReceived}");
+        if (OnServerReceivedResultsResponse != null)
+        {
+            OnServerReceivedResultsResponse.Invoke(resultReceived);
+        }
+        else
+        {
+            Debug.LogWarning("Current test is not validating results were received (adding this validation will assure proper test synchronization and timing).");
+        }
+    }
+
+    [ClientRpc]
+    public void ServerReceivedResultsResponseClientRpc(float resultReceived, ClientRpcParams clientRpcParams = default)
+    {
+        ServerReceivedResultsResponse(resultReceived);
+    }
+
 
     [ServerRpc(RequireOwnership = false)]
     public void WriteErrorServerRpc(string errorMessage, ServerRpcParams receiveParams = default)

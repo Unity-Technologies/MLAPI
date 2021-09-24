@@ -14,6 +14,7 @@ run_all_tests:
     - .yamato/package-tests.yml#test_{{ project.name}}_{{ package.name }}_{{ editor }}_{{ platform.name }}
 {% endfor -%}
     - .yamato/project-tests.yml#test_{{ project.name }}_{{ editor }}_{{ platform.name }}
+    - .yamato/project-tests.yml#multiprocess_test_testproject_{{ editor }}_{{ platform.name }}
 {% endfor -%}
 {% endfor -%}
 {% endfor -%}

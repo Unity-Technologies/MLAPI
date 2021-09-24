@@ -262,7 +262,7 @@ LightingSettings:
   m_PVREnvironmentReferencePointCount: 2048
   m_LightProbeSampleCountMultiplier: 4
   m_PVRBounces: 2
-  m_PVRMinBounces: 1
+  m_PVRMinBounces: 2
   m_PVREnvironmentMIS: 1
   m_PVRFilteringMode: 1
   m_PVRDenoiserTypeDirect: 1
@@ -658,8 +658,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1211923376}
   - component: {fileID: 1211923375}
-  - component: {fileID: 1211923377}
   - component: {fileID: 1211923378}
+  - component: {fileID: 1211923377}
   m_Layer: 0
   m_Name: '[NetworkManager] (Multiprocess)'
   m_TagString: Untagged
@@ -685,13 +685,6 @@ MonoBehaviour:
   NetworkConfig:
     ProtocolVersion: 0
     NetworkTransport: {fileID: 1674777073}
-    RegisteredScenes:
-    - MultiprocessTestScene
-    - SampleScene
-    RegisteredSceneAssets:
-    - {fileID: 102900000, guid: 76743cb7b342c49279327834918a9c6e, type: 3}
-    - {fileID: 102900000, guid: 9fc0d4010bbf28b4594072e72b8655ab, type: 3}
-    AllowRuntimeSceneChanges: 0
     PlayerPrefab: {fileID: 4700706668509470175, guid: 7eeaaf9e50c0afc4dab93584a54fb0d6,
       type: 3}
     NetworkPrefabs:
@@ -707,7 +700,6 @@ MonoBehaviour:
     ConnectionData: 
     EnableTimeResync: 0
     TimeResyncInterval: 30
-    EnableNetworkVariable: 1
     EnsureNetworkVariableLengthSafety: 0
     EnableSceneManagement: 1
     ForceSamePrefabs: 1
@@ -742,10 +734,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1211923374}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: 068bf11ceb1344667af4cc40950f44f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ReferencedPrefab: {fileID: 5637023994061915634, guid: b0952a471c5a147cb92f6afcdb648f8a,
+  ReferencedPrefab: {fileID: 9115731988109684252, guid: c2851feb7276442cc86a6f2d1d69ea11,
     type: 3}
 --- !u!114 &1211923378
 MonoBehaviour:
@@ -868,12 +860,6 @@ MonoBehaviour:
   ConnectAddress: 127.0.0.1
   ConnectPort: 7777
   ServerListenPort: 7777
-  ServerWebsocketListenPort: 8887
-  SupportWebsocket: 0
-  Channels: []
-  UseNetcodeRelay: 0
-  NetcodeRelayAddress: 127.0.0.1
-  NetcodeRelayPort: 8888
   MessageSendMode: 0
 --- !u!1 &2027640071
 GameObject:
@@ -915,8 +901,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 2027640071}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fc5ef7b69296d69458910681f29471e6, type: 3}
+  m_Script: {fileID: 11500000, guid: 6960e84d07fb87f47956e7a81d71c4e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Port: 7777
-  Address: 127.0.0.1
+  m_ProtocolType: 0
+  m_MessageBufferSize: 6144
+  m_ReciveQueueSize: 128
+  m_SendQueueSize: 128
+  m_SendQueueBatchSize: 4096
+  m_ServerAddress: 127.0.0.1
+  m_ServerPort: 7777
