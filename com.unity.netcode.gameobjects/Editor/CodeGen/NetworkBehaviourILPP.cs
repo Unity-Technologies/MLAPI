@@ -20,6 +20,9 @@ namespace Unity.Netcode.Editor.CodeGen
 
     internal sealed class NetworkBehaviourILPP : ILPPInterface
     {
+        private const string k_ExtensionMethodReadName = "ReadValueSafe";
+        private const string k_ExtensionMethodWriteName = "WriteValueSafe";
+
         public override ILPPInterface GetInstance() => this;
 
         public override bool WillProcess(ICompiledAssembly compiledAssembly) => compiledAssembly.References.Any(filePath => Path.GetFileNameWithoutExtension(filePath) == CodeGenHelpers.RuntimeAssemblyName);
@@ -637,7 +640,7 @@ namespace Unity.Netcode.Editor.CodeGen
                 {
                     var parameters = method.Resolve().Parameters;
 
-                    if (method.Name == "WriteValueSafe")
+                    if (method.Name == k_ExtensionMethodWriteName)
                     {
                         if (parameters[1].IsIn)
                         {
@@ -668,7 +671,7 @@ namespace Unity.Netcode.Editor.CodeGen
                 var typeMethod = GetFastBufferWriterWriteMethod("WriteNetworkSerializable", paramType);
                 if (typeMethod == null)
                 {
-                    typeMethod = GetFastBufferWriterWriteMethod("WriteValueSafe", paramType);
+                    typeMethod = GetFastBufferWriterWriteMethod(k_ExtensionMethodWriteName, paramType);
                 }
                 if (typeMethod != null)
                 {
@@ -754,7 +757,7 @@ namespace Unity.Netcode.Editor.CodeGen
                 {
                     var parameters = method.Resolve().Parameters;
                     if (
-                        method.Name == "ReadValueSafe"
+                        method.Name == k_ExtensionMethodReadName
                         && parameters[1].IsOut
                         && parameters[1].ParameterType.Resolve() == paramType.MakeByReferenceType().Resolve()
                         && ((ByReferenceType)parameters[1].ParameterType).ElementType.IsArray == paramType.IsArray)
@@ -770,7 +773,7 @@ namespace Unity.Netcode.Editor.CodeGen
                 var typeMethod = GetFastBufferReaderReadMethod("ReadNetworkSerializable", paramType);
                 if (typeMethod == null)
                 {
-                    typeMethod = GetFastBufferReaderReadMethod("ReadValueSafe", paramType);
+                    typeMethod = GetFastBufferReaderReadMethod(k_ExtensionMethodReadName, paramType);
                 }
                 if (typeMethod != null)
                 {
@@ -1014,13 +1017,12 @@ namespace Unity.Netcode.Editor.CodeGen
                     }
                     else
                     {
-                        m_Diagnostics.AddError(methodDefinition, $"Don't know how to serialize {paramType.Name} - implement INetworkSerializable or add an extension method to FastBufferWriter to define serialization.");
+                        m_Diagnostics.AddError(methodDefinition, $"Don't know how to serialize {paramType.Name} - implement {nameof(INetworkSerializable)} or add an extension method for {nameof(FastBufferWriter)}.{k_ExtensionMethodWriteName} to define serialization.");
                         continue;
                     }
 
                     if (jumpInstruction != null)
                     {
-                        // }
                         instructions.Add(jumpInstruction);
                     }
                 }
@@ -1305,13 +1307,12 @@ namespace Unity.Netcode.Editor.CodeGen
                 }
                 else
                 {
-                    m_Diagnostics.AddError(methodDefinition, $"Don't know how to deserialize {paramType.Name} - implement INetworkSerializable or add an extension method to FastBufferReader to define serialization.");
+                    m_Diagnostics.AddError(methodDefinition, $"Don't know how to deserialize {paramType.Name} - implement {nameof(INetworkSerializable)} or add an extension method for {nameof(FastBufferReader)}.{k_ExtensionMethodReadName} to define serialization.");
                     continue;
                 }
 
                 if (jumpInstruction != null)
                 {
-                    // }
                     processor.Append(jumpInstruction);
                 }
             }
