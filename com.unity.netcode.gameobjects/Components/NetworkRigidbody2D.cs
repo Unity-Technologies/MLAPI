@@ -11,6 +11,7 @@ namespace Unity.Netcode.Components
     public class NetworkRigidbody2D : NetworkBehaviour
     {
         private Rigidbody2D m_Rigidbody;
+        private NetworkTransform m_NetworkTransform;
 
         private bool m_OriginalKinematic;
 
@@ -20,25 +21,25 @@ namespace Unity.Netcode.Components
         /// <summary>
         /// Gets a bool value indicating whether this <see cref="NetworkRigidbody2D"/> on this peer currently holds authority.
         /// </summary>
-        internal bool HasAuthority => NetworkManager.IsServer; // TODO update this once we support owner authoritative NetworkTransform.
+        private bool HasAuthority => m_NetworkTransform.CanCommitToTransform;
 
         private void Awake()
         {
             m_Rigidbody = GetComponent<Rigidbody2D>();
+            m_NetworkTransform = GetComponent<NetworkTransform>();
         }
 
-        // Currently commented out because it is not needed as authority currently can't change at runtime.
-        // private void FixedUpdate()
-        // {
-        //     if (NetworkManager.IsListening)
-        //     {
-        //         if (HasAuthority != m_IsAuthority)
-        //         {
-        //             m_IsAuthority = HasAuthority;
-        //             UpdateRigidbodyKinematicMode();
-        //         }
-        //     }
-        // }
+        private void FixedUpdate()
+        {
+            if (NetworkManager.IsListening)
+            {
+                if (HasAuthority != m_IsAuthority)
+                {
+                    m_IsAuthority = HasAuthority;
+                    UpdateRigidbodyKinematicMode();
+                }
+            }
+        }
 
         // Puts the rigidbody in a kinematic non-interpolated mode on everyone but the server.
         private void UpdateRigidbodyKinematicMode()
