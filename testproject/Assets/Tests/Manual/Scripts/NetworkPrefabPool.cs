@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Unity.Netcode;
+using Unity.Netcode.Components;
 
 namespace TestProject.ManualTests
 {
@@ -11,12 +12,12 @@ namespace TestProject.ManualTests
     {
         [Header("General Settings")]
         public bool AutoSpawnEnable = true;
+        public bool Interpolate = true;
         public float InitialSpawnDelay;
         public int SpawnsPerSecond;
         public int PoolSize;
         public float ObjectSpeed = 10.0f;
         public bool DontDestroy;
-
 
         [Header("Prefab Instance Handling")]
         [Tooltip("When enabled, this will utilize the NetworkPrefabHandler to register a custom INetworkPrefabInstanceHandler")]
@@ -44,6 +45,8 @@ namespace TestProject.ManualTests
         private List<GameObject> m_ObjectPool;
 
         private static GameObject s_Instance;
+
+        private NetworkVariable<bool> m_CurrentInterpolateState = new NetworkVariable<bool>();
 
         /// <summary>
         /// Called when enabled, if already connected we register any custom prefab spawn handler here
@@ -165,7 +168,7 @@ namespace TestProject.ManualTests
         private void DeregisterCustomPrefabHandler()
         {
             // Register the custom spawn handler?
-            if (EnableHandler && NetworkManager && NetworkManager.PrefabHandler != null)
+            if (IsSpawned && EnableHandler && NetworkManager && NetworkManager.PrefabHandler != null)
             {
                 NetworkManager.PrefabHandler.RemoveHandler(ServerObjectToPool);
                 if (IsClient && m_ObjectToSpawn != null)
@@ -177,16 +180,20 @@ namespace TestProject.ManualTests
 
         private void OnSceneEvent(SceneEvent sceneEvent)
         {
-            switch (sceneEvent.SceneEventType)
+            // Only process events for our local client id (this includes server)
+            if (sceneEvent.ClientId == NetworkManager.LocalClientId)
             {
-                case SceneEventData.SceneEventTypes.S2C_Unload:
-                    {
-                        if (sceneEvent.LoadSceneMode == LoadSceneMode.Single && (gameObject.scene.name == sceneEvent.SceneName))
+                switch (sceneEvent.SceneEventType)
+                {
+                    case SceneEventData.SceneEventTypes.S2C_Unload:
                         {
-                            OnDestroyObjectPool();
+                            if (sceneEvent.LoadSceneMode == LoadSceneMode.Single && (gameObject.scene.name == sceneEvent.SceneName))
+                            {
+                                OnDestroyObjectPool();
+                            }
+                            break;
                         }
-                        break;
-                    }
+                }
             }
         }
 
@@ -302,9 +309,6 @@ namespace TestProject.ManualTests
             }
         }
 
-
-
-
         /// <summary>
         /// Override NetworkBehaviour.NetworkStart
         /// </summary>
@@ -317,10 +321,52 @@ namespace TestProject.ManualTests
                 if (isActiveAndEnabled)
                 {
                     m_DelaySpawning = Time.realtimeSinceStartup + InitialSpawnDelay;
-                    StartSpawningBoxes();
 
                     //Make sure our slider reflects the current spawn rate
                     UpdateSpawnsPerSecond();
+                }
+
+                // Server dictates interpolation
+                m_CurrentInterpolateState.Value = Interpolate;
+            }
+
+            // Both client and server want to know when this changes
+            m_CurrentInterpolateState.OnValueChanged = OnInterpolateStateChanged;
+        }
+
+        /// <summary>
+        /// When we change interpolation state, we change this for all of our
+        /// NetworkObjects in the pool
+        /// </summary>
+        /// <param name="previous"></param>
+        /// <param name="current"></param>
+        private void OnInterpolateStateChanged(bool previous, bool current)
+        {
+            if (IsSpawned)
+            {
+                Interpolate = current;
+                foreach (var obj in m_ObjectPool)
+                {
+                    if (obj == null)
+                    {
+                        continue;
+                    }
+                    obj.GetComponent<NetworkTransform>().Interpolate = Interpolate;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Server uses the update to check and see if we want to change the interpolate
+        /// status for the NetworkObject Pool
+        /// </summary>
+        private void Update()
+        {
+            if (IsSpawned && IsServer)
+            {
+                if (Interpolate != m_CurrentInterpolateState.Value)
+                {
+                    m_CurrentInterpolateState.Value = Interpolate;
                 }
             }
         }
@@ -381,7 +427,6 @@ namespace TestProject.ManualTests
                 {
                     if (obj != null && !obj.activeInHierarchy)
                     {
-                        obj.SetActive(true);
                         return obj;
                     }
                 }
@@ -401,6 +446,7 @@ namespace TestProject.ManualTests
             var genericNetworkObjectBehaviour = obj.GetComponent<GenericNetworkObjectBehaviour>();
             genericNetworkObjectBehaviour.HasHandler = EnableHandler;
             genericNetworkObjectBehaviour.IsRegisteredPoolObject = true;
+            obj.GetComponent<NetworkTransform>().Interpolate = Interpolate;
             m_ObjectPool.Add(obj);
             return m_ObjectPool[m_ObjectPool.Count - 1];
         }
@@ -464,7 +510,6 @@ namespace TestProject.ManualTests
 
             m_IsSpawningObjects = true;
 
-
             while (m_IsSpawningObjects && !m_IsExitingScene)
             {
                 //Start spawning if auto spawn is enabled
@@ -480,14 +525,13 @@ namespace TestProject.ManualTests
                         //Spawn (n) entities then wait for 1/60th of a second and repeat
                         for (int i = 0; i < entitityCountPerFrame; i++)
                         {
-                            GameObject go = GetObject();
+                            var go = GetObject();
                             if (go != null)
                             {
+                                go.SetActive(true);
                                 go.transform.position = transform.position;
-
                                 float ang = Random.Range(0.0f, 2 * Mathf.PI);
                                 go.GetComponent<GenericNetworkObjectBehaviour>().SetDirectionAndVelocity(new Vector3(Mathf.Cos(ang), 0, Mathf.Sin(ang)), ObjectSpeed);
-
                                 var no = go.GetComponent<NetworkObject>();
                                 if (!no.IsSpawned)
                                 {
@@ -512,6 +556,7 @@ namespace TestProject.ManualTests
             {
                 obj.transform.position = position;
                 obj.transform.rotation = rotation;
+                obj.SetActive(true);
                 return obj.GetComponent<NetworkObject>();
             }
             return null;

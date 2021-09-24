@@ -249,7 +249,7 @@ MonoBehaviour:
   SpawnInSourceScene: 1
   DestroyOnUnload: 1
   InitialSpawnDelay: 0.2
-  SpawnsPerSecond: 3
+  SpawnsPerSecond: 4
   PoolSize: 32
   ObjectSpeed: 8
   EnableHandler: 1

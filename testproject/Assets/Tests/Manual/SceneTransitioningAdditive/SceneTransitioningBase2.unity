@@ -1468,6 +1468,7 @@ MonoBehaviour:
   SpawnsPerSecond: 1
   PoolSize: 32
   ObjectSpeed: 8
+  DontDestroy: 0
   EnableHandler: 1
   RegisterUsingNetworkObject: 0
   ServerObjectToPool: {fileID: 47844432802121000, guid: 894296ee6a442ef49b3637b680c7bdf7,
@@ -3133,7 +3134,7 @@ MonoBehaviour:
   m_MinValue: 0
   m_MaxValue: 550
   m_WholeNumbers: 1
-  m_Value: 2
+  m_Value: 6
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:

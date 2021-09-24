@@ -173,13 +173,13 @@ namespace TestProject.ManualTests
         {
             while (true)
             {
-                if (NetworkManager.Singleton)
+                if (IsSpawned)
                 {
                     if (m_ClientMode)
                     {
                         m_LastStatsDump = m_IsServer ? "Server Stats" : "Client Stats";
-                        m_LastStatsDump += "\ndeltaTime: [" + Time.deltaTime.ToString() + "]";
-                        m_LastStatsDump += "\n";
+                        m_LastStatsDump += "\ndeltaTime: [" + Time.deltaTime.ToString() + "]\n";
+                        m_LastStatsDump += "Spawned: [" + NetworkManager.SpawnManager.SpawnedObjectsList.Count + "]\n";
                         m_LastStatsDump += $"Active Scene: {SceneManager.GetActiveScene().name}\n";
                         if (m_SceneEventNotificationQueue != null)
                         {

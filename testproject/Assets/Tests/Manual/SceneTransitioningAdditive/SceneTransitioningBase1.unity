@@ -172,7 +172,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 475de064003ff104fb88b1fbccd0f417, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ActivateOnLoad: 0
+  m_ActivateOnLoad: 1
   m_SceneToLoad: AdditiveSceneMultiInstance
   m_SceneAsset: {fileID: 102900000, guid: 0ae94f636016d3b40bfbecad57d99553, type: 3}
 --- !u!1 &34066664
@@ -627,7 +627,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 475de064003ff104fb88b1fbccd0f417, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ActivateOnLoad: 0
+  m_ActivateOnLoad: 1
   m_SceneToLoad: AdditiveSceneMultiInstance
   m_SceneAsset: {fileID: 102900000, guid: 0ae94f636016d3b40bfbecad57d99553, type: 3}
 --- !u!1 &125866602
@@ -2200,7 +2200,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 475de064003ff104fb88b1fbccd0f417, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ActivateOnLoad: 0
+  m_ActivateOnLoad: 1
   m_SceneToLoad: AdditiveSceneMultiInstance
   m_SceneAsset: {fileID: 102900000, guid: 0ae94f636016d3b40bfbecad57d99553, type: 3}
 --- !u!1 &1024114717
@@ -2241,28 +2241,6 @@ MonoBehaviour:
   NetworkConfig:
     ProtocolVersion: 0
     NetworkTransport: {fileID: 1024114719}
-    RegisteredScenes:
-    - SceneTransitioningBase
-    - SecondSceneAdditive
-    - ThirdSceneAdditive
-    - AdditiveSceneOne
-    - AdditiveSceneTwo
-    - SceneTransitioningBase1
-    - AdditiveScene1
-    - AdditiveScene2
-    - SceneTransitioningBase2
-    - AdditiveScene3
-    - AdditiveScene4
-    - AdditiveSceneMultiInstance
-    RegisteredSceneAssets:
-    - {fileID: 102900000, guid: 780f96a61e8ac8e41b638ae8ec3a3236, type: 3}
-    - {fileID: 102900000, guid: 9e437cc704801bc47add735d743985f5, type: 3}
-    - {fileID: 102900000, guid: 41a0239b0c49e2047b7063c822f0df8a, type: 3}
-    - {fileID: 102900000, guid: c6a3d883c8253ee43bca4f2b03797d7b, type: 3}
-    - {fileID: 102900000, guid: 7da3dd618f5b5a34db1f6d3c9511e221, type: 3}
-    - {fileID: 102900000, guid: dc7e17c86f5ca81478043be306027c13, type: 3}
-    - {fileID: 102900000, guid: 0ae94f636016d3b40bfbecad57d99553, type: 3}
-    AllowRuntimeSceneChanges: 0
     PlayerPrefab: {fileID: 4079352819444256614, guid: c16f03336b6104576a565ef79ad643c0,
       type: 3}
     NetworkPrefabs:
@@ -2322,7 +2300,6 @@ MonoBehaviour:
     ConnectionData: 
     EnableTimeResync: 0
     TimeResyncInterval: 30
-    EnableNetworkVariable: 1
     EnsureNetworkVariableLengthSafety: 0
     EnableSceneManagement: 1
     ForceSamePrefabs: 1
@@ -2332,8 +2309,6 @@ MonoBehaviour:
     LoadSceneTimeOut: 120
     MessageBufferTimeout: 20
     EnableNetworkLogs: 1
-    UseSnapshotDelta: 0
-    UseSnapshotSpawn: 0
 --- !u!114 &1024114719
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2352,12 +2327,6 @@ MonoBehaviour:
   ConnectAddress: 127.0.0.1
   ConnectPort: 7777
   ServerListenPort: 7777
-  ServerWebsocketListenPort: 8887
-  SupportWebsocket: 0
-  Channels: []
-  UseNetcodeRelay: 0
-  NetcodeRelayAddress: 127.0.0.1
-  NetcodeRelayPort: 8888
   MessageSendMode: 0
 --- !u!4 &1024114720
 Transform:
@@ -2430,10 +2399,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   AutoSpawnEnable: 1
+  Interpolate: 1
   InitialSpawnDelay: 0.2
   SpawnsPerSecond: 1
   PoolSize: 32
   ObjectSpeed: 8
+  DontDestroy: 0
   EnableHandler: 1
   RegisterUsingNetworkObject: 0
   ServerObjectToPool: {fileID: 771575417923360811, guid: c0a45bdb516f341498d933b7a7ed4fc1,
@@ -2521,7 +2492,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 475de064003ff104fb88b1fbccd0f417, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ActivateOnLoad: 0
+  m_ActivateOnLoad: 1
   m_SceneToLoad: AdditiveSceneMultiInstance
   m_SceneAsset: {fileID: 102900000, guid: 0ae94f636016d3b40bfbecad57d99553, type: 3}
 --- !u!1 &1210784441
@@ -4857,7 +4828,7 @@ MonoBehaviour:
   m_MinValue: 0
   m_MaxValue: 550
   m_WholeNumbers: 1
-  m_Value: 4
+  m_Value: 6
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:

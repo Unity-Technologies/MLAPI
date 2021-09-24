@@ -676,17 +676,18 @@ namespace Unity.Netcode.Components
             }
         }
 
-        private void Awake()
+        /// <summary>
+        /// Apply our initial assignment and subscribe to the OnValueChanged event
+        /// when enabled in order to support NetworkObject pools.
+        /// </summary>
+        private void OnEnable()
         {
             m_Transform = transform;
 
-
             // ReplNetworkState.NetworkVariableChannel = NetworkChannel.PositionUpdate; // todo figure this out, talk with Matt/Fatih, this should be unreliable
-
-
-
             m_ReplicatedNetworkState.OnValueChanged += OnNetworkStateChanged;
         }
+
 
         public override void OnNetworkSpawn()
         {
@@ -697,6 +698,23 @@ namespace Unity.Netcode.Components
             m_ScaleXInterpolator = new BufferedLinearInterpolatorFloat(NetworkManager);
             m_ScaleYInterpolator = new BufferedLinearInterpolatorFloat(NetworkManager);
             m_ScaleZInterpolator = new BufferedLinearInterpolatorFloat(NetworkManager);
+
+            // Clients need to set the interpolators' values from the local transform
+            // in order to avoid interpolating from the last position under the scenario
+            // where the NetworkObject is part of a pool
+            if (!IsServer)
+            {
+                m_PositionXInterpolator.ResetTo(m_Transform.position.x);
+                m_PositionYInterpolator.ResetTo(m_Transform.position.y);
+                m_PositionZInterpolator.ResetTo(m_Transform.position.z);
+
+                m_RotationInterpolator.ResetTo(m_Transform.rotation);
+
+                m_ScaleXInterpolator.ResetTo(m_Transform.localScale.x);
+                m_ScaleYInterpolator.ResetTo(m_Transform.localScale.y);
+                m_ScaleZInterpolator.ResetTo(m_Transform.localScale.z);
+            }
+
             if (m_AllFloatInterpolators.Count == 0)
             {
                 m_AllFloatInterpolators.Add(m_PositionXInterpolator);
@@ -711,7 +729,11 @@ namespace Unity.Netcode.Components
                 TryCommitTransformToServer(m_Transform, NetworkManager.LocalTime.Time);
             }
             m_LocalAuthoritativeNetworkState = m_ReplicatedNetworkState.Value;
-            Initialize();
+
+            if (IsServer)
+            {
+                Initialize();
+            }
         }
 
         public override void OnGainedOwnership()
@@ -738,8 +760,21 @@ namespace Unity.Netcode.Components
             }
         }
 
-        private void OnDestroy()
+        /// <summary>
+        /// We need to reset our settings when a NetworkObject is disabled in order to support
+        /// NetworkObject pools.  We need to release the instance for each interpolator in order
+        /// to support NetworkObjects that persist after a NetworkManager is destroyed.
+        /// </summary>
+        private void OnDisable()
         {
+            m_AllFloatInterpolators.Clear();
+            m_PositionXInterpolator = null;
+            m_PositionYInterpolator = null;
+            m_PositionZInterpolator = null;
+            m_RotationInterpolator = null;
+            m_ScaleXInterpolator = null;
+            m_ScaleYInterpolator = null;
+            m_ScaleZInterpolator = null;
             m_ReplicatedNetworkState.OnValueChanged -= OnNetworkStateChanged;
         }
 

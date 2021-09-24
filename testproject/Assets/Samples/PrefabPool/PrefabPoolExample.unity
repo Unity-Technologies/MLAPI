@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44657874, g: 0.49641275, b: 0.5748172, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -265,6 +265,7 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
@@ -563,6 +564,7 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
@@ -874,9 +876,6 @@ MonoBehaviour:
   NetworkConfig:
     ProtocolVersion: 0
     NetworkTransport: {fileID: 1024114719}
-    RegisteredScenes:
-    - PrefabPoolExample
-    AllowRuntimeSceneChanges: 0
     PlayerPrefab: {fileID: 4079352819444256614, guid: c16f03336b6104576a565ef79ad643c0,
       type: 3}
     NetworkPrefabs:
@@ -894,7 +893,6 @@ MonoBehaviour:
     ConnectionData: 
     EnableTimeResync: 0
     TimeResyncInterval: 30
-    EnableNetworkVariable: 1
     EnsureNetworkVariableLengthSafety: 0
     EnableSceneManagement: 1
     ForceSamePrefabs: 1
@@ -922,12 +920,6 @@ MonoBehaviour:
   ConnectAddress: 127.0.0.1
   ConnectPort: 7777
   ServerListenPort: 7777
-  ServerWebsocketListenPort: 8887
-  SupportWebsocket: 0
-  Channels: []
-  UseNetcodeRelay: 0
-  NetcodeRelayAddress: 127.0.0.1
-  NetcodeRelayPort: 8888
   MessageSendMode: 0
 --- !u!4 &1024114720
 Transform:
@@ -976,7 +968,7 @@ MonoBehaviour:
   m_ObjectToPool: {fileID: 771575417923360811, guid: 29cabf623d47bb345a9bb4140e4397d7,
     type: 3}
   m_ObjectPoolSize: 15
-  m_SpawnsPerSecond: 2
+  m_SpawnsPerSecond: 1
 --- !u!4 &1113539280
 Transform:
   m_ObjectHideFlags: 0
@@ -1085,6 +1077,7 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
@@ -1458,6 +1451,7 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
@@ -1678,6 +1672,7 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
@@ -1775,6 +1770,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_ClientServerToggle: {fileID: 1588117327}
+  m_TrackSceneEvents: 0
+  m_LogSceneEventsToConsole: 0
 --- !u!114 &2107482023
 MonoBehaviour:
   m_ObjectHideFlags: 0
