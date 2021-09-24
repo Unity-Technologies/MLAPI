@@ -17,11 +17,22 @@ namespace Unity.Netcode.RuntimeTests.Metrics.Utility
         uint m_NbFrames = 0;
         IReadOnlyCollection<TMetric> m_Values;
 
+        public delegate bool Filter(TMetric metric);
+
+        Filter m_FilterDelegate;
+
+
         public WaitForMetricValues(IMetricDispatcher dispatcher, DirectionalMetricInfo directionalMetricName)
         {
             m_MetricName = directionalMetricName.Id;
 
             dispatcher.RegisterObserver(this);
+        }
+
+        public WaitForMetricValues(IMetricDispatcher dispatcher, DirectionalMetricInfo directionalMetricName, Filter filter)
+            : this(dispatcher, directionalMetricName)
+        {
+            m_FilterDelegate = filter;
         }
 
         public IEnumerator WaitForMetricsReceived()
@@ -71,8 +82,9 @@ namespace Unity.Netcode.RuntimeTests.Metrics.Utility
 
             if (typedMetric.Values.Any())
             {
-                m_Values = typedMetric.Values.ToList();
-                m_Found = true;
+                // Apply filter if one was provided
+                m_Values = m_FilterDelegate != null ? typedMetric.Values.Where(x => m_FilterDelegate(x)).ToList() : typedMetric.Values.ToList();
+                m_Found = m_Values.Count > 0;
             }
         }
 

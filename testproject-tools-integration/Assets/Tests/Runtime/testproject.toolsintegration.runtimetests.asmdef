@@ -1,0 +1,23 @@
+{
+    "name": "TestProject.ToolsIntegration.RuntimeTests",
+    "rootNamespace": "TestProject.ToolsIntegration.RuntimeTests",
+    "references": [
+        "Unity.Netcode.Runtime",
+        "Unity.Netcode.RuntimeTests",
+        "Unity.Multiplayer.MetricTypes",
+        "Unity.Multiplayer.NetStats"
+    ],
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.multiplayer.tools",
+            "expression": "",
+            "define": "MULTIPLAYER_TOOLS"
+        }
+    ]
+}

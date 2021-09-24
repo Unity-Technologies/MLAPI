@@ -3,7 +3,7 @@
   "dependencies": {
     "com.unity.ide.rider": "3.0.7",
     "com.unity.netcode.gameobjects": "file:../../com.unity.netcode.gameobjects",
-    "com.unity.multiplayer.tools": "0.0.1-preview.8",
+    "com.unity.multiplayer.tools": "1.0.0-pre.1",
     "com.unity.netcode.adapter.utp": "file:../../com.unity.netcode.adapter.utp",
     "com.unity.test-framework": "1.1.26",
     "com.unity.modules.ai": "1.0.0",

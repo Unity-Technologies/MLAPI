@@ -6,5 +6,6 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Netcode.Editor")]
 [assembly: InternalsVisibleTo("TestProject.EditorTests")]
 [assembly: InternalsVisibleTo("TestProject.RuntimeTests")]
+[assembly: InternalsVisibleTo("TestProject.ToolsIntegration.RuntimeTests")]
 #endif
 [assembly: InternalsVisibleTo("Unity.Netcode.RuntimeTests")]
