@@ -83,4 +83,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Tests/Manual/DontDestroyOnLoad/DontDestroyOnLoad_DestroyNetworkManagerTest.unity
     guid: 7dc1ab12373402546befc7d54e447258
+  - enabled: 1
+    path: Assets/Tests/Manual/UnitTestBaseScene.unity
+    guid: fa0b4956a4a0aee48ae43f9116d28354
   m_configObjects: {}

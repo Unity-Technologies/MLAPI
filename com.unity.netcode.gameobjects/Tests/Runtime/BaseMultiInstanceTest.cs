@@ -83,7 +83,7 @@ namespace Unity.Netcode.RuntimeTests
             {
                 networkManager.SceneManager.VerifySceneBeforeLoading = VerifySceneIsValidForClientsToLoad;
                 // If a unit/integration test does not handle this on their own, then Ignore the validation warning
-                networkManager.SceneManager.IgnoreSceneValidationWarning = true;
+                networkManager.SceneManager.DisableValidationWarnings(true);
             }
 
             // Register the test runner scene so it will be able to synchronize NetworkObjects without logging a
