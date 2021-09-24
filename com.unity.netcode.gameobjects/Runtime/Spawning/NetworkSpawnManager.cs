@@ -20,7 +20,6 @@ namespace Unity.Netcode
         /// </summary>
         public readonly HashSet<NetworkObject> SpawnedObjectsList = new HashSet<NetworkObject>();
 
-
         /// <summary>
         /// Gets the NetworkManager associated with this SpawnManager.
         /// </summary>
@@ -69,7 +68,7 @@ namespace Unity.Netcode
                 throw new NotServerException("Only the server can find player objects from other clients.");
             }
 
-            if (NetworkManager.ConnectedClients.TryGetValue(clientId, out NetworkClient networkClient))
+            if (TryGetNetworkClient(clientId, out NetworkClient networkClient))
             {
                 return networkClient.PlayerObject;
             }
@@ -110,11 +109,36 @@ namespace Unity.Netcode
 
             foreach (var client in NetworkManager.ConnectedClients)
             {
-                var bytesReported = NetworkManager.LocalClientId == client.Key
+              var bytesReported = NetworkManager.LocalClientId == client.Key
                     ? 0
                     : size;
                 NetworkManager.NetworkMetrics.TrackOwnershipChangeSent(client.Key, networkObject.NetworkObjectId, networkObject.name, bytesReported);
             }
+        }
+
+        /// <summary>
+        /// Helper function to get a network client for a clientId from the NetworkManager.
+        /// On the server this will check the <see cref="NetworkManager.ConnectedClients"/> list.
+        /// On a non-server this will check the <see cref="NetworkManager.LocalClient"/> only.
+        /// </summary>
+        /// <param name="clientId">The clientId for which to try getting the NetworkClient for.</param>
+        /// <param name="networkClient">The found NetworkClient. Null if no client was found.</param>
+        /// <returns>True if a NetworkClient with a matching id was found else false.</returns>
+        private bool TryGetNetworkClient(ulong clientId, out NetworkClient networkClient)
+        {
+            if (NetworkManager.IsServer)
+            {
+                return NetworkManager.ConnectedClients.TryGetValue(clientId, out networkClient);
+            }
+
+            if (clientId == NetworkManager.LocalClient.ClientId)
+            {
+                networkClient = NetworkManager.LocalClient;
+                return true;
+            }
+
+            networkClient = null;
+            return false;
         }
 
         internal void ChangeOwnership(NetworkObject networkObject, ulong clientId)
@@ -129,7 +153,7 @@ namespace Unity.Netcode
                 throw new SpawnStateException("Object is not spawned");
             }
 
-            if (NetworkManager.ConnectedClients.TryGetValue(networkObject.OwnerClientId, out NetworkClient networkClient))
+            if (TryGetNetworkClient(networkObject.OwnerClientId, out NetworkClient networkClient))
             {
                 for (int i = networkClient.OwnedObjects.Count - 1; i >= 0; i--)
                 {
@@ -360,7 +384,7 @@ namespace Unity.Netcode
                 }
                 else if (playerObject && ownerClientId.Value == NetworkManager.LocalClientId)
                 {
-                    NetworkManager.ConnectedClients[ownerClientId.Value].PlayerObject = networkObject;
+                    NetworkManager.LocalClient.PlayerObject = networkObject;
                 }
             }
 
@@ -524,7 +548,6 @@ namespace Unity.Netcode
             }
         }
 
-
         internal void ServerSpawnSceneObjectsOnStartSweep()
         {
             var networkObjects = UnityEngine.Object.FindObjectsOfType<NetworkObject>();
@@ -577,7 +600,7 @@ namespace Unity.Netcode
                 }
             }
 
-            if (!networkObject.IsOwnedByServer && !networkObject.IsPlayerObject && NetworkManager.Singleton.ConnectedClients.TryGetValue(networkObject.OwnerClientId, out NetworkClient networkClient))
+            if (!networkObject.IsOwnedByServer && !networkObject.IsPlayerObject && TryGetNetworkClient(networkObject.OwnerClientId, out NetworkClient networkClient))
             {
                 //Someone owns it.
                 for (int i = networkClient.OwnedObjects.Count - 1; i > -1; i--)
@@ -623,6 +646,8 @@ namespace Unity.Netcode
                                 {
                                     m_TargetClientIds.Add(clientId);
                                 }
+<<<<<<< HEAD
+=======
                             }
 
                             var message = new DestroyObjectMessage
@@ -636,11 +661,20 @@ namespace Unity.Netcode
                                     ? 0
                                     : size;
                                 NetworkManager.NetworkMetrics.TrackObjectDestroySent(targetClientId, networkObject.NetworkObjectId, networkObject.name, bytesReported);
+>>>>>>> origin/develop
                             }
+
+                            var message = new DestroyObjectMessage
+                            {
+                                NetworkObjectId = networkObject.NetworkObjectId
+                            };
+                            var size = NetworkManager.SendMessage(message, NetworkDelivery.ReliableSequenced, m_TargetClientIds);
+                            NetworkManager.NetworkMetrics.TrackObjectDestroySent(m_TargetClientIds, networkObject.NetworkObjectId, networkObject.name, size);
                         }
                     }
                 }
             }
+
             networkObject.IsSpawned = false;
 
             if (SpawnedObjects.Remove(networkObject.NetworkObjectId))

@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using System.Reflection;
-using System.Linq;
 using Unity.Collections;
 
 namespace Unity.Netcode
@@ -131,14 +131,7 @@ namespace Unity.Netcode
 
             if (rpcParams.Send.TargetClientIds != null)
             {
-                // Copy into a localArray because SendMessage doesn't take IEnumerable, only IReadOnlyList
-                ulong* localArray = stackalloc ulong[rpcParams.Send.TargetClientIds.Count()];
-                var index = 0;
-                foreach (var clientId in rpcParams.Send.TargetClientIds)
-                {
-                    localArray[index++] = clientId;
-                }
-                messageSize = NetworkManager.SendMessage(message, networkDelivery, localArray, index, true);
+                messageSize = NetworkManager.SendMessage(message, networkDelivery, in rpcParams.Send.TargetClientIds, true);
             }
             else if (rpcParams.Send.TargetClientIdsNativeArray != null)
             {

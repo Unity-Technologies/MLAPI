@@ -25,7 +25,7 @@ namespace Unity.Netcode
         /// Note: Even if you provide a value type such as NativeArray, enumerating it will cause boxing.
         /// If you want to avoid boxing, use TargetClientIdsNativeArray
         /// </summary>
-        public IEnumerable<ulong> TargetClientIds;
+        public IReadOnlyList<ulong> TargetClientIds;
 
         /// <summary>
         /// NativeArray version of target id list - use either this OR TargetClientIds

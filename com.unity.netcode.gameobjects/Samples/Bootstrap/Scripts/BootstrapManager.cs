@@ -39,11 +39,10 @@ namespace Unity.Netcode.Samples
                 {
                     if (GUILayout.Button("Random Teleport"))
                     {
-                        // Get the local `NetworkClient` by `LocalClientId`
-                        if (networkManager.ConnectedClients.TryGetValue(networkManager.LocalClientId, out var networkedClient))
+                        if (networkManager.LocalClient != null)
                         {
                             // Get `BootstrapPlayer` component from the player's `PlayerObject`
-                            if (networkedClient.PlayerObject.TryGetComponent(out BootstrapPlayer bootstrapPlayer))
+                            if (networkManager.LocalClient.PlayerObject.TryGetComponent(out BootstrapPlayer bootstrapPlayer))
                             {
                                 // Invoke a `ServerRpc` from client-side to teleport player to a random position on the server-side
                                 bootstrapPlayer.RandomTeleportServerRpc();

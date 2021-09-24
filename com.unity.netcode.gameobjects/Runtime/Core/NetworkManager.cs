@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
@@ -9,7 +8,6 @@ using UnityEngine;
 using UnityEditor;
 #endif
 #if MULTIPLAYER_TOOLS
-using Unity.Multiplayer.Tools;
 #endif
 using Unity.Profiling;
 using UnityEngine.SceneManagement;
@@ -251,20 +249,61 @@ namespace Unity.Netcode
 
         private ulong m_LocalClientId;
 
-        /// <summary>
-        /// Gets a dictionary of connected clients and their clientId keys. This is only populated on the server.
-        /// </summary>
-        public readonly Dictionary<ulong, NetworkClient> ConnectedClients = new Dictionary<ulong, NetworkClient>();
+        private Dictionary<ulong, NetworkClient> m_ConnectedClients = new Dictionary<ulong, NetworkClient>();
+
+        private List<NetworkClient> m_ConnectedClientsList = new List<NetworkClient>();
+
+        private List<ulong> m_ConnectedClientIds = new List<ulong>();
 
         /// <summary>
-        /// Gets a list of connected clients. This is only populated on the server.
+        /// Gets a dictionary of connected clients and their clientId keys. This is only accessible on the server.
         /// </summary>
-        public readonly List<NetworkClient> ConnectedClientsList = new List<NetworkClient>();
+        public IReadOnlyDictionary<ulong, NetworkClient> ConnectedClients
+        {
+            get
+            {
+                if (IsServer == false)
+                {
+                    throw new NotServerException($"{nameof(ConnectedClients)} should only be accessed on server.");
+                }
+                return m_ConnectedClients;
+            }
+        }
 
         /// <summary>
-        /// Gets a list of just the IDs of all connected clients.
+        /// Gets a list of connected clients. This is only accessible on the server.
         /// </summary>
-        public ulong[] ConnectedClientsIds => ConnectedClientsList.Select(c => c.ClientId).ToArray();
+        public IReadOnlyList<NetworkClient> ConnectedClientsList
+        {
+            get
+            {
+                if (IsServer == false)
+                {
+                    throw new NotServerException($"{nameof(ConnectedClientsList)} should only be accessed on server.");
+                }
+                return m_ConnectedClientsList;
+            }
+        }
+
+        /// <summary>
+        /// Gets a list of just the IDs of all connected clients. This is only accessible on the server.
+        /// </summary>
+        public IReadOnlyList<ulong> ConnectedClientsIds
+        {
+            get
+            {
+                if (IsServer == false)
+                {
+                    throw new NotServerException($"{nameof(m_ConnectedClientIds)} should only be accessed on server.");
+                }
+                return m_ConnectedClientIds;
+            }
+        }
+
+        /// <summary>
+        /// Gets the local <see cref="NetworkClient"/> for this client.
+        /// </summary>
+        public NetworkClient LocalClient { get; internal set; }
 
         /// <summary>
         /// Gets a dictionary of the clients that have been accepted by the transport but are still pending by the Netcode. This is only populated on the server.
@@ -468,8 +507,9 @@ namespace Unity.Netcode
             LocalClientId = ulong.MaxValue;
 
             PendingClients.Clear();
-            ConnectedClients.Clear();
-            ConnectedClientsList.Clear();
+            m_ConnectedClients.Clear();
+            m_ConnectedClientsList.Clear();
+            m_ConnectedClientIds.Clear();
             NetworkObject.OrphanChildren.Clear();
 
             // Create spawn manager instance
@@ -1414,12 +1454,21 @@ namespace Unity.Netcode
                 {
                     if (ConnectedClientsList[i].ClientId == clientId)
                     {
-                        ConnectedClientsList.RemoveAt(i);
+                        m_ConnectedClientsList.RemoveAt(i);
                         break;
                     }
                 }
 
-                ConnectedClients.Remove(clientId);
+                for (int i = 0; i < ConnectedClientsIds.Count; i++)
+                {
+                    if (ConnectedClientsIds[i] == clientId)
+                    {
+                        m_ConnectedClientIds.RemoveAt(i);
+                        break;
+                    }
+                }
+
+                m_ConnectedClients.Remove(clientId);
             }
             m_MessagingSystem.ClientDisconnected(clientId);
         }
@@ -1461,8 +1510,9 @@ namespace Unity.Netcode
                 PendingClients.Remove(ownerClientId);
 
                 var client = new NetworkClient { ClientId = ownerClientId, };
-                ConnectedClients.Add(ownerClientId, client);
-                ConnectedClientsList.Add(client);
+                m_ConnectedClients.Add(ownerClientId, client);
+                m_ConnectedClientsList.Add(client);
+                m_ConnectedClientIds.Add(client.ClientId);
 
                 if (createPlayerObject)
                 {

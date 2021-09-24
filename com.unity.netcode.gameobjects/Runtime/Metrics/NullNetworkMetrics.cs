@@ -131,7 +131,7 @@ namespace Unity.Netcode
         {
         }
 
-        public void TrackSceneEventSent(ulong[] receiverClientIds, uint sceneEventType, string sceneName, long bytesCount)
+        public void TrackSceneEventSent(IReadOnlyList<ulong> receiverClientIds, uint sceneEventType, string sceneName, long bytesCount)
         {
         }
 
