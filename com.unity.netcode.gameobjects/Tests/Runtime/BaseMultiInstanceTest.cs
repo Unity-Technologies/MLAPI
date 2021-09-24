@@ -33,7 +33,6 @@ namespace Unity.Netcode.RuntimeTests
             {
                 MultiInstanceHelpers.Destroy();
             }
-            catch (Exception e) { throw e; }
             finally
             {
                 if (m_PlayerPrefab != null)
@@ -43,8 +42,8 @@ namespace Unity.Netcode.RuntimeTests
                 }
             }
 
-            // Make sure any NetworkObject with a GlobalObjectIdHash value of 0 is destroyed
-            // If we are tearing down, we don't want to leave NetworkObjects hanging around
+            // Make sure we clean up after ourselves and destroy any remaining NetworkObjects
+            // before we exit our test
             var networkObjects = Object.FindObjectsOfType<NetworkObject>().ToList();
             foreach (var networkObject in networkObjects)
             {
@@ -110,10 +109,9 @@ namespace Unity.Netcode.RuntimeTests
         /// <returns></returns>
         public IEnumerator StartSomeClientsAndServerWithPlayers(bool useHost, int nbClients, Action<GameObject> updatePlayerPrefab = null, int targetFrameRate = 60)
         {
-            // Make sure any NetworkObject with a GlobalObjectIdHash value of 0 is destroyed
-            // If we are tearing down, we don't want to leave NetworkObjects hanging around
+            // Make sure there are no remaining NetworkObjects from a previous test
+            // before we start our new test
             var networkObjects = Object.FindObjectsOfType<NetworkObject>().ToList();
-            var networkObjectsList = networkObjects.Where(c => c.GlobalObjectIdHash == 0);
             foreach (var netObject in networkObjects)
             {
                 Object.DestroyImmediate(netObject);
