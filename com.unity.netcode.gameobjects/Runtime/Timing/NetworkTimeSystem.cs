@@ -248,7 +248,7 @@ namespace Unity.Netcode
             var timeDif = serverTimeSec - m_TimeSec;
 
             m_DesiredServerTimeOffset = timeDif - ServerBufferSec;
-            m_DesiredLocalTimeOffset = timeDif + rttSec + LocalBufferSec;
+            m_DesiredLocalTimeOffset = timeDif + (rttSec * 0.5d) + LocalBufferSec;
         }
     }
 }
