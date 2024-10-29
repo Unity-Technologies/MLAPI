@@ -14,7 +14,7 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
       "Unity.Multiplayer.Tools.Adapters.Ngo1",
-      "Unity.Multiplayer.Tools.BuiltInMetrics"
+      "Unity.Multiplayer.Tools.MetricTypes"
       
     ],
     "includePlatforms": [],

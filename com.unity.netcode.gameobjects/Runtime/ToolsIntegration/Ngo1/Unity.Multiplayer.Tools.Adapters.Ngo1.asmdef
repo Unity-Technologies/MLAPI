@@ -6,7 +6,7 @@
     "Unity.Netcode.Runtime",
     "Unity.Multiplayer.Tools.Interfaces",
     "Unity.Multiplayer.Tools.MetricCollection",
-    "Unity.Multiplayer.Tools.BuiltInMetrics",
+    "Unity.Multiplayer.Tools.MetricTypes",
     "Unity.Multiplayer.Tools.ReaderWriters"
   ],
   "includePlatforms": [],

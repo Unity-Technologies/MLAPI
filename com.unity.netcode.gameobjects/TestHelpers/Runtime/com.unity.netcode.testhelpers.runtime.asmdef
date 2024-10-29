@@ -8,7 +8,7 @@
         "Unity.Multiplayer.Tools.Interfaces",
         "Unity.Multiplayer.Tools.MetricCollection",
         "Unity.Multiplayer.Tools.Adapters.Ngo1",
-      "Unity.Multiplayer.Tools.BuiltInMetrics"
+      "Unity.Multiplayer.Tools.MetricTypes"
     ],
     "optionalUnityReferences": [
         "TestAssemblies"
