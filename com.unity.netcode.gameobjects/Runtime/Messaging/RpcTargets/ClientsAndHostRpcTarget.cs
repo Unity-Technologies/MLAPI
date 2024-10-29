@@ -17,7 +17,8 @@ namespace Unity.Netcode
                 // ClientsAndHost sends to everyone who runs any client logic
                 // So if the server is a host, this target includes it (as hosts run client logic)
                 // If the server is not a host, this target leaves it out, ergo the selection of NotServer.
-                if (behaviour.NetworkManager.ServerIsHost)
+                // If we are in distributed authority mode and connected to a service, then send to all clients.
+                if (behaviour.NetworkManager.ServerIsHost || (m_NetworkManager.DistributedAuthorityMode && m_NetworkManager.CMBServiceConnection))
                 {
                     m_UnderlyingTarget = behaviour.RpcTarget.Everyone;
                 }

@@ -51,7 +51,13 @@ namespace Unity.Netcode
                         continue;
                     }
 
-                    if (clientId == behaviour.NetworkManager.LocalClientId)
+                    // If we are in distributed authority mode and connected to the service, then we exclude the owner/authority from the list
+                    if (m_NetworkManager.DistributedAuthorityMode && m_NetworkManager.CMBServiceConnection && clientId == behaviour.OwnerClientId)
+                    {
+                        continue;
+                    }
+
+                    if (clientId == m_NetworkManager.LocalClientId)
                     {
                         m_LocalSendRpcTarget.Send(behaviour, ref message, delivery, rpcParams);
                         continue;
