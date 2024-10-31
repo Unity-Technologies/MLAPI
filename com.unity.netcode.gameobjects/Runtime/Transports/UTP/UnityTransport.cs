@@ -944,11 +944,8 @@ namespace Unity.Netcode.Transports.UTP
             return false;
         }
 
-        private JobHandle m_FlushSendJobHandle;
-
         internal override void EarlyUpdate()
         {
-            m_FlushSendJobHandle.Complete();
             if (m_Driver.IsCreated)
             {
                 if (m_ProtocolType == ProtocolType.RelayUnityTransport && m_Driver.GetRelayConnectionStatus() == RelayConnectionStatus.AllocationInvalid)
@@ -985,15 +982,15 @@ namespace Unity.Netcode.Transports.UTP
 
                 // Schedule a flush send as the last transport action for the
                 // current frame.
-                m_FlushSendJobHandle = m_Driver.ScheduleFlushSend(default);
-            }
+                m_Driver.ScheduleFlushSend(default).Complete();
 
 #if MULTIPLAYER_TOOLS_1_0_0_PRE_7
-            if (m_NetworkManager)
-            {
-                ExtractNetworkMetrics();
-            }
+                if (m_NetworkManager)
+                {
+                    ExtractNetworkMetrics();
+                }
 #endif
+            }
             base.PostLateUpdate();
         }
 
