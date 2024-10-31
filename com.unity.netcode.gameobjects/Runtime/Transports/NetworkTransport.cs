@@ -107,6 +107,22 @@ namespace Unity.Netcode
         /// /// <param name="networkManager">optionally pass in NetworkManager</param>
         public abstract void Initialize(NetworkManager networkManager = null);
 
+        /// <summary>
+        /// Invoked by NetworkManager at the beginning of its EarlyUpdate
+        /// </summary>
+        internal virtual void EarlyUpdate()
+        {
+
+        }
+
+        /// <summary>
+        /// Invoked by NetworkManager during PostLateUpdate
+        /// </summary>
+        internal virtual void PostLateUpdate()
+        {
+
+        }
+
         protected virtual NetworkTopologyTypes OnCurrentTopology()
         {
             return NetworkTopologyTypes.ClientServer;

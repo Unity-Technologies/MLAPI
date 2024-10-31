@@ -944,17 +944,10 @@ namespace Unity.Netcode.Transports.UTP
             return false;
         }
 
-        private void Update()
+        internal override void EarlyUpdate()
         {
             if (m_Driver.IsCreated)
             {
-                foreach (var kvp in m_SendQueue)
-                {
-                    SendBatchedMessages(kvp.Key, kvp.Value);
-                }
-
-                m_Driver.ScheduleUpdate().Complete();
-
                 if (m_ProtocolType == ProtocolType.RelayUnityTransport && m_Driver.GetRelayConnectionStatus() == RelayConnectionStatus.AllocationInvalid)
                 {
                     Debug.LogError("Transport failure! Relay allocation needs to be recreated, and NetworkManager restarted. " +
@@ -963,6 +956,12 @@ namespace Unity.Netcode.Transports.UTP
                     InvokeOnTransportEvent(NetcodeNetworkEvent.TransportFailure, 0, default, m_RealTimeProvider.RealTimeSinceStartup);
                     return;
                 }
+
+                m_Driver.ScheduleUpdate().Complete();
+
+                // Schedule a flush send as the last transport action for the
+                // current frame.
+                m_Driver.ScheduleFlushSend(default).Complete();
 
                 while (AcceptConnection() && m_Driver.IsCreated)
                 {
@@ -973,14 +972,37 @@ namespace Unity.Netcode.Transports.UTP
                 {
                     ;
                 }
+            }
+        }
+
+        internal override void PostLateUpdate()
+        {
+            if (m_Driver.IsCreated)
+            {
+                foreach (var kvp in m_SendQueue)
+                {
+                    SendBatchedMessages(kvp.Key, kvp.Value);
+                }
+
+                m_Driver.ScheduleUpdate();
+
+                // Schedule a flush send as the last transport action for the
+                // current frame.
+                m_Driver.ScheduleFlushSend(default);
+            }
 
 #if MULTIPLAYER_TOOLS_1_0_0_PRE_7
-                if (m_NetworkManager)
-                {
-                    ExtractNetworkMetrics();
-                }
-#endif
+            if (m_NetworkManager)
+            {
+                ExtractNetworkMetrics();
             }
+#endif
+            base.PostLateUpdate();
+        }
+
+        private void Update()
+        {
+
         }
 
         private void OnDestroy()
