@@ -9,6 +9,7 @@ using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 #endif
 using UnityEngine.SceneManagement;
 using Debug = UnityEngine.Debug;
+using Unity.Netcode.Transports.UTP;
 
 namespace Unity.Netcode
 {
@@ -291,6 +292,10 @@ namespace Unity.Netcode
                 case NetworkUpdateStage.EarlyUpdate:
                     {
                         UpdateTopology();
+
+                        // Handle processing any new connections or transport events
+                        NetworkConfig.NetworkTransport.EarlyUpdate();
+
                         ConnectionManager.ProcessPendingApprovals();
                         ConnectionManager.PollAndHandleNetworkEvents();
 
@@ -378,6 +383,9 @@ namespace Unity.Netcode
 
                         // Metrics update needs to be driven by NetworkConnectionManager's update to assure metrics are dispatched after the send queue is processed.
                         MetricsManager.UpdateMetrics();
+
+                        // Handle sending any pending transport messages 
+                        NetworkConfig.NetworkTransport.PostLateUpdate();
 
                         // TODO: Determine a better way to handle this
                         NetworkObject.VerifyParentingStatus();
