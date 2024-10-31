@@ -39,6 +39,7 @@ namespace Unity.Netcode.RuntimeTests
         {
             if (m_Server)
             {
+                DeregisterTransportInstance(m_Server);
                 m_Server.Shutdown();
 
                 // Need to destroy the GameObject (all assigned components will get destroyed too)
@@ -47,6 +48,7 @@ namespace Unity.Netcode.RuntimeTests
 
             if (m_Client1)
             {
+                DeregisterTransportInstance(m_Client1);
                 m_Client1.Shutdown();
 
                 // Need to destroy the GameObject (all assigned components will get destroyed too)
@@ -55,12 +57,13 @@ namespace Unity.Netcode.RuntimeTests
 
             if (m_Client2)
             {
+                DeregisterTransportInstance(m_Client2);
                 m_Client2.Shutdown();
 
                 // Need to destroy the GameObject (all assigned components will get destroyed too)
                 UnityEngine.Object.DestroyImmediate(m_Client2.gameObject);
             }
-
+            ClearRegisteredTransportInstances();
             m_ServerEvents?.Clear();
             m_Client1Events?.Clear();
             m_Client2Events?.Clear();
@@ -361,9 +364,26 @@ namespace Unity.Netcode.RuntimeTests
                 m_Client1.Send(m_Client1.ServerClientId, payload, NetworkDelivery.Unreliable);
             }
 
+            var waitUntilEndofFrame = new WaitForEndOfFrame();
+            var waitForNextFrame = new WaitForFixedUpdate();
+            var timeout = Time.realtimeSinceStartup + 8.0f;
+
             // Manually wait. This ends up generating quite a bit of packets and it might take a
             // while for everything to make it to the server.
-            yield return new WaitForSeconds(numSends * 0.02f);
+            // Updated: We have to simulate the EarlyUpdate and PostLateUpdate invocations by NetworkManager
+            // in order to process connnects, events, and send messages.
+            while (timeout > Time.realtimeSinceStartup)
+            {
+                yield return waitForNextFrame;
+                InvokeEarlyUpdate();
+                yield return waitUntilEndofFrame;
+                InvokePostLateUpdate();
+                // Once we hit the expected count, exit the loop
+                if ((numSends + 1) == m_ServerEvents.Count)
+                {
+                    break;
+                }
+            }
 
             // Extra event is the connect event.
             Assert.AreEqual(numSends + 1, m_ServerEvents.Count);

@@ -1463,6 +1463,11 @@ namespace Unity.Netcode.Transports.UTP
         {
             if (m_Driver.IsCreated)
             {
+                while (ProcessEvent() && m_Driver.IsCreated)
+                {
+                    ;
+                }
+
                 // Flush all send queues to the network. NGO can be configured to flush its message
                 // queue on shutdown. But this only calls the Send() method, which doesn't actually
                 // get anything to the network.
