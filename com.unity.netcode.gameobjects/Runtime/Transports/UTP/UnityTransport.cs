@@ -997,11 +997,6 @@ namespace Unity.Netcode.Transports.UTP
             base.PostLateUpdate();
         }
 
-        private void Update()
-        {
-
-        }
-
         private void OnDestroy()
         {
             DisposeInternals();

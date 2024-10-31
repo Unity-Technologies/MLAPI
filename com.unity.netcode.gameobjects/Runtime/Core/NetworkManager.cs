@@ -9,7 +9,6 @@ using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 #endif
 using UnityEngine.SceneManagement;
 using Debug = UnityEngine.Debug;
-using Unity.Netcode.Transports.UTP;
 
 namespace Unity.Netcode
 {
