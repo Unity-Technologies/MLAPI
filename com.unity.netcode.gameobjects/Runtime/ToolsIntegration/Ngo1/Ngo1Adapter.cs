@@ -100,9 +100,6 @@ namespace Unity.Multiplayer.Tools.Adapters.Ngo1
                 nm.OnMetricsDispatched -= NotifyObservers;
             }
 
-            m_NetworkManager.NetworkMetrics = null;
-            m_NetworkManager = null;
-            m_Collection = null;
         }
 
         private readonly List<ClientId> m_ClientIds = new();

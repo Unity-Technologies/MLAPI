@@ -31,9 +31,9 @@ namespace Unity.Netcode.TestHelpers.Runtime.Metrics
         {
             ServerMetrics = Server.NetworkMetrics as NetworkMetrics;
             ClientMetrics = Client.NetworkMetrics as NetworkMetrics;
-            yield return base.OnStartedServerAndClients();
             ServerMetricsDispatcher = new TestDispatcher(ServerMetrics);
             ClientMetricsDispatcher = new TestDispatcher(ClientMetrics);
+            yield return base.OnStartedServerAndClients();
         }
     }
 
@@ -72,10 +72,11 @@ namespace Unity.Netcode.TestHelpers.Runtime.Metrics
             ServerMetrics = Server.NetworkMetrics as NetworkMetrics;
             FirstClientMetrics = FirstClient.NetworkMetrics as NetworkMetrics;
             SecondClientMetrics = SecondClient.NetworkMetrics as NetworkMetrics;
-            yield return base.OnStartedServerAndClients();
             ServerMetricsDispatcher = new TestDispatcher(ServerMetrics);
             FirstClientMetricsDispatcher = new TestDispatcher(FirstClientMetrics);
             SecondClientMetricsDispatcher = new TestDispatcher(SecondClientMetrics);
+            yield return base.OnStartedServerAndClients();
+
         }
     }
 

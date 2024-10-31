@@ -210,7 +210,7 @@ namespace Unity.Netcode.RuntimeTests.Metrics
 
             //By default, we have 2 network objects
             //There's a slight delay between the spawn on the server and the spawn on the client
-            //We want to have metrics when the value is different than the 2 default one to confirm the client has the new value
+            //We want to have metrics when the value is different from the 2 default one to confirm the client has the new value
             var waitForGaugeValues = new WaitForGaugeMetricValues(ClientMetricsDispatcher, NetworkMetricTypes.NetworkObjects, metric => (int)metric != 2);
 
             yield return waitForGaugeValues.WaitForMetricsReceived();

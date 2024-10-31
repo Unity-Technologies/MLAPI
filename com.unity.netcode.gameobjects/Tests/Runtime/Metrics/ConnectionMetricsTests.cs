@@ -54,7 +54,7 @@ namespace Unity.Netcode.RuntimeTests.Metrics
         {
             foreach (var clientNetworkManager in m_ClientNetworkManagers)
             {
-                var dispatcher = new TestDispatcher((NetworkMetrics)m_ServerNetworkManager.NetworkMetrics);
+                var dispatcher = new TestDispatcher((NetworkMetrics)clientNetworkManager.NetworkMetrics);
                 var waitForGaugeValues = new WaitForGaugeMetricValues(dispatcher, NetworkMetricTypes.ConnectedClients);
 
                 yield return waitForGaugeValues.WaitForMetricsReceived();

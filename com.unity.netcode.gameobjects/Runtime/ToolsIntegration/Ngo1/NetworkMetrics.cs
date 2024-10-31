@@ -279,7 +279,7 @@ namespace Unity.Netcode
                 StringConversionUtility.ConvertToFixedString(networkObject.GetNameForMetrics()),
                 networkObject.NetworkObjectId,
                 StringConversionUtility.ConvertToFixedString(rpcName),
-                StringConversionUtility.ConvertToFixedString(networkObject.GetNameForMetrics()),
+                StringConversionUtility.ConvertToFixedString(networkBehaviourName),
                 bytesCount);
             IncrementMetricCount();
         }
