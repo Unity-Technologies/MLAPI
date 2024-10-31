@@ -944,8 +944,11 @@ namespace Unity.Netcode.Transports.UTP
             return false;
         }
 
+        private JobHandle m_FlushSendJobHandle;
+
         internal override void EarlyUpdate()
         {
+            m_FlushSendJobHandle.Complete();
             if (m_Driver.IsCreated)
             {
                 if (m_ProtocolType == ProtocolType.RelayUnityTransport && m_Driver.GetRelayConnectionStatus() == RelayConnectionStatus.AllocationInvalid)
@@ -958,10 +961,6 @@ namespace Unity.Netcode.Transports.UTP
                 }
 
                 m_Driver.ScheduleUpdate().Complete();
-
-                // Schedule a flush send as the last transport action for the
-                // current frame.
-                m_Driver.ScheduleFlushSend(default).Complete();
 
                 while (AcceptConnection() && m_Driver.IsCreated)
                 {
@@ -984,11 +983,9 @@ namespace Unity.Netcode.Transports.UTP
                     SendBatchedMessages(kvp.Key, kvp.Value);
                 }
 
-                m_Driver.ScheduleUpdate();
-
                 // Schedule a flush send as the last transport action for the
                 // current frame.
-                m_Driver.ScheduleFlushSend(default);
+                m_FlushSendJobHandle = m_Driver.ScheduleFlushSend(default);
             }
 
 #if MULTIPLAYER_TOOLS_1_0_0_PRE_7
