@@ -19,8 +19,6 @@ namespace Unity.Netcode.RuntimeTests
         private List<TransportEvent> m_ServerEvents;
         private List<TransportEvent>[] m_ClientsEvents = new List<TransportEvent>[k_NumClients];
 
-
-
         [UnityTearDown]
         public IEnumerator Cleanup()
         {
@@ -45,7 +43,6 @@ namespace Unity.Netcode.RuntimeTests
             }
 
             UnityTransportTestComponent.CleanUp();
-
             yield return null;
         }
 
@@ -145,7 +142,6 @@ namespace Unity.Netcode.RuntimeTests
 
             yield return WaitForNetworkEvent(NetworkEvent.Connect, m_ClientsEvents[k_NumClients - 1]);
 
-            var clientId = m_ServerEvents[0].ClientID;
             // Disconnect a single client.
             m_Server.DisconnectRemoteClient(m_ServerEvents[0].ClientID);
 
