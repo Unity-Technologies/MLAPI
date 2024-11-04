@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using NUnit.Framework;
-using Unity.Netcode.TestHelpers.Runtime;
 using Unity.Netcode.Transports.UTP;
 using Unity.Networking.Transport;
 using UnityEngine;
@@ -16,15 +15,6 @@ namespace Unity.Netcode.RuntimeTests
         // sometimes very high lag spikes. PS4 and Switch are particularly sensitive in this regard
         // so we allow even more time for these platforms.
         public const float MaxNetworkEventWaitTime = 0.5f;
-
-        private static TimeoutHelper s_GlobalTimeoutHelper = new TimeoutHelper(MaxNetworkEventWaitTime);
-
-        public static void AssertOnTimeout(string timeOutErrorMessage, TimeoutHelper assignedTimeoutHelper = null)
-        {
-            var timeoutHelper = assignedTimeoutHelper ?? s_GlobalTimeoutHelper;
-            Assert.False(timeoutHelper.TimedOut, timeOutErrorMessage);
-        }
-
 
         // Wait for an event to appear in the given event list (must be the very next event).
         public static IEnumerator WaitForNetworkEvent(NetworkEvent type, List<TransportEvent> events, float timeout = MaxNetworkEventWaitTime)
