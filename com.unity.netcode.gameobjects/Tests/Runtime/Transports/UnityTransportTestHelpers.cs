@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using NUnit.Framework;
+using Unity.Netcode.TestHelpers.Runtime;
 using Unity.Netcode.Transports.UTP;
 using Unity.Networking.Transport;
 using UnityEngine;
@@ -47,6 +48,50 @@ namespace Unity.Netcode.RuntimeTests
                 transport.PostLateUpdate();
             }
         }
+
+        private static TimeoutHelper s_GlobalTimeoutHelper = new TimeoutHelper(MaxNetworkEventWaitTime);
+
+        public static void AssertOnTimeout(string timeOutErrorMessage, TimeoutHelper assignedTimeoutHelper = null)
+        {
+            var timeoutHelper = assignedTimeoutHelper ?? s_GlobalTimeoutHelper;
+            Assert.False(timeoutHelper.TimedOut, timeOutErrorMessage);
+        }
+
+        public static IEnumerator WaitForConditionOrTimeOut(Func<bool> checkForCondition, TimeoutHelper timeOutHelper = null)
+        {
+            if (checkForCondition == null)
+            {
+                throw new ArgumentNullException($"checkForCondition cannot be null!");
+            }
+
+            // If none is provided we use the default global time out helper
+            if (timeOutHelper == null)
+            {
+                timeOutHelper = s_GlobalTimeoutHelper;
+            }
+
+            var waitUntilEndofFrame = new WaitForEndOfFrame();
+            var waitForNextFrame = new WaitForFixedUpdate();
+
+            // Start checking for a timeout
+            timeOutHelper.Start();
+            while (!timeOutHelper.HasTimedOut())
+            {
+                yield return waitForNextFrame;
+                InvokeEarlyUpdate();
+                // Update and check to see if the condition has been met
+                if (checkForCondition.Invoke())
+                {
+                    break;
+                }
+                yield return waitUntilEndofFrame;
+                InvokePostLateUpdate();
+            }
+
+            // Stop checking for a timeout
+            timeOutHelper.Stop();
+        }
+
 
         // Wait for an event to appear in the given event list (must be the very next event).
         public static IEnumerator WaitForNetworkEvent(NetworkEvent type, List<TransportEvent> events, float timeout = MaxNetworkEventWaitTime)
