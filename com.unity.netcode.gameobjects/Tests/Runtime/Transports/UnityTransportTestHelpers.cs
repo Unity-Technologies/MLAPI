@@ -97,23 +97,25 @@ namespace Unity.Netcode.RuntimeTests
         public static IEnumerator WaitForNetworkEvent(NetworkEvent type, List<TransportEvent> events, float timeout = MaxNetworkEventWaitTime)
         {
             int initialCount = events.Count;
-            float startTime = Time.realtimeSinceStartup;
+            float timedOut = Time.realtimeSinceStartup + timeout;
             var waitUntilEndofFrame = new WaitForEndOfFrame();
             var waitForNextFrame = new WaitForFixedUpdate();
-            while (Time.realtimeSinceStartup - startTime < timeout)
+            var success = false;
+            while (timedOut > Time.realtimeSinceStartup)
             {
                 yield return waitForNextFrame;
                 InvokeEarlyUpdate();
                 if (events.Count > initialCount)
                 {
                     Assert.AreEqual(type, events[initialCount].Type);
-                    yield break;
+                    success = true;
+
                 }
                 yield return waitUntilEndofFrame;
                 InvokePostLateUpdate();
             }
 
-            Assert.Fail("Timed out while waiting for network event.");
+            Assert.IsTrue(success, "Timed out while waiting for network event.");
         }
 
         // Common code to initialize a UnityTransport that logs its events.

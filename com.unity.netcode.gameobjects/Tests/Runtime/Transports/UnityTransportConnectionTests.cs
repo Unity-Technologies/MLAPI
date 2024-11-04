@@ -182,35 +182,38 @@ namespace Unity.Netcode.RuntimeTests
         [UnityTest]
         public IEnumerator ClientDisconnectMultipleClients()
         {
+            Debug.Log("Starting ClientDisconnectMultipleClients");
             InitializeTransport(out m_Server, out m_ServerEvents);
             m_Server.StartServer();
-
+            yield return new WaitForEndOfFrame();
             for (int i = 0; i < k_NumClients; i++)
             {
                 InitializeTransport(out m_Clients[i], out m_ClientsEvents[i]);
                 m_Clients[i].StartClient();
             }
-
+            Debug.Log("Waiting for clients to connect.");
             yield return WaitForNetworkEvent(NetworkEvent.Connect, m_ClientsEvents[k_NumClients - 1]);
 
+            Debug.Log("Disconnecting single client.");
             // Disconnect a single client.
             m_Clients[0].DisconnectLocalClient();
 
+            Debug.Log("Waiting for single client to disconnect.");
             yield return WaitForNetworkEvent(NetworkEvent.Disconnect, m_ServerEvents);
 
+            Debug.Log("Disconnecting multiple clients.");
             // Disconnect all the other clients.
             for (int i = 1; i < k_NumClients; i++)
             {
                 m_Clients[i].DisconnectLocalClient();
             }
-
-            yield return WaitForNetworkEvent(NetworkEvent.Disconnect, m_ServerEvents, 5);
+            Debug.Log("Waiting for multiple clients to disconnect.");
+            yield return WaitForConditionOrTimeOut(() => k_NumClients == m_ServerEvents.Count(e => e.Type == NetworkEvent.Disconnect));
+            AssertOnTimeout($"Timed out waiting for server events! Server events: {m_ServerEvents.Count(e => e.Type == NetworkEvent.Disconnect)} Expected: {k_NumClients}");
 
             // Check that we got the correct number of Disconnect events on the server.
             Assert.AreEqual(k_NumClients * 2, m_ServerEvents.Count);
             Assert.AreEqual(k_NumClients, m_ServerEvents.Count(e => e.Type == NetworkEvent.Disconnect));
-
-            yield return null;
         }
 
         // Check that server re-disconnects are no-ops.
