@@ -20,6 +20,8 @@ namespace Unity.Netcode.RuntimeTests
         private List<TransportEvent> m_ServerEvents;
         private List<TransportEvent>[] m_ClientsEvents = new List<TransportEvent>[k_NumClients];
 
+
+
         [UnityTearDown]
         public IEnumerator Cleanup()
         {
@@ -34,7 +36,7 @@ namespace Unity.Netcode.RuntimeTests
                 if (transport)
                 {
                     transport.Shutdown();
-                    UnityEngine.Object.DestroyImmediate(transport);
+                    UnityEngine.Object.DestroyImmediate(transport.gameObject);
                 }
             }
 
@@ -42,6 +44,8 @@ namespace Unity.Netcode.RuntimeTests
             {
                 transportEvents?.Clear();
             }
+
+            UnityTransportTestComponent.CleanUp();
 
             yield return null;
         }
@@ -60,6 +64,7 @@ namespace Unity.Netcode.RuntimeTests
             Assert.False(m_Clients[0].StartClient(), "Client failed to detect invalid endpoint!");
             netcodeLogAssert.LogWasReceived(LogType.Error, $"Network listen address ({m_Server.ConnectionData.Address}) is Invalid!");
             netcodeLogAssert.LogWasReceived(LogType.Error, $"Target server network address ({m_Clients[0].ConnectionData.Address}) is Invalid!");
+            UnityTransportTestComponent.CleanUp();
         }
 
         // Check connection with a single client.
@@ -145,10 +150,11 @@ namespace Unity.Netcode.RuntimeTests
             // Disconnect a single client.
             m_Server.DisconnectRemoteClient(m_ServerEvents[0].ClientID);
 
-            // Check that we received a Disconnect event on only one client.
-            yield return WaitForConditionOrTimeOut(() => m_ClientsEvents.Count(evs => evs.Count == 2 && evs[1].Type == NetworkEvent.Disconnect) == 1);
+            // Need to manually wait since we don't know which client will get the Disconnect.
+            yield return new WaitForSeconds(MaxNetworkEventWaitTime);
 
-            AssertOnTimeout($"Timed out waiting for Client-{clientId} disconnect events!");
+            // Check that we received a Disconnect event on only one client.
+            Assert.AreEqual(1, m_ClientsEvents.Count(evs => evs.Count == 2 && evs[1].Type == NetworkEvent.Disconnect));
 
             // Disconnect all the other clients.
             for (int i = 1; i < k_NumClients; i++)
@@ -156,9 +162,12 @@ namespace Unity.Netcode.RuntimeTests
                 m_Server.DisconnectRemoteClient(m_ServerEvents[i].ClientID);
             }
 
+            // Need to manually wait since we don't know which client got the Disconnect.
+            yield return new WaitForSeconds(MaxNetworkEventWaitTime);
+
             // Check that all clients got a Disconnect event.
-            yield return WaitForConditionOrTimeOut(() => m_ClientsEvents.All(evs => evs.Count == 2) && m_ClientsEvents.All(evs => evs[1].Type == NetworkEvent.Disconnect));
-            AssertOnTimeout($"Timed out waiting for all clients' disconnect events!");
+            Assert.True(m_ClientsEvents.All(evs => evs.Count == 2));
+            Assert.True(m_ClientsEvents.All(evs => evs[1].Type == NetworkEvent.Disconnect));
         }
 
         // Check client disconnection from a single client.
@@ -182,7 +191,6 @@ namespace Unity.Netcode.RuntimeTests
         [UnityTest]
         public IEnumerator ClientDisconnectMultipleClients()
         {
-            Debug.Log("Starting ClientDisconnectMultipleClients");
             InitializeTransport(out m_Server, out m_ServerEvents);
             m_Server.StartServer();
             yield return new WaitForEndOfFrame();
@@ -191,25 +199,19 @@ namespace Unity.Netcode.RuntimeTests
                 InitializeTransport(out m_Clients[i], out m_ClientsEvents[i]);
                 m_Clients[i].StartClient();
             }
-            Debug.Log("Waiting for clients to connect.");
             yield return WaitForNetworkEvent(NetworkEvent.Connect, m_ClientsEvents[k_NumClients - 1]);
 
-            Debug.Log("Disconnecting single client.");
             // Disconnect a single client.
             m_Clients[0].DisconnectLocalClient();
 
-            Debug.Log("Waiting for single client to disconnect.");
             yield return WaitForNetworkEvent(NetworkEvent.Disconnect, m_ServerEvents);
 
-            Debug.Log("Disconnecting multiple clients.");
             // Disconnect all the other clients.
             for (int i = 1; i < k_NumClients; i++)
             {
                 m_Clients[i].DisconnectLocalClient();
             }
-            Debug.Log("Waiting for multiple clients to disconnect.");
-            yield return WaitForConditionOrTimeOut(() => k_NumClients == m_ServerEvents.Count(e => e.Type == NetworkEvent.Disconnect));
-            AssertOnTimeout($"Timed out waiting for server events! Server events: {m_ServerEvents.Count(e => e.Type == NetworkEvent.Disconnect)} Expected: {k_NumClients}");
+            yield return WaitForNetworkEvent(NetworkEvent.Disconnect, m_ServerEvents, 5);
 
             // Check that we got the correct number of Disconnect events on the server.
             Assert.AreEqual(k_NumClients * 2, m_ServerEvents.Count);
@@ -240,12 +242,8 @@ namespace Unity.Netcode.RuntimeTests
             var timeoutHelper = new TimeoutHelper(MaxNetworkEventWaitTime + 0.15f);
             var timeToWait = Time.realtimeSinceStartup + MaxNetworkEventWaitTime;
 
-            // Need to use the WaitForConditionOrTimeOut in order for the EarlyUpdate and PostLateUpdate methods to be invoked.
-            // Wait for the MaxNetworkEventWaitTime to assure no new events are received 
-            yield return WaitForConditionOrTimeOut(() => (timeToWait <= Time.realtimeSinceStartup) && (m_ServerEvents.Count == previousServerEventsCount) &&
-            (m_ClientsEvents[0].Count == previousClientEventsCount), timeoutHelper);
-            AssertOnTimeout($"Sever or client events counts changed!\n ServerEvents: {m_ServerEvents.Count} Expected: {previousServerEventsCount}\n " +
-                $"ClientEvents: {m_ClientsEvents[0].Count} Expected: {previousClientEventsCount}", timeoutHelper);
+            // Need to wait manually since no event should be generated.
+            yield return new WaitForSeconds(MaxNetworkEventWaitTime);
 
             // DoubleCheck we haven't received anything else on the client or server.
             Assert.AreEqual(m_ServerEvents.Count, previousServerEventsCount);
@@ -276,14 +274,10 @@ namespace Unity.Netcode.RuntimeTests
             var timeoutHelper = new TimeoutHelper(MaxNetworkEventWaitTime + 0.15f);
             var timeToWait = Time.realtimeSinceStartup + MaxNetworkEventWaitTime;
 
-            // Need to use the WaitForConditionOrTimeOut in order for the EarlyUpdate and PostLateUpdate methods to be invoked.
-            // Wait for the MaxNetworkEventWaitTime to assure no new events are received 
-            yield return WaitForConditionOrTimeOut(() => (timeToWait <= Time.realtimeSinceStartup) && (m_ServerEvents.Count == previousServerEventsCount) &&
-            (m_ClientsEvents[0].Count == previousClientEventsCount), timeoutHelper);
-            AssertOnTimeout($"Sever or client events counts changed!\n ServerEvents: {m_ServerEvents.Count} Expected: {previousServerEventsCount}\n " +
-                $"ClientEvents: {m_ClientsEvents[0].Count} Expected: {previousClientEventsCount}", timeoutHelper);
+            // Need to wait manually since no event should be generated.
+            yield return new WaitForSeconds(MaxNetworkEventWaitTime);
 
-            // Double check we haven't received anything else on the client or server.
+            // Check we haven't received anything else on the client or server.
             Assert.AreEqual(m_ServerEvents.Count, previousServerEventsCount);
             Assert.AreEqual(m_ClientsEvents[0].Count, previousClientEventsCount);
         }

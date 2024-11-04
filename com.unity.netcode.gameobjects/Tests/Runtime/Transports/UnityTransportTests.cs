@@ -39,7 +39,6 @@ namespace Unity.Netcode.RuntimeTests
         {
             if (m_Server)
             {
-                DeregisterTransportInstance(m_Server);
                 m_Server.Shutdown();
 
                 // Need to destroy the GameObject (all assigned components will get destroyed too)
@@ -48,7 +47,6 @@ namespace Unity.Netcode.RuntimeTests
 
             if (m_Client1)
             {
-                DeregisterTransportInstance(m_Client1);
                 m_Client1.Shutdown();
 
                 // Need to destroy the GameObject (all assigned components will get destroyed too)
@@ -57,16 +55,16 @@ namespace Unity.Netcode.RuntimeTests
 
             if (m_Client2)
             {
-                DeregisterTransportInstance(m_Client2);
                 m_Client2.Shutdown();
 
                 // Need to destroy the GameObject (all assigned components will get destroyed too)
                 UnityEngine.Object.DestroyImmediate(m_Client2.gameObject);
             }
-            ClearRegisteredTransportInstances();
             m_ServerEvents?.Clear();
             m_Client1Events?.Clear();
             m_Client2Events?.Clear();
+
+            UnityTransportTestComponent.CleanUp();
 
             yield return null;
         }
@@ -220,8 +218,6 @@ namespace Unity.Netcode.RuntimeTests
 
             Assert.AreEqual(33, m_ServerEvents[3].Data.First());
             Assert.AreEqual(10, m_ServerEvents[3].Data.Count);
-
-            yield return null;
         }
 
         // Check sending data to multiple clients.
@@ -263,8 +259,6 @@ namespace Unity.Netcode.RuntimeTests
             byte c1Data = m_Client1Events[1].Data.First();
             byte c2Data = m_Client2Events[1].Data.First();
             Assert.That((c1Data == 11 && c2Data == 22) || (c1Data == 22 && c2Data == 11));
-
-            yield return null;
         }
 
         // Check receiving data from multiple clients.
@@ -302,8 +296,6 @@ namespace Unity.Netcode.RuntimeTests
             byte sData1 = m_ServerEvents[2].Data.First();
             byte sData2 = m_ServerEvents[3].Data.First();
             Assert.That((sData1 == 11 && sData2 == 22) || (sData1 == 22 && sData2 == 11));
-
-            yield return null;
         }
 
         // Check that we get disconnected when overflowing the reliable send queue.
@@ -335,8 +327,6 @@ namespace Unity.Netcode.RuntimeTests
 
             Assert.AreEqual(2, m_Client1Events.Count);
             Assert.AreEqual(NetworkEvent.Disconnect, m_Client1Events[1].Type);
-
-            yield return null;
         }
 
         // Check that it's fine to overflow the unreliable send queue (traffic is flushed on overflow).
@@ -364,26 +354,10 @@ namespace Unity.Netcode.RuntimeTests
                 m_Client1.Send(m_Client1.ServerClientId, payload, NetworkDelivery.Unreliable);
             }
 
-            var waitUntilEndofFrame = new WaitForEndOfFrame();
-            var waitForNextFrame = new WaitForFixedUpdate();
-            var timeout = Time.realtimeSinceStartup + 8.0f;
-
             // Manually wait. This ends up generating quite a bit of packets and it might take a
             // while for everything to make it to the server.
-            // Updated: We have to simulate the EarlyUpdate and PostLateUpdate invocations by NetworkManager
-            // in order to process connnects, events, and send messages.
-            while (timeout > Time.realtimeSinceStartup)
-            {
-                yield return waitForNextFrame;
-                InvokeEarlyUpdate();
-                yield return waitUntilEndofFrame;
-                InvokePostLateUpdate();
-                // Once we hit the expected count, exit the loop
-                if ((numSends + 1) == m_ServerEvents.Count)
-                {
-                    break;
-                }
-            }
+            yield return new WaitForSeconds(numSends * 0.02f);
+
 
             // Extra event is the connect event.
             Assert.AreEqual(numSends + 1, m_ServerEvents.Count);
@@ -393,8 +367,6 @@ namespace Unity.Netcode.RuntimeTests
                 Assert.AreEqual(NetworkEvent.Data, m_ServerEvents[i].Type);
                 Assert.AreEqual(1024, m_ServerEvents[i].Data.Count);
             }
-
-            yield return null;
         }
 
 #if !UTP_TRANSPORT_2_0_ABOVE
@@ -471,8 +443,6 @@ namespace Unity.Netcode.RuntimeTests
             m_Client1.Shutdown();
 
             yield return WaitForNetworkEvent(NetworkEvent.Data, m_ServerEvents);
-
-            yield return null;
         }
 
         [UnityTest]
@@ -492,8 +462,6 @@ namespace Unity.Netcode.RuntimeTests
             m_Client1.DisconnectLocalClient();
 
             yield return WaitForNetworkEvent(NetworkEvent.Data, m_ServerEvents);
-
-            yield return null;
         }
 
         [UnityTest]
@@ -513,8 +481,6 @@ namespace Unity.Netcode.RuntimeTests
             m_Server.DisconnectRemoteClient(m_ServerEvents[0].ClientID);
 
             yield return WaitForNetworkEvent(NetworkEvent.Data, m_Client1Events);
-
-            yield return null;
         }
 
         [UnityTest]
@@ -534,8 +500,6 @@ namespace Unity.Netcode.RuntimeTests
             m_Server.Send(m_Client1.ServerClientId, data, NetworkDelivery.Reliable);
 
             yield return WaitForNetworkEvent(NetworkEvent.Data, m_Client1Events);
-
-            yield return null;
         }
     }
 }

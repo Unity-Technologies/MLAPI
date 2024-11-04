@@ -303,7 +303,6 @@ namespace Unity.Netcode.RuntimeTests
             if (m_MotionModel == MotionModels.UseRigidbody)
             {
                 yield return new WaitForFixedUpdate();
-                yield return new WaitForEndOfFrame();
             }
 
             LogNonOwnerRigidBody(2);
