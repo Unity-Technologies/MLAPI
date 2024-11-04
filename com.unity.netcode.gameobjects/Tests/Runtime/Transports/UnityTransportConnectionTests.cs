@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
-using Unity.Netcode.TestHelpers.Runtime;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -193,7 +192,6 @@ namespace Unity.Netcode.RuntimeTests
         {
             InitializeTransport(out m_Server, out m_ServerEvents);
             m_Server.StartServer();
-            yield return new WaitForEndOfFrame();
             for (int i = 0; i < k_NumClients; i++)
             {
                 InitializeTransport(out m_Clients[i], out m_ClientsEvents[i]);
@@ -239,13 +237,10 @@ namespace Unity.Netcode.RuntimeTests
 
             m_Server.DisconnectRemoteClient(m_ServerEvents[0].ClientID);
 
-            var timeoutHelper = new TimeoutHelper(MaxNetworkEventWaitTime + 0.15f);
-            var timeToWait = Time.realtimeSinceStartup + MaxNetworkEventWaitTime;
-
             // Need to wait manually since no event should be generated.
             yield return new WaitForSeconds(MaxNetworkEventWaitTime);
 
-            // DoubleCheck we haven't received anything else on the client or server.
+            // Check we haven't received anything else on the client or server.
             Assert.AreEqual(m_ServerEvents.Count, previousServerEventsCount);
             Assert.AreEqual(m_ClientsEvents[0].Count, previousClientEventsCount);
         }
@@ -270,9 +265,6 @@ namespace Unity.Netcode.RuntimeTests
             var previousClientEventsCount = m_ClientsEvents[0].Count;
 
             m_Clients[0].DisconnectLocalClient();
-
-            var timeoutHelper = new TimeoutHelper(MaxNetworkEventWaitTime + 0.15f);
-            var timeToWait = Time.realtimeSinceStartup + MaxNetworkEventWaitTime;
 
             // Need to wait manually since no event should be generated.
             yield return new WaitForSeconds(MaxNetworkEventWaitTime);
