@@ -98,7 +98,7 @@ namespace Unity.Netcode.RuntimeTests
 
             public static void CleanUp()
             {
-                for(int i = s_Instances.Count - 1; i >= 0; i--)
+                for (int i = s_Instances.Count - 1; i >= 0; i--)
                 {
                     var instance = s_Instances[i];
                     instance.Shutdown();

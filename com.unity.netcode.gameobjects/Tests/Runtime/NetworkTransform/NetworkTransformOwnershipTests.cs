@@ -280,6 +280,7 @@ namespace Unity.Netcode.RuntimeTests
                 ownerRigidbody.Move(valueSetByOwner, rotation);
                 ownerRigidbody.linearVelocity = Vector3.zero;
                 yield return s_DefaultWaitForTick;
+                ownerRigidbody.linearVelocity = Vector3.zero;
                 ownerInstance.transform.localScale = valueSetByOwner;
             }
             else
