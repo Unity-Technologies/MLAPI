@@ -46,6 +46,10 @@ namespace Unity.Netcode.RuntimeTests
             rigidBody.maxLinearVelocity = 0;
             rigidBody.mass = 0;
             rigidBody.detectCollisions = false;
+            rigidBody.position = Vector3.zero;
+            rigidBody.rotation = Quaternion.identity;
+            rigidBody.transform.position = Vector3.zero;
+            rigidBody.transform.rotation = Quaternion.identity;
             // NOTE: We don't use a sphere collider for this integration test because by the time we can
             // assure they don't collide and skew the results the NetworkObjects are already synchronized
             // with skewed results
@@ -60,6 +64,10 @@ namespace Unity.Netcode.RuntimeTests
             rigidBody.interpolation = RigidbodyInterpolation.None;
             rigidBody.maxLinearVelocity = 0;
             rigidBody.detectCollisions = false;
+            rigidBody.position = Vector3.zero;
+            rigidBody.rotation = Quaternion.identity;
+            rigidBody.transform.position = Vector3.zero;
+            rigidBody.transform.rotation = Quaternion.identity;
             // NOTE: We don't use a sphere collider for this integration test because by the time we can
             // assure they don't collide and skew the results the NetworkObjects are already synchronized
             // with skewed results

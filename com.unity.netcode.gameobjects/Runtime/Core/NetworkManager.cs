@@ -300,10 +300,18 @@ namespace Unity.Netcode
 
                         DeferredMessageManager.ProcessTriggers(IDeferredNetworkMessageManager.TriggerType.OnNextFrame, 0);
 
+#if COM_UNITY_MODULES_PHYSICS
+                        NetworkTimeSystem.UpdateTime();
+    
+                        // Transport processes events after time has been updated
+                        NetworkConfig.NetworkTransport.PreUpdate();
+#endif
+
                         AnticipationSystem.SetupForUpdate();
                         MessageManager.ProcessIncomingMessageQueue();
                         MessageManager.CleanupDisconnectedClients();
                         AnticipationSystem.ProcessReanticipation();
+
                     }
                     break;
 #if COM_UNITY_MODULES_PHYSICS
@@ -331,10 +339,14 @@ namespace Unity.Netcode
 #endif
                 case NetworkUpdateStage.PreUpdate:
                     {
+#if !COM_UNITY_MODULES_PHYSICS
                         NetworkTimeSystem.UpdateTime();
                         AnticipationSystem.Update();
                         // Transport processes events after time has been updated
                         NetworkConfig.NetworkTransport.PreUpdate();
+#else
+                        AnticipationSystem.Update();
+#endif
                     }
                     break;
                 case NetworkUpdateStage.PreLateUpdate:
