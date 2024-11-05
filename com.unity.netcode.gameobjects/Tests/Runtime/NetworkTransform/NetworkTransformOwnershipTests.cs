@@ -36,13 +36,16 @@ namespace Unity.Netcode.RuntimeTests
         {
             VerifyObjectIsSpawnedOnClient.ResetObjectTable();
             m_ClientNetworkTransformPrefab = CreateNetworkObjectPrefab("OwnerAuthorityTest");
-            var clientNetworkTransform = m_ClientNetworkTransformPrefab.AddComponent<TestClientNetworkTransform>();
+            var clientNetworkTransform = m_ClientNetworkTransformPrefab.AddComponent<NetworkTransform>();
+            clientNetworkTransform.AuthorityMode = NetworkTransform.AuthorityModes.Owner;
             clientNetworkTransform.Interpolate = false;
             clientNetworkTransform.UseHalfFloatPrecision = false;
             var rigidBody = m_ClientNetworkTransformPrefab.AddComponent<Rigidbody>();
             rigidBody.useGravity = false;
             rigidBody.interpolation = RigidbodyInterpolation.None;
             rigidBody.maxLinearVelocity = 0;
+            rigidBody.mass = 0;
+            rigidBody.detectCollisions = false;
             // NOTE: We don't use a sphere collider for this integration test because by the time we can
             // assure they don't collide and skew the results the NetworkObjects are already synchronized
             // with skewed results
@@ -56,6 +59,7 @@ namespace Unity.Netcode.RuntimeTests
             rigidBody.useGravity = false;
             rigidBody.interpolation = RigidbodyInterpolation.None;
             rigidBody.maxLinearVelocity = 0;
+            rigidBody.detectCollisions = false;
             // NOTE: We don't use a sphere collider for this integration test because by the time we can
             // assure they don't collide and skew the results the NetworkObjects are already synchronized
             // with skewed results
@@ -279,8 +283,8 @@ namespace Unity.Netcode.RuntimeTests
                 var ownerRigidbody = ownerInstance.GetComponent<Rigidbody>();
                 ownerRigidbody.Move(valueSetByOwner, rotation);
                 ownerRigidbody.linearVelocity = Vector3.zero;
+                yield return new WaitForFixedUpdate();
                 yield return s_DefaultWaitForTick;
-                ownerRigidbody.linearVelocity = Vector3.zero;
                 ownerInstance.transform.localScale = valueSetByOwner;
             }
             else

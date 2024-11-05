@@ -65,7 +65,6 @@ namespace Unity.Netcode.RuntimeTests
             m_Client2Events?.Clear();
 
             UnityTransportTestComponent.CleanUp();
-
             yield return null;
         }
 
@@ -357,7 +356,6 @@ namespace Unity.Netcode.RuntimeTests
             // Manually wait. This ends up generating quite a bit of packets and it might take a
             // while for everything to make it to the server.
             yield return new WaitForSeconds(numSends * 0.02f);
-
 
             // Extra event is the connect event.
             Assert.AreEqual(numSends + 1, m_ServerEvents.Count);
