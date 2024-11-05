@@ -302,7 +302,7 @@ namespace Unity.Netcode
 
 #if COM_UNITY_MODULES_PHYSICS
                         NetworkTimeSystem.UpdateTime();
-    
+
                         // Transport processes events after time has been updated
                         NetworkConfig.NetworkTransport.PreUpdate();
 #endif

@@ -290,9 +290,9 @@ namespace Unity.Netcode.RuntimeTests
             {
                 var ownerRigidbody = ownerInstance.GetComponent<Rigidbody>();
                 ownerRigidbody.Move(valueSetByOwner, rotation);
+                yield return new WaitForFixedUpdate();
                 ownerRigidbody.linearVelocity = Vector3.zero;
                 yield return new WaitForFixedUpdate();
-                yield return s_DefaultWaitForTick;
                 ownerInstance.transform.localScale = valueSetByOwner;
             }
             else
