@@ -333,6 +333,8 @@ namespace Unity.Netcode
                     {
                         NetworkTimeSystem.UpdateTime();
                         AnticipationSystem.Update();
+                        // Transport processes events after time has been updated
+                        NetworkConfig.NetworkTransport.PreUpdate();
                     }
                     break;
                 case NetworkUpdateStage.PreLateUpdate:

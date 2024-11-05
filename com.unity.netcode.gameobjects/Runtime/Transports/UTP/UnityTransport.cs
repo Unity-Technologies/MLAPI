@@ -963,12 +963,29 @@ namespace Unity.Netcode.Transports.UTP
                 {
                     ;
                 }
+            }
+        }
+
+        internal override void PreUpdate()
+        {
+            if (m_Driver.IsCreated)
+            {
+                if (m_ProtocolType == ProtocolType.RelayUnityTransport && m_Driver.GetRelayConnectionStatus() == RelayConnectionStatus.AllocationInvalid)
+                {
+                    Debug.LogError("Transport failure! Relay allocation needs to be recreated, and NetworkManager restarted. " +
+                        "Use NetworkManager.OnTransportFailure to be notified of such events programmatically.");
+
+                    InvokeOnTransportEvent(NetcodeNetworkEvent.TransportFailure, 0, default, m_RealTimeProvider.RealTimeSinceStartup);
+                    return;
+                }
 
                 while (ProcessEvent() && m_Driver.IsCreated)
                 {
                     ;
                 }
             }
+
+            base.PreUpdate();
         }
 
         internal override void PostLateUpdate()

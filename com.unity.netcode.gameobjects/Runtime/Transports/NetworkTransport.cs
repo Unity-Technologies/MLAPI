@@ -116,6 +116,14 @@ namespace Unity.Netcode
         }
 
         /// <summary>
+        /// Invoked by NetworkManager at the end of its PreUpdate
+        /// </summary>
+        internal virtual void PreUpdate()
+        {
+
+        }
+
+        /// <summary>
         /// Invoked by NetworkManager during PostLateUpdate
         /// </summary>
         internal virtual void PostLateUpdate()

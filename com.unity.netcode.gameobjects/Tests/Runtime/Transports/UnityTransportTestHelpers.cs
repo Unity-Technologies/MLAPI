@@ -116,6 +116,11 @@ namespace Unity.Netcode.RuntimeTests
                             EarlyUpdate();
                             break;
                         }
+                    case NetworkUpdateStage.PreUpdate:
+                        {
+                            PreUpdate();
+                            break;
+                        }
                     case NetworkUpdateStage.PostLateUpdate:
                         {
                             PostLateUpdate();
@@ -135,6 +140,7 @@ namespace Unity.Netcode.RuntimeTests
             {
                 base.Initialize(networkManager);
                 this.RegisterNetworkUpdate(NetworkUpdateStage.EarlyUpdate);
+                this.RegisterNetworkUpdate(NetworkUpdateStage.PreUpdate);
                 this.RegisterNetworkUpdate(NetworkUpdateStage.PostLateUpdate);
                 s_Instances.Add(this);
             }
