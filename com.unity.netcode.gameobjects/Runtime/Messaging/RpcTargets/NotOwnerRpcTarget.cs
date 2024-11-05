@@ -4,12 +4,14 @@ namespace Unity.Netcode
     {
         private IGroupRpcTarget m_GroupSendTarget;
         private ServerRpcTarget m_ServerRpcTarget;
+        private NotAuthorityRpcTarget m_NotAuthorityRpcTarget;
         private LocalSendRpcTarget m_LocalSendRpcTarget;
 
         public override void Dispose()
         {
             m_ServerRpcTarget.Dispose();
             m_LocalSendRpcTarget.Dispose();
+            m_NotAuthorityRpcTarget.Dispose();
             if (m_GroupSendTarget != null)
             {
                 m_GroupSendTarget.Target.Dispose();
@@ -19,6 +21,13 @@ namespace Unity.Netcode
 
         internal override void Send(NetworkBehaviour behaviour, ref RpcMessage message, NetworkDelivery delivery, RpcParams rpcParams)
         {
+            // Not owner is the same as not authority in distributed authority mode
+            if (m_NetworkManager.DistributedAuthorityMode)
+            {
+                m_NotAuthorityRpcTarget.Send(behaviour, ref message, delivery, rpcParams);
+                return;
+            }
+
             if (m_GroupSendTarget == null)
             {
                 if (behaviour.IsServer)
@@ -86,6 +95,7 @@ namespace Unity.Netcode
         {
             m_ServerRpcTarget = new ServerRpcTarget(manager);
             m_LocalSendRpcTarget = new LocalSendRpcTarget(manager);
+            m_NotAuthorityRpcTarget = new NotAuthorityRpcTarget(manager);
         }
     }
 }
