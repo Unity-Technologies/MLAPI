@@ -944,7 +944,10 @@ namespace Unity.Netcode.Transports.UTP
             return false;
         }
 
-        internal override void EarlyUpdate()
+        /// <summary>
+        /// Handles accepting new connections and processing transport events.
+        /// </summary>
+        protected override void OnEarlyUpdate()
         {
             if (m_Driver.IsCreated)
             {
@@ -959,11 +962,13 @@ namespace Unity.Netcode.Transports.UTP
 
                 m_Driver.ScheduleUpdate().Complete();
 
+                // Process any new connections
                 while (AcceptConnection() && m_Driver.IsCreated)
                 {
                     ;
                 }
 
+                // Process any transport events (i.e. connect, disconnect, data, etc)
                 while (ProcessEvent() && m_Driver.IsCreated)
                 {
                     ;
@@ -971,12 +976,10 @@ namespace Unity.Netcode.Transports.UTP
             }
         }
 
-        internal override void PreUpdate()
-        {
-            base.PreUpdate();
-        }
-
-        internal override void PostLateUpdate()
+        /// <summary>
+        /// Handles sending any queued batched messages.
+        /// </summary>
+        protected override void OnPostLateUpdate()
         {
             if (m_Driver.IsCreated)
             {

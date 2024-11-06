@@ -334,8 +334,6 @@ namespace Unity.Netcode
                     {
                         NetworkTimeSystem.UpdateTime();
                         AnticipationSystem.Update();
-
-                        NetworkConfig.NetworkTransport.PreUpdate();
                     }
                     break;
                 case NetworkUpdateStage.PreLateUpdate:

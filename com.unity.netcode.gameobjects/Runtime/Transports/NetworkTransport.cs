@@ -108,27 +108,42 @@ namespace Unity.Netcode
         public abstract void Initialize(NetworkManager networkManager = null);
 
         /// <summary>
+        /// Invoked by NetworkManager at the beginning of its EarlyUpdate.
+        /// For order of operations see: <see cref="NetworkManager.NetworkUpdate(NetworkUpdateStage)"/>
+        /// </summary>
+        /// Useful to handle processing any transport-layer events such as processing inbound messages or changes in connection state(s).
+        /// </remarks>
+        protected virtual void OnEarlyUpdate()
+        {
+
+        }
+
+        /// <summary>
         /// Invoked by NetworkManager at the beginning of its EarlyUpdate
         /// </summary>
-        internal virtual void EarlyUpdate()
+        internal void EarlyUpdate()
+        {
+            OnEarlyUpdate();
+        }
+
+        /// <summary>
+        /// Invoked by NetworkManager towards the end of the PostLateUpdate.
+        /// For order of operations see: <see cref="NetworkManager.NetworkUpdate(NetworkUpdateStage)"/>
+        /// </summary>
+        /// <remarks>
+        /// Useful to handle any end of frame transport tasks such as sending queued transport messages.
+        /// </remarks>
+        protected virtual void OnPostLateUpdate()
         {
 
         }
 
         /// <summary>
-        /// Invoked by NetworkManager at the end of its PreUpdate
+        /// Invoked by NetworkManager towards the end of the PostLateUpdate
         /// </summary>
-        internal virtual void PreUpdate()
+        internal void PostLateUpdate()
         {
-
-        }
-
-        /// <summary>
-        /// Invoked by NetworkManager during PostLateUpdate
-        /// </summary>
-        internal virtual void PostLateUpdate()
-        {
-
+            OnPostLateUpdate();
         }
 
         protected virtual NetworkTopologyTypes OnCurrentTopology()
