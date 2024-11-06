@@ -13,7 +13,7 @@ namespace Unity.Netcode.RuntimeTests
     /// - Deserializing NetworkObjectReference to NetworkObject
     /// - Implicit operators of NetworkObjectReference
     /// </summary>
-    public class NetworkBehaviourReferenceTests : IDisposable
+    internal class NetworkBehaviourReferenceTests : IDisposable
     {
         private class TestNetworkBehaviour : NetworkBehaviour
         {
@@ -127,7 +127,6 @@ namespace Unity.Netcode.RuntimeTests
             Assert.AreEqual(testNetworkBehaviour, testNetworkBehaviour.RpcReceivedBehaviour);
         }
 
-
         [Test]
         public void TestNetworkVariable()
         {
@@ -186,7 +185,7 @@ namespace Unity.Netcode.RuntimeTests
     /// <summary>
     /// Integration tests for NetworkBehaviourReference
     /// </summary>
-    public class NetworkBehaviourReferenceIntegrationTests : NetcodeIntegrationTest
+    internal class NetworkBehaviourReferenceIntegrationTests : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 1;
 

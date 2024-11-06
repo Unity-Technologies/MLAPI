@@ -7,9 +7,9 @@ using Object = UnityEngine.Object;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class AddNetworkPrefabTest : NetcodeIntegrationTest
+    internal class AddNetworkPrefabTest : NetcodeIntegrationTest
     {
-        public class EmptyComponent : NetworkBehaviour
+        internal class EmptyComponent : NetworkBehaviour
         {
 
         }

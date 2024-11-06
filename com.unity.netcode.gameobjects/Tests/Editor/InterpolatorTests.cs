@@ -3,7 +3,7 @@ using NUnit.Framework;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class InterpolatorTests
+    internal class InterpolatorTests
     {
         private const float k_Precision = 0.00000001f;
         private const int k_MockTickRate = 1;

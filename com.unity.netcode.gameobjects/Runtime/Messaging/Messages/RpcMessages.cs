@@ -14,7 +14,7 @@ namespace Unity.Netcode
             writer.WriteBytesSafe(payload.GetUnsafePtr(), payload.Length);
         }
 
-        public static unsafe bool Deserialize(ref FastBufferReader reader, ref NetworkContext context, ref RpcMetadata metadata, ref FastBufferReader payload)
+        public static unsafe bool Deserialize(ref FastBufferReader reader, ref NetworkContext context, ref RpcMetadata metadata, ref FastBufferReader payload, string messageType)
         {
             ByteUnpacker.ReadValueBitPacked(reader, out metadata.NetworkObjectId);
             ByteUnpacker.ReadValueBitPacked(reader, out metadata.NetworkBehaviourId);
@@ -23,7 +23,7 @@ namespace Unity.Netcode
             var networkManager = (NetworkManager)context.SystemOwner;
             if (!networkManager.SpawnManager.SpawnedObjects.ContainsKey(metadata.NetworkObjectId))
             {
-                networkManager.DeferredMessageManager.DeferMessage(IDeferredNetworkMessageManager.TriggerType.OnSpawn, metadata.NetworkObjectId, reader, ref context);
+                networkManager.DeferredMessageManager.DeferMessage(IDeferredNetworkMessageManager.TriggerType.OnSpawn, metadata.NetworkObjectId, reader, ref context, messageType);
                 return false;
             }
 
@@ -52,7 +52,6 @@ namespace Unity.Netcode
                     reader.Length);
             }
 #endif
-
             return true;
         }
 
@@ -106,6 +105,8 @@ namespace Unity.Netcode
         public FastBufferWriter WriteBuffer;
         public FastBufferReader ReadBuffer;
 
+        private const string k_Name = "ServerRpcMessage";
+
         public unsafe void Serialize(FastBufferWriter writer, int targetVersion)
         {
             RpcMessageHelpers.Serialize(ref writer, ref Metadata, ref WriteBuffer);
@@ -113,7 +114,7 @@ namespace Unity.Netcode
 
         public unsafe bool Deserialize(FastBufferReader reader, ref NetworkContext context, int receivedMessageVersion)
         {
-            return RpcMessageHelpers.Deserialize(ref reader, ref context, ref Metadata, ref ReadBuffer);
+            return RpcMessageHelpers.Deserialize(ref reader, ref context, ref Metadata, ref ReadBuffer, k_Name);
         }
 
         public void Handle(ref NetworkContext context)
@@ -141,6 +142,8 @@ namespace Unity.Netcode
         public FastBufferWriter WriteBuffer;
         public FastBufferReader ReadBuffer;
 
+        private const string k_Name = "ClientRpcMessage";
+
         public void Serialize(FastBufferWriter writer, int targetVersion)
         {
             RpcMessageHelpers.Serialize(ref writer, ref Metadata, ref WriteBuffer);
@@ -148,7 +151,7 @@ namespace Unity.Netcode
 
         public bool Deserialize(FastBufferReader reader, ref NetworkContext context, int receivedMessageVersion)
         {
-            return RpcMessageHelpers.Deserialize(ref reader, ref context, ref Metadata, ref ReadBuffer);
+            return RpcMessageHelpers.Deserialize(ref reader, ref context, ref Metadata, ref ReadBuffer, k_Name);
         }
 
         public void Handle(ref NetworkContext context)
@@ -176,6 +179,8 @@ namespace Unity.Netcode
         public FastBufferWriter WriteBuffer;
         public FastBufferReader ReadBuffer;
 
+        private const string k_Name = "RpcMessage";
+
         public unsafe void Serialize(FastBufferWriter writer, int targetVersion)
         {
             BytePacker.WriteValuePacked(writer, SenderClientId);
@@ -185,7 +190,8 @@ namespace Unity.Netcode
         public unsafe bool Deserialize(FastBufferReader reader, ref NetworkContext context, int receivedMessageVersion)
         {
             ByteUnpacker.ReadValuePacked(reader, out SenderClientId);
-            return RpcMessageHelpers.Deserialize(ref reader, ref context, ref Metadata, ref ReadBuffer);
+
+            return RpcMessageHelpers.Deserialize(ref reader, ref context, ref Metadata, ref ReadBuffer, k_Name);
         }
 
         public void Handle(ref NetworkContext context)
@@ -201,6 +207,140 @@ namespace Unity.Netcode
                 }
             };
             RpcMessageHelpers.Handle(ref context, ref Metadata, ref ReadBuffer, ref rpcParams);
+        }
+    }
+
+    // DANGO-EXP TODO: REMOVE THIS
+    internal struct ForwardServerRpcMessage : INetworkMessage
+    {
+        public int Version => 0;
+        public ulong OwnerId;
+        public NetworkDelivery NetworkDelivery;
+        public ServerRpcMessage ServerRpcMessage;
+
+        public unsafe void Serialize(FastBufferWriter writer, int targetVersion)
+        {
+            writer.WriteValueSafe(OwnerId);
+            writer.WriteValueSafe(NetworkDelivery);
+            ServerRpcMessage.Serialize(writer, targetVersion);
+        }
+
+        public unsafe bool Deserialize(FastBufferReader reader, ref NetworkContext context, int receivedMessageVersion)
+        {
+            reader.ReadValueSafe(out OwnerId);
+            reader.ReadValueSafe(out NetworkDelivery);
+            ServerRpcMessage.ReadBuffer = new FastBufferReader(reader, Allocator.Persistent, reader.Length - reader.Position, sizeof(RpcMetadata));
+
+            // If deserializing failed or this message was deferred.
+            if (!ServerRpcMessage.Deserialize(reader, ref context, receivedMessageVersion))
+            {
+                // release this reader as the handler will either be invoked later (deferred) or will not be invoked at all.
+                ServerRpcMessage.ReadBuffer.Dispose();
+                return false;
+            }
+            return true;
+        }
+
+        public void Handle(ref NetworkContext context)
+        {
+            var networkManager = (NetworkManager)context.SystemOwner;
+            if (networkManager.DAHost)
+            {
+                try
+                {
+                    // Since this is temporary, we will not be collection metrics for this.
+                    // DAHost just forwards the message to the owner
+                    ServerRpcMessage.WriteBuffer = new FastBufferWriter(ServerRpcMessage.ReadBuffer.Length, Allocator.TempJob);
+                    ServerRpcMessage.WriteBuffer.WriteBytesSafe(ServerRpcMessage.ReadBuffer.ToArray());
+                    networkManager.ConnectionManager.SendMessage(ref ServerRpcMessage, NetworkDelivery, OwnerId);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogException(ex);
+                }
+            }
+            else
+            {
+                NetworkLog.LogErrorServer($"Received {nameof(ForwardServerRpcMessage)} on client-{networkManager.LocalClientId}! Only DAHost may forward RPC messages!");
+            }
+            ServerRpcMessage.ReadBuffer.Dispose();
+            ServerRpcMessage.WriteBuffer.Dispose();
+        }
+
+    }
+
+    // DANGO-EXP TODO: REMOVE THIS
+    internal struct ForwardClientRpcMessage : INetworkMessage
+    {
+        public int Version => 0;
+        public bool BroadCast;
+        public ulong[] TargetClientIds;
+        public NetworkDelivery NetworkDelivery;
+        public ClientRpcMessage ClientRpcMessage;
+
+        public unsafe void Serialize(FastBufferWriter writer, int targetVersion)
+        {
+            if (TargetClientIds == null)
+            {
+                BroadCast = true;
+                writer.WriteValueSafe(BroadCast);
+            }
+            else
+            {
+                BroadCast = false;
+                writer.WriteValueSafe(BroadCast);
+                writer.WriteValueSafe(TargetClientIds);
+            }
+            writer.WriteValueSafe(NetworkDelivery);
+            ClientRpcMessage.Serialize(writer, targetVersion);
+        }
+
+        public unsafe bool Deserialize(FastBufferReader reader, ref NetworkContext context, int receivedMessageVersion)
+        {
+            reader.ReadValueSafe(out BroadCast);
+
+            if (!BroadCast)
+            {
+                reader.ReadValueSafe(out TargetClientIds);
+            }
+
+            reader.ReadValueSafe(out NetworkDelivery);
+
+            ClientRpcMessage.ReadBuffer = new FastBufferReader(reader, Allocator.Persistent, reader.Length - reader.Position, sizeof(RpcMetadata));
+            // If deserializing failed or this message was deferred.
+            if (!ClientRpcMessage.Deserialize(reader, ref context, receivedMessageVersion))
+            {
+                // release this reader as the handler will either be invoked later (deferred) or will not be invoked at all.
+                ClientRpcMessage.ReadBuffer.Dispose();
+                return false;
+            }
+            return true;
+        }
+
+        public void Handle(ref NetworkContext context)
+        {
+            var networkManager = (NetworkManager)context.SystemOwner;
+            if (networkManager.DAHost)
+            {
+                ClientRpcMessage.WriteBuffer = new FastBufferWriter(ClientRpcMessage.ReadBuffer.Length, Allocator.TempJob);
+                ClientRpcMessage.WriteBuffer.WriteBytesSafe(ClientRpcMessage.ReadBuffer.ToArray());
+                // Since this is temporary, we will not be collection metrics for this.
+                // DAHost just forwards the message to the clients
+                if (BroadCast)
+                {
+                    networkManager.ConnectionManager.SendMessage(ref ClientRpcMessage, NetworkDelivery, networkManager.ConnectedClientsIds);
+                }
+                else
+                {
+                    networkManager.ConnectionManager.SendMessage(ref ClientRpcMessage, NetworkDelivery, TargetClientIds);
+                }
+            }
+            else
+            {
+                NetworkLog.LogErrorServer($"Received {nameof(ForwardClientRpcMessage)} on client-{networkManager.LocalClientId}! Only DAHost may forward RPC messages!");
+            }
+            ClientRpcMessage.WriteBuffer.Dispose();
+            ClientRpcMessage.ReadBuffer.Dispose();
         }
     }
 }

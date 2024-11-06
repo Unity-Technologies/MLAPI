@@ -27,7 +27,8 @@ namespace Unity.Netcode.Editor.CodeGen
 
         public override ILPPInterface GetInstance() => this;
 
-        public override bool WillProcess(ICompiledAssembly compiledAssembly) => compiledAssembly.References.Any(filePath => Path.GetFileNameWithoutExtension(filePath) == CodeGenHelpers.RuntimeAssemblyName);
+        public override bool WillProcess(ICompiledAssembly compiledAssembly) => compiledAssembly.Name == CodeGenHelpers.RuntimeAssemblyName ||
+            compiledAssembly.References.Any(filePath => Path.GetFileNameWithoutExtension(filePath) == CodeGenHelpers.RuntimeAssemblyName);
 
         private readonly List<DiagnosticMessage> m_Diagnostics = new List<DiagnosticMessage>();
 
@@ -721,7 +722,7 @@ namespace Unity.Netcode.Editor.CodeGen
                     continue;
                 }
 
-                if (networkVariableSerializationTypesTypeDef == null && netcodeTypeDef.Name == nameof(NetworkVariableSerializationTypes))
+                if (networkVariableSerializationTypesTypeDef == null && netcodeTypeDef.Name == nameof(NetworkVariableSerializationTypedInitializers))
                 {
                     networkVariableSerializationTypesTypeDef = netcodeTypeDef;
                     continue;
@@ -1007,103 +1008,103 @@ namespace Unity.Netcode.Editor.CodeGen
 
                 switch (method.Name)
                 {
-                    case nameof(NetworkVariableSerializationTypes.InitializeSerializer_UnmanagedByMemcpy):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeSerializer_UnmanagedByMemcpy):
                         m_NetworkVariableSerializationTypes_InitializeSerializer_UnmanagedByMemcpy_MethodRef = method;
                         break;
-                    case nameof(NetworkVariableSerializationTypes.InitializeSerializer_UnmanagedByMemcpyArray):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeSerializer_UnmanagedByMemcpyArray):
                         m_NetworkVariableSerializationTypes_InitializeSerializer_UnmanagedByMemcpyArray_MethodRef = method;
                         break;
 
 #if UNITY_NETCODE_NATIVE_COLLECTION_SUPPORT
-                    case nameof(NetworkVariableSerializationTypes.InitializeSerializer_UnmanagedByMemcpyList):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeSerializer_UnmanagedByMemcpyList):
                         m_NetworkVariableSerializationTypes_InitializeSerializer_UnmanagedByMemcpyList_MethodRef = method;
                         break;
 #endif
-                    case nameof(NetworkVariableSerializationTypes.InitializeSerializer_UnmanagedINetworkSerializable):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeSerializer_UnmanagedINetworkSerializable):
                         m_NetworkVariableSerializationTypes_InitializeSerializer_UnmanagedINetworkSerializable_MethodRef = method;
                         break;
-                    case nameof(NetworkVariableSerializationTypes.InitializeSerializer_UnmanagedINetworkSerializableArray):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeSerializer_UnmanagedINetworkSerializableArray):
                         m_NetworkVariableSerializationTypes_InitializeSerializer_UnmanagedINetworkSerializableArray_MethodRef = method;
                         break;
 
 #if UNITY_NETCODE_NATIVE_COLLECTION_SUPPORT
-                    case nameof(NetworkVariableSerializationTypes.InitializeSerializer_UnmanagedINetworkSerializableList):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeSerializer_UnmanagedINetworkSerializableList):
                         m_NetworkVariableSerializationTypes_InitializeSerializer_UnmanagedINetworkSerializableList_MethodRef = method;
                         break;
-                    case nameof(NetworkVariableSerializationTypes.InitializeSerializer_NativeHashSet):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeSerializer_NativeHashSet):
                         m_NetworkVariableSerializationTypes_InitializeSerializer_NativeHashSet_MethodRef = method;
                         break;
-                    case nameof(NetworkVariableSerializationTypes.InitializeSerializer_NativeHashMap):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeSerializer_NativeHashMap):
                         m_NetworkVariableSerializationTypes_InitializeSerializer_NativeHashMap_MethodRef = method;
                         break;
 #endif
-                    case nameof(NetworkVariableSerializationTypes.InitializeSerializer_List):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeSerializer_List):
                         m_NetworkVariableSerializationTypes_InitializeSerializer_List_MethodRef = method;
                         break;
-                    case nameof(NetworkVariableSerializationTypes.InitializeSerializer_HashSet):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeSerializer_HashSet):
                         m_NetworkVariableSerializationTypes_InitializeSerializer_HashSet_MethodRef = method;
                         break;
-                    case nameof(NetworkVariableSerializationTypes.InitializeSerializer_Dictionary):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeSerializer_Dictionary):
                         m_NetworkVariableSerializationTypes_InitializeSerializer_Dictionary_MethodRef = method;
                         break;
-                    case nameof(NetworkVariableSerializationTypes.InitializeSerializer_ManagedINetworkSerializable):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeSerializer_ManagedINetworkSerializable):
                         m_NetworkVariableSerializationTypes_InitializeSerializer_ManagedINetworkSerializable_MethodRef = method;
                         break;
-                    case nameof(NetworkVariableSerializationTypes.InitializeSerializer_FixedString):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeSerializer_FixedString):
                         m_NetworkVariableSerializationTypes_InitializeSerializer_FixedString_MethodRef = method;
                         break;
-                    case nameof(NetworkVariableSerializationTypes.InitializeSerializer_FixedStringArray):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeSerializer_FixedStringArray):
                         m_NetworkVariableSerializationTypes_InitializeSerializer_FixedStringArray_MethodRef = method;
                         break;
 
 #if UNITY_NETCODE_NATIVE_COLLECTION_SUPPORT
-                    case nameof(NetworkVariableSerializationTypes.InitializeSerializer_FixedStringList):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeSerializer_FixedStringList):
                         m_NetworkVariableSerializationTypes_InitializeSerializer_FixedStringList_MethodRef = method;
                         break;
 #endif
 
-                    case nameof(NetworkVariableSerializationTypes.InitializeEqualityChecker_ManagedIEquatable):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeEqualityChecker_ManagedIEquatable):
                         m_NetworkVariableSerializationTypes_InitializeEqualityChecker_ManagedIEquatable_MethodRef = method;
                         break;
-                    case nameof(NetworkVariableSerializationTypes.InitializeEqualityChecker_UnmanagedIEquatable):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeEqualityChecker_UnmanagedIEquatable):
                         m_NetworkVariableSerializationTypes_InitializeEqualityChecker_UnmanagedIEquatable_MethodRef = method;
                         break;
-                    case nameof(NetworkVariableSerializationTypes.InitializeEqualityChecker_UnmanagedIEquatableArray):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeEqualityChecker_UnmanagedIEquatableArray):
                         m_NetworkVariableSerializationTypes_InitializeEqualityChecker_UnmanagedIEquatableArray_MethodRef = method;
                         break;
 
 #if UNITY_NETCODE_NATIVE_COLLECTION_SUPPORT
-                    case nameof(NetworkVariableSerializationTypes.InitializeEqualityChecker_UnmanagedIEquatableList):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeEqualityChecker_UnmanagedIEquatableList):
                         m_NetworkVariableSerializationTypes_InitializeEqualityChecker_UnmanagedIEquatableList_MethodRef = method;
                         break;
-                    case nameof(NetworkVariableSerializationTypes.InitializeEqualityChecker_NativeHashSet):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeEqualityChecker_NativeHashSet):
                         m_NetworkVariableSerializationTypes_InitializeEqualityChecker_NativeHashSet_MethodRef = method;
                         break;
-                    case nameof(NetworkVariableSerializationTypes.InitializeEqualityChecker_NativeHashMap):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeEqualityChecker_NativeHashMap):
                         m_NetworkVariableSerializationTypes_InitializeEqualityChecker_NativeHashMap_MethodRef = method;
                         break;
 #endif
-                    case nameof(NetworkVariableSerializationTypes.InitializeEqualityChecker_List):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeEqualityChecker_List):
                         m_NetworkVariableSerializationTypes_InitializeEqualityChecker_List_MethodRef = method;
                         break;
-                    case nameof(NetworkVariableSerializationTypes.InitializeEqualityChecker_HashSet):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeEqualityChecker_HashSet):
                         m_NetworkVariableSerializationTypes_InitializeEqualityChecker_HashSet_MethodRef = method;
                         break;
-                    case nameof(NetworkVariableSerializationTypes.InitializeEqualityChecker_Dictionary):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeEqualityChecker_Dictionary):
                         m_NetworkVariableSerializationTypes_InitializeEqualityChecker_Dictionary_MethodRef = method;
                         break;
-                    case nameof(NetworkVariableSerializationTypes.InitializeEqualityChecker_UnmanagedValueEquals):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeEqualityChecker_UnmanagedValueEquals):
                         m_NetworkVariableSerializationTypes_InitializeEqualityChecker_UnmanagedValueEquals_MethodRef = method;
                         break;
-                    case nameof(NetworkVariableSerializationTypes.InitializeEqualityChecker_UnmanagedValueEqualsArray):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeEqualityChecker_UnmanagedValueEqualsArray):
                         m_NetworkVariableSerializationTypes_InitializeEqualityChecker_UnmanagedValueEqualsArray_MethodRef = method;
                         break;
 #if UNITY_NETCODE_NATIVE_COLLECTION_SUPPORT
-                    case nameof(NetworkVariableSerializationTypes.InitializeEqualityChecker_UnmanagedValueEqualsList):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeEqualityChecker_UnmanagedValueEqualsList):
                         m_NetworkVariableSerializationTypes_InitializeEqualityChecker_UnmanagedValueEqualsList_MethodRef = method;
                         break;
 #endif
-                    case nameof(NetworkVariableSerializationTypes.InitializeEqualityChecker_ManagedClassEquals):
+                    case nameof(NetworkVariableSerializationTypedInitializers.InitializeEqualityChecker_ManagedClassEquals):
                         m_NetworkVariableSerializationTypes_InitializeEqualityChecker_ManagedClassEquals_MethodRef = method;
                         break;
                 }

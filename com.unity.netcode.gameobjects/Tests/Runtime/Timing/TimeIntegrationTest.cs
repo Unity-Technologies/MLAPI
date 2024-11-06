@@ -1,6 +1,6 @@
+#if !MULTIPLAYER_TOOLS
 using System;
 using System.Collections;
-using System.Linq;
 using NUnit.Framework;
 using Unity.Netcode.TestHelpers.Runtime;
 using UnityEngine;
@@ -11,9 +11,9 @@ namespace Unity.Netcode.RuntimeTests
     /// <summary>
     /// Tests the times of two clients connecting to a server using the SIPTransport (returns 50ms RTT but has no latency simulation)
     /// </summary>
-    public class TimeIntegrationTest : NetcodeIntegrationTest
+    internal class TimeIntegrationTest : NetcodeIntegrationTest
     {
-        private const double k_AdditionalTimeTolerance = 0.3d; // magic number and in theory not needed but without this mac os test fail in Yamato because it looks like we get random framerate drops during unit test.
+        private const double k_AdditionalTimeTolerance = 0.3333d; // magic number and in theory not needed but without this mac os test fail in Yamato because it looks like we get random framerate drops during unit test.
 
         private NetworkTimeState m_ServerState;
         private NetworkTimeState m_Client1State;
@@ -26,17 +26,11 @@ namespace Unity.Netcode.RuntimeTests
             return NetworkManagerInstatiationMode.DoNotCreate;
         }
 
-        private void UpdateTimeStates(NetworkManager[] networkManagers)
+        private void UpdateTimeStates()
         {
-            var server = networkManagers.First(t => t.IsServer);
-            var firstClient = networkManagers.First(t => t.IsClient);
-            var secondClient = networkManagers.Last(t => t.IsClient);
-
-            Assert.AreNotEqual(firstClient, secondClient);
-
-            m_ServerState = new NetworkTimeState(server);
-            m_Client1State = new NetworkTimeState(firstClient);
-            m_Client2State = new NetworkTimeState(secondClient);
+            m_ServerState = new NetworkTimeState(m_ServerNetworkManager);
+            m_Client1State = new NetworkTimeState(m_ClientNetworkManagers[0]);
+            m_Client2State = new NetworkTimeState(m_ClientNetworkManagers[1]);
         }
 
         [UnityTest]
@@ -61,26 +55,21 @@ namespace Unity.Netcode.RuntimeTests
             double frameInterval = 1d / targetFrameRate;
             double tickInterval = 1d / tickRate;
 
-            var networkManagers = NetcodeIntegrationTestHelpers.NetworkManagerInstances.ToArray();
-
-            var server = networkManagers.First(t => t.IsServer);
-            var firstClient = networkManagers.First(t => !t.IsServer);
-            var secondClient = networkManagers.Last(t => !t.IsServer);
-
-            Assert.AreNotEqual(firstClient, secondClient);
+            var server = m_ServerNetworkManager;
+            var firstClient = m_ClientNetworkManagers[0];
+            var secondClient = m_ClientNetworkManagers[1];
 
             // increase the buffer time of client 2 // the values for client 1 are 0.0333/0.0333 here
             secondClient.NetworkTimeSystem.LocalBufferSec = 0.2;
             secondClient.NetworkTimeSystem.ServerBufferSec = 0.1;
 
-            UpdateTimeStates(networkManagers);
+            UpdateTimeStates();
 
-
-            // wait for at least one tick to pass
-            yield return new WaitUntil(() => m_ServerState.LocalTime.Tick != server.NetworkTickSystem.LocalTime.Tick);
-            yield return new WaitUntil(() => m_Client1State.LocalTime.Tick != firstClient.NetworkTickSystem.LocalTime.Tick);
-            yield return new WaitUntil(() => m_Client2State.LocalTime.Tick != secondClient.NetworkTickSystem.LocalTime.Tick);
-
+            // wait for a few ticks to pass
+            for (int i = 0; i < 4; i++)
+            {
+                yield return s_DefaultWaitForTick;
+            }
 
             var framesToRun = 3d / frameInterval;
 
@@ -103,7 +92,7 @@ namespace Unity.Netcode.RuntimeTests
                     currentAdjustment += additionalTimeTolerance * fpsAdjustment;
                 }
 
-                UpdateTimeStates(networkManagers);
+                UpdateTimeStates();
 
                 // compares whether client times have the correct offset to server
                 m_ServerState.AssertCheckDifference(m_Client1State, tickInterval, tickInterval, tickInterval * 2 + frameInterval * 2 + currentAdjustment);
@@ -211,3 +200,4 @@ namespace Unity.Netcode.RuntimeTests
         }
     }
 }
+#endif

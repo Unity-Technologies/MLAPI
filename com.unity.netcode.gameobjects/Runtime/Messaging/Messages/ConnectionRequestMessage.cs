@@ -2,11 +2,53 @@ using Unity.Collections;
 
 namespace Unity.Netcode
 {
+    /// <summary>
+    /// Only used when connecting to the distributed authority service
+    /// </summary>
+    internal struct ClientConfig : INetworkSerializable
+    {
+        /// <summary>
+        /// We start at version 1, where anything less than version 1 on the service side
+        /// is not bypass feature compatible.
+        /// </summary>
+        private const int k_BypassFeatureCompatible = 1;
+        public int Version => k_BypassFeatureCompatible;
+        public uint TickRate;
+        public bool EnableSceneManagement;
+
+        // Only gets deserialized but should never be used unless testing
+        public int RemoteClientVersion;
+
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            if (serializer.IsWriter)
+            {
+                var writer = serializer.GetFastBufferWriter();
+                BytePacker.WriteValueBitPacked(writer, Version);
+                BytePacker.WriteValueBitPacked(writer, TickRate);
+                writer.WriteValueSafe(EnableSceneManagement);
+            }
+            else
+            {
+                var reader = serializer.GetFastBufferReader();
+                ByteUnpacker.ReadValueBitPacked(reader, out RemoteClientVersion);
+                ByteUnpacker.ReadValueBitPacked(reader, out TickRate);
+                reader.ReadValueSafe(out EnableSceneManagement);
+            }
+        }
+    }
+
     internal struct ConnectionRequestMessage : INetworkMessage
     {
-        public int Version => 0;
+        // This version update is unidirectional (client to service) and version
+        // handling occurs on the service side. This serialized data is never sent
+        // to a host or server.
+        private const int k_SendClientConfigToService = 1;
+        public int Version => k_SendClientConfigToService;
 
         public ulong ConfigHash;
+        public bool CMBServiceConnection;
+        public ClientConfig ClientConfig;
 
         public byte[] ConnectionData;
 
@@ -29,6 +71,11 @@ namespace Unity.Netcode
             // ============================================================
             // END FORBIDDEN SEGMENT
             // ============================================================
+
+            if (CMBServiceConnection)
+            {
+                writer.WriteNetworkSerializable(ClientConfig);
+            }
 
             if (ShouldSendConnectionData)
             {
@@ -92,7 +139,7 @@ namespace Unity.Netcode
                 {
                     if (NetworkLog.CurrentLogLevel <= LogLevel.Normal)
                     {
-                        NetworkLog.LogWarning($"{nameof(NetworkConfig)} mismatch. The configuration between the server and client does not match");
+                        NetworkLog.LogWarning($"{nameof(NetworkConfig)} mismatch. IncomingHash=[{ConfigHash}] OurHash=[{networkManager.NetworkConfig.GetConfig()}] The configuration between the server and client does not match");
                     }
 
                     networkManager.DisconnectClient(context.SenderId);
@@ -151,7 +198,7 @@ namespace Unity.Netcode
                 var response = new NetworkManager.ConnectionApprovalResponse
                 {
                     Approved = true,
-                    CreatePlayerObject = networkManager.NetworkConfig.PlayerPrefab != null
+                    CreatePlayerObject = networkManager.DistributedAuthorityMode && networkManager.AutoSpawnPlayerPrefabClientSide ? false : networkManager.NetworkConfig.PlayerPrefab != null
                 };
                 networkManager.ConnectionManager.HandleConnectionApproval(senderId, response);
             }

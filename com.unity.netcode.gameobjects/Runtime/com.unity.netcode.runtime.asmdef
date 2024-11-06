@@ -13,9 +13,17 @@
         "Unity.Networking.Transport",
         "Unity.Collections",
         "Unity.Burst",
-        "Unity.Mathematics"
+        "Unity.Mathematics",
+        "Unity.ResourceManager",
+        "Unity.Addressables"
     ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
     "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
     "versionDefines": [
         {
             "name": "com.unity.multiplayer.tools",
@@ -46,6 +54,32 @@
             "name": "Unity",
             "expression": "2023",
             "define": "UNITY_DEDICATED_SERVER_ARGUMENTS_PRESENT"
+        },
+        {
+            "name": "com.unity.modules.animation",
+            "expression": "",
+            "define": "COM_UNITY_MODULES_ANIMATION"
+        },
+        {
+            "name": "com.unity.modules.physics",
+            "expression": "",
+            "define": "COM_UNITY_MODULES_PHYSICS"
+        },
+        {
+            "name": "com.unity.modules.physics2d",
+            "expression": "",
+            "define": "COM_UNITY_MODULES_PHYSICS2D"
+        },
+        {
+            "name": "com.unity.services.multiplayer",
+            "expression": "0.2.0",
+            "define": "MULTIPLAYER_SERVICES_SDK_INSTALLED"
+        },
+        {
+            "name": "Unity",
+            "expression": "6000.0.11f1",
+            "define": "COM_UNITY_MODULES_PHYSICS2D_LINEAR"
         }
-    ]
+    ],
+    "noEngineReferences": false
 }

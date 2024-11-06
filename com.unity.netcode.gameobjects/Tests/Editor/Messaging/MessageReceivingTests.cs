@@ -7,7 +7,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class MessageReceivingTests
+    internal class MessageReceivingTests
     {
         private struct TestMessage : INetworkMessage, INetworkSerializeByMemcpy
         {

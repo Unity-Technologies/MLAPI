@@ -10,7 +10,7 @@ using static Unity.Netcode.RuntimeTests.UnityTransportTestHelpers;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class UnityTransportConnectionTests
+    internal class UnityTransportConnectionTests
     {
         // For tests using multiple clients.
         private const int k_NumClients = 5;
@@ -208,7 +208,7 @@ namespace Unity.Netcode.RuntimeTests
                 m_Clients[i].DisconnectLocalClient();
             }
 
-            yield return WaitForNetworkEvent(NetworkEvent.Disconnect, m_ServerEvents);
+            yield return WaitForNetworkEvent(NetworkEvent.Disconnect, m_ServerEvents, 5);
 
             // Check that we got the correct number of Disconnect events on the server.
             Assert.AreEqual(k_NumClients * 2, m_ServerEvents.Count);

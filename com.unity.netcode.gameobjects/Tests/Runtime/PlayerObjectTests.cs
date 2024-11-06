@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Linq;
 using NUnit.Framework;
 using Unity.Netcode.TestHelpers.Runtime;
 using UnityEngine;
@@ -7,11 +6,12 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests
 {
+    [TestFixture(HostOrServer.DAHost)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
-    public class PlayerObjectTests : NetcodeIntegrationTest
+    internal class PlayerObjectTests : NetcodeIntegrationTest
     {
-        protected override int NumberOfClients => 1;
+        protected override int NumberOfClients => 2;
 
         protected GameObject m_NewPlayerToSpawn;
 
@@ -26,6 +26,8 @@ namespace Unity.Netcode.RuntimeTests
         [UnityTest]
         public IEnumerator SpawnAndReplaceExistingPlayerObject()
         {
+            yield return WaitForConditionOrTimeOut(() => m_PlayerNetworkObjects[m_ServerNetworkManager.LocalClientId].ContainsKey(m_ClientNetworkManagers[0].LocalClientId));
+            AssertOnTimeout("Timed out waiting for client-side player object to spawn!");
             // Get the server-side player NetworkObject
             var originalPlayer = m_PlayerNetworkObjects[m_ServerNetworkManager.LocalClientId][m_ClientNetworkManagers[0].LocalClientId];
             // Get the client-side player NetworkObject
@@ -34,7 +36,8 @@ namespace Unity.Netcode.RuntimeTests
             // Create a new player prefab instance
             var newPlayer = Object.Instantiate(m_NewPlayerToSpawn);
             var newPlayerNetworkObject = newPlayer.GetComponent<NetworkObject>();
-            newPlayerNetworkObject.NetworkManagerOwner = m_ServerNetworkManager;
+            // In distributed authority mode, the client owner spawns its new player
+            newPlayerNetworkObject.NetworkManagerOwner = m_DistributedAuthority ? m_ClientNetworkManagers[0] : m_ServerNetworkManager;
             // Spawn this instance as a new player object for the client who already has an assigned player object
             newPlayerNetworkObject.SpawnAsPlayerObject(m_ClientNetworkManagers[0].LocalClientId);
 
@@ -54,6 +57,7 @@ namespace Unity.Netcode.RuntimeTests
     /// Validate that when auto-player spawning but SpawnWithObservers is disabled,
     /// the player instantiated is only spawned on the authority side.
     /// </summary>
+    [TestFixture(HostOrServer.DAHost)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class PlayerSpawnNoObserversTest : NetcodeIntegrationTest
@@ -79,15 +83,40 @@ namespace Unity.Netcode.RuntimeTests
         {
             yield return s_DefaultWaitForTick;
 
-            var playerObjects = m_ServerNetworkManager.SpawnManager.SpawnedObjectsList.Where((c) => c.IsPlayerObject).ToList();
-
-            // Make sure clients did not spawn their player object on any of the clients including the owner.
-            foreach (var client in m_ClientNetworkManagers)
+            if (!m_DistributedAuthority)
             {
-                foreach (var playerObject in playerObjects)
+                // Make sure clients did not spawn their player object on any of the clients including the owner.
+                foreach (var client in m_ClientNetworkManagers)
                 {
-                    Assert.IsFalse(client.SpawnManager.SpawnedObjects.ContainsKey(playerObject.NetworkObjectId), $"Client-{client.LocalClientId} spawned player object for Client-{playerObject.NetworkObjectId}!");
+                    foreach (var playerObject in m_ServerNetworkManager.SpawnManager.PlayerObjects)
+                    {
+                        Assert.IsFalse(client.SpawnManager.SpawnedObjects.ContainsKey(playerObject.NetworkObjectId), $"Client-{client.LocalClientId} spawned player object for Client-{playerObject.NetworkObjectId}!");
+                    }
                 }
+            }
+            else
+            {
+                // For distributed authority, we want to make sure the player object is only spawned on the authority side and all non-authority instances did not spawn it.
+                var playerObjectId = m_ServerNetworkManager.LocalClient.PlayerObject.NetworkObjectId;
+                foreach (var client in m_ClientNetworkManagers)
+                {
+                    Assert.IsFalse(client.SpawnManager.SpawnedObjects.ContainsKey(playerObjectId), $"Client-{client.LocalClientId} spawned player object for Client-{m_ServerNetworkManager.LocalClientId}!");
+                }
+
+                foreach (var clientPlayer in m_ClientNetworkManagers)
+                {
+                    playerObjectId = clientPlayer.LocalClient.PlayerObject.NetworkObjectId;
+                    Assert.IsFalse(m_ServerNetworkManager.SpawnManager.SpawnedObjects.ContainsKey(playerObjectId), $"Client-{m_ServerNetworkManager.LocalClientId} spawned player object for Client-{clientPlayer.LocalClientId}!");
+                    foreach (var client in m_ClientNetworkManagers)
+                    {
+                        if (clientPlayer == client)
+                        {
+                            continue;
+                        }
+                        Assert.IsFalse(client.SpawnManager.SpawnedObjects.ContainsKey(playerObjectId), $"Client-{client.LocalClientId} spawned player object for Client-{clientPlayer.LocalClientId}!");
+                    }
+                }
+
             }
         }
     }
@@ -96,16 +125,14 @@ namespace Unity.Netcode.RuntimeTests
     /// This test validates the player position and rotation is correct
     /// relative to the prefab's initial settings if no changes are applied.
     /// </summary>
+    [TestFixture(HostOrServer.DAHost)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class PlayerSpawnPositionTests : IntegrationTestWithApproximation
     {
         protected override int NumberOfClients => 2;
 
-        public PlayerSpawnPositionTests(HostOrServer hostOrServer)
-        {
-            m_UseHost = hostOrServer == HostOrServer.Host;
-        }
+        public PlayerSpawnPositionTests(HostOrServer hostOrServer) : base(hostOrServer) { }
 
         private Vector3 m_PlayerPosition;
         private Quaternion m_PlayerRotation;

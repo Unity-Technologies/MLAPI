@@ -53,6 +53,11 @@
             "name": "com.unity.transport",
             "expression": "2.0",
             "define": "UTP_TRANSPORT_2_0_ABOVE"
+        },
+        {
+            "name": "com.unity.services.multiplayer",
+            "expression": "0.2.0",
+            "define": "MULTIPLAYER_SERVICES_SDK_INSTALLED"
         }
     ],
     "noEngineReferences": false

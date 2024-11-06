@@ -12,7 +12,7 @@ using static Unity.Netcode.RuntimeTests.UnityTransportTestHelpers;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class UnityTransportTests
+    internal class UnityTransportTests
     {
         // No need to test all reliable delivery methods since they all map to the same pipeline.
         private static readonly NetworkDelivery[] k_DeliveryParameters =

@@ -26,13 +26,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 344161399033526463}
+  serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -2, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2272675266166542847}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!23 &8724994478026131689
 MeshRenderer:
@@ -51,6 +51,9 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -96,6 +99,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d8ad30fca3f9a240bdce16f0166033b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  AuthorityMode: 0
+  UseUnreliableDeltas: 0
   SyncPositionX: 1
   SyncPositionY: 1
   SyncPositionZ: 1
@@ -105,20 +110,22 @@ MonoBehaviour:
   SyncScaleX: 1
   SyncScaleY: 1
   SyncScaleZ: 1
-  UseQuaternionSynchronization: 1
-  UseQuaternionCompression: 1
-  UseHalfFloatPrecision: 1
   PositionThreshold: 0.001
   RotAngleThreshold: 0.001
   ScaleThreshold: 0.001
+  UseQuaternionSynchronization: 1
+  UseQuaternionCompression: 0
+  UseHalfFloatPrecision: 1
   InLocalSpace: 1
-  Interpolate: 1
+  Interpolate: 0
   SlerpPosition: 1
-  IsServerAuthority: 0
   DebugTransform: 0
   LastUpdatedPosition: {x: 0, y: 0, z: 0}
   LastUpdatedScale: {x: 0, y: 0, z: 0}
   LastUpdatedRotation: {x: 0, y: 0, z: 0, w: 0}
+  PushedPosition: {x: 0, y: 0, z: 0}
+  PushedScale: {x: 0, y: 0, z: 0}
+  PushedRotation: {x: 0, y: 0, z: 0, w: 0}
   PreviousUpdatedPosition: {x: 0, y: 0, z: 0}
   PreviousUpdatedScale: {x: 0, y: 0, z: 0}
   PreviousUpdatedRotation: {x: 0, y: 0, z: 0, w: 0}
@@ -155,6 +162,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6307603743893504780}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.5, z: 0}
   m_LocalScale: {x: 2, y: 2, z: 2}
@@ -163,7 +171,6 @@ Transform:
   - {fileID: 5095177694802425565}
   - {fileID: 2272675266166542847}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &6307603743893504769
 MeshFilter:
@@ -190,6 +197,9 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -227,9 +237,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 951099334
+  GlobalObjectIdHash: 441869080
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
 --- !u!114 &3387617782067200397
@@ -274,6 +290,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dfb1af1a9249278438d2daa2877ee2ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  AuthorityMode: 0
+  UseUnreliableDeltas: 0
   SyncPositionX: 1
   SyncPositionY: 1
   SyncPositionZ: 1
@@ -283,20 +301,22 @@ MonoBehaviour:
   SyncScaleX: 1
   SyncScaleY: 1
   SyncScaleZ: 1
-  UseQuaternionSynchronization: 1
-  UseQuaternionCompression: 1
-  UseHalfFloatPrecision: 1
   PositionThreshold: 0.001
   RotAngleThreshold: 0.001
   ScaleThreshold: 0.001
+  UseQuaternionSynchronization: 1
+  UseQuaternionCompression: 0
+  UseHalfFloatPrecision: 1
   InLocalSpace: 0
-  Interpolate: 1
+  Interpolate: 0
   SlerpPosition: 0
-  IsServerAuthority: 0
   DebugTransform: 0
   LastUpdatedPosition: {x: 0, y: 0, z: 0}
   LastUpdatedScale: {x: 0, y: 0, z: 0}
   LastUpdatedRotation: {x: 0, y: 0, z: 0, w: 0}
+  PushedPosition: {x: 0, y: 0, z: 0}
+  PushedScale: {x: 0, y: 0, z: 0}
+  PushedRotation: {x: 0, y: 0, z: 0, w: 0}
   PreviousUpdatedPosition: {x: 0, y: 0, z: 0}
   PreviousUpdatedScale: {x: 0, y: 0, z: 0}
   PreviousUpdatedRotation: {x: 0, y: 0, z: 0, w: 0}
@@ -339,13 +359,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6425543486096047037}
+  serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 2, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6307603743893504768}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!23 &313661067260263792
 MeshRenderer:
@@ -364,6 +384,9 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -409,6 +432,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d8ad30fca3f9a240bdce16f0166033b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  AuthorityMode: 0
+  UseUnreliableDeltas: 0
   SyncPositionX: 1
   SyncPositionY: 1
   SyncPositionZ: 1
@@ -418,20 +443,22 @@ MonoBehaviour:
   SyncScaleX: 1
   SyncScaleY: 1
   SyncScaleZ: 1
-  UseQuaternionSynchronization: 1
-  UseQuaternionCompression: 1
-  UseHalfFloatPrecision: 1
   PositionThreshold: 0.001
   RotAngleThreshold: 0.001
   ScaleThreshold: 0.001
+  UseQuaternionSynchronization: 1
+  UseQuaternionCompression: 0
+  UseHalfFloatPrecision: 1
   InLocalSpace: 1
-  Interpolate: 1
+  Interpolate: 0
   SlerpPosition: 1
-  IsServerAuthority: 0
   DebugTransform: 0
   LastUpdatedPosition: {x: 0, y: 0, z: 0}
   LastUpdatedScale: {x: 0, y: 0, z: 0}
   LastUpdatedRotation: {x: 0, y: 0, z: 0, w: 0}
+  PushedPosition: {x: 0, y: 0, z: 0}
+  PushedScale: {x: 0, y: 0, z: 0}
+  PushedRotation: {x: 0, y: 0, z: 0, w: 0}
   PreviousUpdatedPosition: {x: 0, y: 0, z: 0}
   PreviousUpdatedScale: {x: 0, y: 0, z: 0}
   PreviousUpdatedRotation: {x: 0, y: 0, z: 0, w: 0}
@@ -461,6 +488,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8494372709139388141}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -468,5 +496,4 @@ Transform:
   m_Children:
   - {fileID: 1626890731237231805}
   m_Father: {fileID: 6307603743893504768}
-  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

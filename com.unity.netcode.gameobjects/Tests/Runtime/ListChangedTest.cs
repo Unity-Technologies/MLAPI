@@ -1,16 +1,17 @@
 using System.Collections;
+using NUnit.Framework;
 using Unity.Netcode.TestHelpers.Runtime;
 using UnityEngine;
 using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class NetworkListChangedTestComponent : NetworkBehaviour
+    internal class NetworkListChangedTestComponent : NetworkBehaviour
     {
 
     }
 
-    public class ListChangedObject : NetworkBehaviour
+    internal class ListChangedObject : NetworkBehaviour
     {
         public int ExpectedPreviousValue = 0;
         public int ExpectedValue = 0;
@@ -45,7 +46,9 @@ namespace Unity.Netcode.RuntimeTests
         }
     }
 
-    public class NetworkListChangedTests : NetcodeIntegrationTest
+    [TestFixture(NetworkTopologyTypes.DistributedAuthority)]
+    [TestFixture(NetworkTopologyTypes.ClientServer)]
+    internal class NetworkListChangedTests : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 2;
 
@@ -53,6 +56,8 @@ namespace Unity.Netcode.RuntimeTests
         private GameObject m_PrefabToSpawn;
 
         private NetworkObject m_NetSpawnedObject1;
+
+        public NetworkListChangedTests(NetworkTopologyTypes networkTopologyType) : base(networkTopologyType) { }
 
         protected override void OnServerAndClientsCreated()
         {

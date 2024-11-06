@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39a16938ffb5cd846a9f6df7a686a9c4, type: 3}
   m_Name: DualTriggers
   m_EditorClassIdentifier: 
-  SceneToReference: {fileID: 102900000, guid: a2408927b1ca1c74bb359402d44b4c73, type: 3}
+  SceneToReference: {fileID: 102900000, guid: e12df855278120245a8a936a6a52b5bd, type: 3}
   m_IncludedScenes: []
   m_DisplayName: Dual Animation Triggers
   m_ReferencedScenes:

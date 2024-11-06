@@ -21,7 +21,7 @@ namespace Unity.Netcode.RuntimeTests
     /// </summary>
     [TestFixture(HostOrServer.Server)]
     [TestFixture(HostOrServer.Host)]
-    public class PeerDisconnectCallbackTests : NetcodeIntegrationTest
+    internal class PeerDisconnectCallbackTests : NetcodeIntegrationTest
     {
 
         public enum ClientDisconnectType
@@ -133,6 +133,7 @@ namespace Unity.Netcode.RuntimeTests
             }
 
             yield return WaitForConditionOrTimeOut(hooks);
+
             Assert.False(s_GlobalTimeoutHelper.TimedOut);
 
             foreach (var client in m_ClientNetworkManagers)
@@ -144,18 +145,18 @@ namespace Unity.Netcode.RuntimeTests
                 }
                 if (m_UseHost)
                 {
-                    Assert.IsTrue(client.ConnectedClientsIds.Contains(0ul));
+                    Assert.IsTrue(client.ConnectedClientsIds.Contains(0ul), $"[Client-{client.LocalClientId}][Connected ({client.IsConnectedClient})] Still has client identifier 0!");
                 }
 
                 for (var i = 1ul; i < 3ul; ++i)
                 {
                     if (i == disconnectedClient)
                     {
-                        Assert.IsFalse(client.ConnectedClientsIds.Contains(i));
+                        Assert.IsFalse(client.ConnectedClientsIds.Contains(i), $"[Client-{client.LocalClientId}][Connected ({client.IsConnectedClient})] Still has client identifier {i}!");
                     }
                     else
                     {
-                        Assert.IsTrue(client.ConnectedClientsIds.Contains(i));
+                        Assert.IsTrue(client.ConnectedClientsIds.Contains(i), $"[Client-{client.LocalClientId}][Connected ({client.IsConnectedClient})] Still has client identifier {i}!");
                     }
                 }
             }

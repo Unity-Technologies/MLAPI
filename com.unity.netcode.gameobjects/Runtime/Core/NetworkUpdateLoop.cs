@@ -75,12 +75,24 @@ namespace Unity.Netcode
         private static Dictionary<NetworkUpdateStage, INetworkUpdateSystem[]> s_UpdateSystem_Arrays;
         private const int k_UpdateSystem_InitialArrayCapacity = 1024;
 
+        private static NetworkUpdateStage[] _CACHED_ENUM = null;
+
+        public static NetworkUpdateStage[] GetNetworkUpdateStageEnumValues()
+        {
+            if (_CACHED_ENUM == null)
+            {
+                _CACHED_ENUM = (NetworkUpdateStage[])Enum.GetValues(typeof(NetworkUpdateStage));
+            }
+
+            return _CACHED_ENUM;
+        }
+
         static NetworkUpdateLoop()
         {
             s_UpdateSystem_Sets = new Dictionary<NetworkUpdateStage, HashSet<INetworkUpdateSystem>>();
             s_UpdateSystem_Arrays = new Dictionary<NetworkUpdateStage, INetworkUpdateSystem[]>();
 
-            foreach (NetworkUpdateStage updateStage in Enum.GetValues(typeof(NetworkUpdateStage)))
+            foreach (NetworkUpdateStage updateStage in GetNetworkUpdateStageEnumValues())
             {
                 s_UpdateSystem_Sets.Add(updateStage, new HashSet<INetworkUpdateSystem>());
                 s_UpdateSystem_Arrays.Add(updateStage, new INetworkUpdateSystem[k_UpdateSystem_InitialArrayCapacity]);
@@ -93,7 +105,7 @@ namespace Unity.Netcode
         /// <param name="updateSystem">The <see cref="INetworkUpdateSystem"/> implementation to register for all network updates</param>
         public static void RegisterAllNetworkUpdates(this INetworkUpdateSystem updateSystem)
         {
-            foreach (NetworkUpdateStage updateStage in Enum.GetValues(typeof(NetworkUpdateStage)))
+            foreach (NetworkUpdateStage updateStage in GetNetworkUpdateStageEnumValues())
             {
                 RegisterNetworkUpdate(updateSystem, updateStage);
             }
@@ -137,7 +149,7 @@ namespace Unity.Netcode
         /// <param name="updateSystem">The <see cref="INetworkUpdateSystem"/> implementation to deregister from all network updates</param>
         public static void UnregisterAllNetworkUpdates(this INetworkUpdateSystem updateSystem)
         {
-            foreach (NetworkUpdateStage updateStage in Enum.GetValues(typeof(NetworkUpdateStage)))
+            foreach (NetworkUpdateStage updateStage in GetNetworkUpdateStageEnumValues())
             {
                 UnregisterNetworkUpdate(updateSystem, updateStage);
             }

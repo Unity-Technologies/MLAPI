@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class EmbeddedManagedNetworkSerializableType : INetworkSerializable
+    internal class EmbeddedManagedNetworkSerializableType : INetworkSerializable
     {
         public int Int;
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -14,7 +14,7 @@ namespace Unity.Netcode.RuntimeTests
             serializer.SerializeValue(ref Int);
         }
     }
-    public class ManagedNetworkSerializableType : INetworkSerializable, IEquatable<ManagedNetworkSerializableType>
+    internal class ManagedNetworkSerializableType : INetworkSerializable, IEquatable<ManagedNetworkSerializableType>
     {
         public string Str = "";
         public int[] Ints = Array.Empty<int>();
@@ -104,7 +104,7 @@ namespace Unity.Netcode.RuntimeTests
             return 0;
         }
     }
-    public struct UnmanagedNetworkSerializableType : INetworkSerializable, IEquatable<UnmanagedNetworkSerializableType>
+    internal struct UnmanagedNetworkSerializableType : INetworkSerializable, IEquatable<UnmanagedNetworkSerializableType>
     {
         public FixedString32Bytes Str;
         public int Int;
@@ -143,7 +143,7 @@ namespace Unity.Netcode.RuntimeTests
     }
 
 
-    public struct UnmanagedTemplateNetworkSerializableType<T> : INetworkSerializable where T : unmanaged, INetworkSerializable
+    internal struct UnmanagedTemplateNetworkSerializableType<T> : INetworkSerializable where T : unmanaged, INetworkSerializable
     {
         public T Value;
 
@@ -153,7 +153,7 @@ namespace Unity.Netcode.RuntimeTests
         }
     }
 
-    public struct ManagedTemplateNetworkSerializableType<T> : INetworkSerializable where T : class, INetworkSerializable, new()
+    internal struct ManagedTemplateNetworkSerializableType<T> : INetworkSerializable where T : class, INetworkSerializable, new()
     {
         public T Value;
 

@@ -1,16 +1,15 @@
 using System;
 using System.Collections.Generic;
-using TestProject.ManualTests;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-namespace TestProject.RuntimeTests
+namespace TestProject.ManualTests
 {
     public class InSceneParentChildHandler : NetworkBehaviour
     {
-        public static InSceneParentChildHandler ServerRootParent;
+        public static InSceneParentChildHandler AuthorityRootParent;
         public static bool EnableVerboseDebug = true;
         public static bool AddNetworkTransform;
         public static bool WorldPositionStays;
@@ -38,13 +37,13 @@ namespace TestProject.RuntimeTests
 
         private NetworkTransform m_NetworkTransform;
 
-        public static Dictionary<ulong, InSceneParentChildHandler> ServerRelativeInstances = new Dictionary<ulong, InSceneParentChildHandler>();
+        public static Dictionary<ulong, InSceneParentChildHandler> AuthorityRelativeInstances = new Dictionary<ulong, InSceneParentChildHandler>();
         public static Dictionary<ulong, Dictionary<ulong, InSceneParentChildHandler>> ClientRelativeInstances = new Dictionary<ulong, Dictionary<ulong, InSceneParentChildHandler>>();
 
         public static void ResetInstancesTracking(bool enableVerboseDebug)
         {
             EnableVerboseDebug = enableVerboseDebug;
-            ServerRelativeInstances.Clear();
+            AuthorityRelativeInstances.Clear();
             ClientRelativeInstances.Clear();
         }
 
@@ -121,9 +120,19 @@ namespace TestProject.RuntimeTests
             }
         }
 
+        /// <summary>
+        /// DANGO-TODO: Run test where we remove the DAHost as the authority and see what breaks (if anything)
+        /// For now, handle checking authority outselves.
+        /// </summary>
+        /// <returns></returns>
+        private bool CheckForAuthority()
+        {
+            return NetworkObject.HasAuthority;
+        }
+
         public void DeparentAllChildren(bool worldPositionStays = true)
         {
-            if (IsRootParent && IsServer)
+            if (IsRootParent && HasAuthority)
             {
                 var lastChild = GetLastChild(transform);
                 if (lastChild != null)
@@ -154,7 +163,7 @@ namespace TestProject.RuntimeTests
 
         public void ReParentAllChildren(bool worldPositionStays = true)
         {
-            if (IsRootParent && IsServer)
+            if (IsRootParent && HasAuthority)
             {
                 ParentChild(m_Child, worldPositionStays);
             }
@@ -162,7 +171,7 @@ namespace TestProject.RuntimeTests
 
         public override void OnNetworkSpawn()
         {
-            if (IsServer)
+            if (HasAuthority)
             {
                 LogMessage($"[{NetworkObjectId}] Pos = ({m_TargetLocalPosition}) | Rotation ({m_TargetLocalRotation}) | Scale ({m_TargetLocalScale})");
                 if (AddNetworkTransform)
@@ -172,9 +181,13 @@ namespace TestProject.RuntimeTests
                 }
                 if (IsRootParent)
                 {
-                    ServerRootParent = this;
+                    AuthorityRootParent = this;
                 }
-                ServerRelativeInstances.Add(NetworkObjectId, this);
+
+                if (!AuthorityRelativeInstances.ContainsKey(NetworkObjectId))
+                {
+                    AuthorityRelativeInstances.Add(NetworkObjectId, this);
+                }
             }
             else
             {
@@ -193,7 +206,7 @@ namespace TestProject.RuntimeTests
 
         public void DeparentSetValuesAndReparent()
         {
-            if (IsServer && IsRootParent)
+            if (IsRootParent && HasAuthority)
             {
                 // Back to back de-parenting and re-parenting
                 s_GenerateRandomValues = true;
@@ -209,7 +222,7 @@ namespace TestProject.RuntimeTests
         /// </summary>
         public override void OnNetworkObjectParentChanged(NetworkObject parentNetworkObject)
         {
-            if (!IsServer || !IsSpawned || parentNetworkObject != null || !s_GenerateRandomValues)
+            if (!HasAuthority || !IsSpawned || parentNetworkObject != null || !s_GenerateRandomValues)
             {
                 return;
             }
@@ -225,10 +238,11 @@ namespace TestProject.RuntimeTests
             base.OnNetworkObjectParentChanged(parentNetworkObject);
         }
 
+        private bool m_RequestSent;
 
         private void LateUpdate()
         {
-            if (!IsSpawned || !IsServer || NetworkManagerTestDisabler.IsIntegrationTest)
+            if (!IsSpawned || !HasAuthority || NetworkManagerTestDisabler.IsIntegrationTest)
             {
                 return;
             }
@@ -250,6 +264,249 @@ namespace TestProject.RuntimeTests
             {
                 RootParent.DeparentSetValuesAndReparent();
             }
+
+
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                m_RequestSent = true;
+                RequestTransformInfoRpc();
+            }
+        }
+
+        public void CheckChildren()
+        {
+            if (!NetworkObject.HasAuthority || m_RequestSent || AuthorityRootParent != this)
+            {
+                return;
+            }
+
+            m_RequestSent = true;
+            RequestTransformInfoRpc();
+        }
+
+        [Rpc(SendTo.NotOwner)]
+        private void RequestTransformInfoRpc()
+        {
+            var nonAuthInstance = ClientRelativeInstances[NetworkManager.LocalClientId];
+            var childrenInfo = new ChildrenInfo()
+            {
+                Children = new List<ChildInfo>()
+            };
+
+            foreach (var instance in nonAuthInstance)
+            {
+                var childInfo = new ChildInfo()
+                {
+                    InfoType = ChildInfoType.AuthRelative,
+                    Id = instance.Key,
+                    Position = instance.Value.transform.position,
+                    Rotation = instance.Value.transform.eulerAngles,
+                    Scale = instance.Value.transform.localScale,
+                };
+                childrenInfo.Children.Add(childInfo);
+            }
+
+            var autoSync = ParentingAutoSyncManager.ClientInstances[NetworkManager.LocalClientId];
+            var count = 0;
+            foreach (var instance in autoSync.NetworkObjectAutoSyncOffTransforms)
+            {
+                var childInfo = new ChildInfo()
+                {
+                    InfoType = ChildInfoType.AutoSyncOff,
+                    Id = (ulong)count,
+                    Position = instance.position,
+                    Rotation = instance.eulerAngles,
+                    Scale = instance.localScale,
+                };
+                count++;
+                childrenInfo.Children.Add(childInfo);
+            }
+            count = 0;
+            foreach (var instance in autoSync.NetworkObjectAutoSyncOnTransforms)
+            {
+                var childInfo = new ChildInfo()
+                {
+                    InfoType = ChildInfoType.AutoSyncOn,
+                    Id = (ulong)count,
+                    Position = instance.position,
+                    Rotation = instance.eulerAngles,
+                    Scale = instance.localScale,
+                };
+                count++;
+                childrenInfo.Children.Add(childInfo);
+            }
+            count = 0;
+            foreach (var instance in autoSync.GameObjectAutoSyncOffTransforms)
+            {
+                var childInfo = new ChildInfo()
+                {
+                    InfoType = ChildInfoType.AutoSyncGameObjectOff,
+                    Id = (ulong)count,
+                    Position = instance.position,
+                    Rotation = instance.eulerAngles,
+                    Scale = instance.localScale,
+                };
+                count++;
+                childrenInfo.Children.Add(childInfo);
+            }
+            count = 0;
+            foreach (var instance in autoSync.GameObjectAutoSyncOnTransforms)
+            {
+                var childInfo = new ChildInfo()
+                {
+                    InfoType = ChildInfoType.AutoSyncGameObjectOn,
+                    Id = (ulong)count,
+                    Position = instance.position,
+                    Rotation = instance.eulerAngles,
+                    Scale = instance.localScale,
+                };
+                count++;
+                childrenInfo.Children.Add(childInfo);
+            }
+            SendTransformInfoRpc(childrenInfo);
+        }
+
+        [Rpc(SendTo.Owner)]
+        private void SendTransformInfoRpc(ChildrenInfo childrenInfo)
+        {
+            m_RequestSent = false;
+            var errorCount = 0;
+            var autoSync = ParentingAutoSyncManager.ServerInstance;
+            var position = Vector3.zero;
+            var rotation = Vector3.zero;
+            var scale = Vector3.zero;
+            var instanceName = "";
+            foreach (var childInfo in childrenInfo.Children)
+            {
+                switch (childInfo.InfoType)
+                {
+                    case ChildInfoType.AuthRelative:
+                        {
+                            var instance = AuthorityRelativeInstances[childInfo.Id];
+                            instanceName = instance.name;
+                            position = instance.transform.position;
+                            rotation = instance.transform.eulerAngles;
+                            scale = instance.transform.localScale;
+                            break;
+                        }
+                    case ChildInfoType.AutoSyncOff:
+                        {
+                            instanceName = autoSync.NetworkObjectAutoSyncOffTransforms[(int)childInfo.Id].name;
+                            position = autoSync.NetworkObjectAutoSyncOffTransforms[(int)childInfo.Id].position;
+                            rotation = autoSync.NetworkObjectAutoSyncOffTransforms[(int)childInfo.Id].eulerAngles;
+                            scale = autoSync.NetworkObjectAutoSyncOffTransforms[(int)childInfo.Id].localScale;
+                            break;
+                        }
+                    case ChildInfoType.AutoSyncOn:
+                        {
+                            instanceName = autoSync.NetworkObjectAutoSyncOnTransforms[(int)childInfo.Id].name;
+                            position = autoSync.NetworkObjectAutoSyncOnTransforms[(int)childInfo.Id].position;
+                            rotation = autoSync.NetworkObjectAutoSyncOnTransforms[(int)childInfo.Id].eulerAngles;
+                            scale = autoSync.NetworkObjectAutoSyncOnTransforms[(int)childInfo.Id].localScale;
+                            break;
+                        }
+                    case ChildInfoType.AutoSyncGameObjectOff:
+                        {
+                            instanceName = autoSync.GameObjectAutoSyncOffTransforms[(int)childInfo.Id].name;
+                            position = autoSync.GameObjectAutoSyncOffTransforms[(int)childInfo.Id].position;
+                            rotation = autoSync.GameObjectAutoSyncOffTransforms[(int)childInfo.Id].eulerAngles;
+                            scale = autoSync.GameObjectAutoSyncOffTransforms[(int)childInfo.Id].localScale;
+                            break;
+                        }
+                    case ChildInfoType.AutoSyncGameObjectOn:
+                        {
+                            instanceName = autoSync.GameObjectAutoSyncOnTransforms[(int)childInfo.Id].name;
+                            position = autoSync.GameObjectAutoSyncOnTransforms[(int)childInfo.Id].position;
+                            rotation = autoSync.GameObjectAutoSyncOnTransforms[(int)childInfo.Id].eulerAngles;
+                            scale = autoSync.GameObjectAutoSyncOnTransforms[(int)childInfo.Id].localScale;
+                            break;
+                        }
+                }
+
+                if (!Approximately(position, childInfo.Position))
+                {
+                    Debug.LogWarning($"[{childInfo.InfoType}][{instanceName}][Position Mismatch] Auth: {position} | NonAuth: {childInfo.Position}");
+                    errorCount++;
+                }
+                if (!Approximately(rotation, childInfo.Rotation))
+                {
+                    Debug.LogWarning($"[{childInfo.InfoType}][{instanceName}][Rotation Mismatch] Auth: {rotation} | NonAuth: {childInfo.Rotation}");
+                    errorCount++;
+                }
+                if (!Approximately(scale, childInfo.Scale))
+                {
+                    Debug.LogWarning($"[{childInfo.InfoType}][{instanceName}][Scale Mismatch] Auth: {scale} | NonAuth: {childInfo.Scale}");
+                    errorCount++;
+                }
+            }
+
+            Debug.Log($"Finished checking children with ({errorCount}) mismatch errors.");
+        }
+
+        protected bool Approximately(Vector3 a, Vector3 b)
+        {
+            var deltaVariance = 0.0125f;
+            return Math.Round(Mathf.Abs(a.x - b.x), 2) <= deltaVariance &&
+                Math.Round(Mathf.Abs(a.y - b.y), 2) <= deltaVariance &&
+                Math.Round(Mathf.Abs(a.z - b.z), 2) <= deltaVariance;
+        }
+    }
+
+    public struct ChildrenInfo : INetworkSerializable
+    {
+        public List<ChildInfo> Children;
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            var count = 0;
+            if (serializer.IsWriter)
+            {
+                count = Children.Count;
+            }
+            serializer.SerializeValue(ref count);
+            if (serializer.IsReader)
+            {
+                Children = new List<ChildInfo>(count);
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                var childInfo = new ChildInfo();
+                if (serializer.IsWriter)
+                {
+                    childInfo = Children[i];
+                }
+                serializer.SerializeValue(ref childInfo);
+                if (serializer.IsReader)
+                {
+                    Children.Add(childInfo);
+                }
+            }
+        }
+    }
+
+    public enum ChildInfoType
+    {
+        AuthRelative,
+        AutoSyncOff,
+        AutoSyncOn,
+        AutoSyncGameObjectOff,
+        AutoSyncGameObjectOn,
+    }
+
+    public struct ChildInfo : INetworkSerializable
+    {
+        public ChildInfoType InfoType;
+        public ulong Id;
+        public Vector3 Position;
+        public Vector3 Rotation;
+        public Vector3 Scale;
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            serializer.SerializeValue(ref InfoType);
+            serializer.SerializeValue(ref Id);
+            serializer.SerializeValue(ref Position);
+            serializer.SerializeValue(ref Rotation);
+            serializer.SerializeValue(ref Scale);
         }
     }
 }

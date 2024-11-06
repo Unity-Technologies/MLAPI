@@ -6,7 +6,9 @@
         "Unity.Multiplayer.MetricTypes",
         "Unity.Multiplayer.NetStats",
         "Unity.Multiplayer.Tools.MetricTypes",
-        "Unity.Multiplayer.Tools.NetStats"
+        "Unity.Multiplayer.Tools.NetStats",
+        "Unity.ResourceManager",
+        "Unity.Addressables"
     ],
     "optionalUnityReferences": [
         "TestAssemblies"

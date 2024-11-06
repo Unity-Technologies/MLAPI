@@ -5,6 +5,7 @@ using NUnit.Framework;
 using Unity.Netcode.TestHelpers.Runtime;
 using UnityEngine;
 using UnityEngine.TestTools;
+
 using Object = UnityEngine.Object;
 
 namespace Unity.Netcode.RuntimeTests
@@ -84,12 +85,11 @@ namespace Unity.Netcode.RuntimeTests
 
             return 0;
         }
-
-        public override void DeferMessage(IDeferredNetworkMessageManager.TriggerType trigger, ulong key, FastBufferReader reader, ref NetworkContext context)
+        public override void DeferMessage(IDeferredNetworkMessageManager.TriggerType trigger, ulong key, FastBufferReader reader, ref NetworkContext context, string messageType)
         {
             OnBeforeDefer?.Invoke(this, key);
             DeferMessageCalled = true;
-            base.DeferMessage(trigger, key, reader, ref context);
+            base.DeferMessage(trigger, key, reader, ref context, messageType);
         }
 
         public override void ProcessTriggers(IDeferredNetworkMessageManager.TriggerType trigger, ulong key)
@@ -116,7 +116,7 @@ namespace Unity.Netcode.RuntimeTests
         }
     }
 
-    public class DeferredMessageTestRpcComponent : NetworkBehaviour
+    internal class DeferredMessageTestRpcComponent : NetworkBehaviour
     {
         public bool ClientRpcCalled;
 
@@ -137,7 +137,7 @@ namespace Unity.Netcode.RuntimeTests
         }
     }
 
-    public class DeferredMessageTestNetworkVariableComponent : NetworkBehaviour
+    internal class DeferredMessageTestNetworkVariableComponent : NetworkBehaviour
     {
         public static readonly List<ulong> ClientInstances = new List<ulong>();
 
@@ -158,7 +158,7 @@ namespace Unity.Netcode.RuntimeTests
         }
     }
 
-    public class DeferredMessageTestRpcAndNetworkVariableComponent : NetworkBehaviour
+    internal class DeferredMessageTestRpcAndNetworkVariableComponent : NetworkBehaviour
     {
         public static readonly List<ulong> ClientInstances = new List<ulong>();
         public bool ClientRpcCalled;
@@ -185,7 +185,7 @@ namespace Unity.Netcode.RuntimeTests
         }
     }
 
-    public class DeferredMessagingTest : NetcodeIntegrationTest
+    internal class DeferredMessagingTest : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 0;
 
@@ -203,6 +203,9 @@ namespace Unity.Netcode.RuntimeTests
 
         protected override void OnInlineSetup()
         {
+            // Revert back to standard deferred message format for tests (for now)
+            DeferredMessageManager.IncludeMessageType = false;
+
             DeferredMessageTestRpcAndNetworkVariableComponent.ClientInstances.Clear();
             DeferredMessageTestRpcComponent.ClientInstances.Clear();
             DeferredMessageTestNetworkVariableComponent.ClientInstances.Clear();
@@ -667,7 +670,7 @@ namespace Unity.Netcode.RuntimeTests
 
             serverObject.GetComponent<NetworkObject>().ChangeOwnership(m_ClientNetworkManagers[0].LocalClientId);
 
-            WaitForAllClientsToReceive<ChangeOwnershipMessage, NetworkVariableDeltaMessage>();
+            WaitForAllClientsToReceive<ChangeOwnershipMessage>();
 
             foreach (var client in m_ClientNetworkManagers)
             {
@@ -675,9 +678,9 @@ namespace Unity.Netcode.RuntimeTests
                 Assert.IsTrue(manager.DeferMessageCalled);
                 Assert.IsFalse(manager.ProcessTriggersCalled);
 
-                Assert.AreEqual(4, manager.DeferredMessageCountTotal());
-                Assert.AreEqual(4, manager.DeferredMessageCountForType(IDeferredNetworkMessageManager.TriggerType.OnSpawn));
-                Assert.AreEqual(4, manager.DeferredMessageCountForKey(IDeferredNetworkMessageManager.TriggerType.OnSpawn, serverObject.GetComponent<NetworkObject>().NetworkObjectId));
+                Assert.AreEqual(3, manager.DeferredMessageCountTotal());
+                Assert.AreEqual(3, manager.DeferredMessageCountForType(IDeferredNetworkMessageManager.TriggerType.OnSpawn));
+                Assert.AreEqual(3, manager.DeferredMessageCountForKey(IDeferredNetworkMessageManager.TriggerType.OnSpawn, serverObject.GetComponent<NetworkObject>().NetworkObjectId));
                 Assert.AreEqual(0, manager.DeferredMessageCountForType(IDeferredNetworkMessageManager.TriggerType.OnAddPrefab));
                 AddPrefabsToClient(client);
             }
@@ -809,7 +812,7 @@ namespace Unity.Netcode.RuntimeTests
 
             serverObject.GetComponent<NetworkObject>().ChangeOwnership(m_ClientNetworkManagers[0].LocalClientId);
 
-            WaitForAllClientsToReceive<ChangeOwnershipMessage, NetworkVariableDeltaMessage>();
+            WaitForAllClientsToReceive<ChangeOwnershipMessage>();
 
             // Validate messages are deferred and pending
             foreach (var client in m_ClientNetworkManagers)
@@ -818,10 +821,10 @@ namespace Unity.Netcode.RuntimeTests
                 Assert.IsTrue(manager.DeferMessageCalled);
                 Assert.IsFalse(manager.ProcessTriggersCalled);
 
-                Assert.AreEqual(5, manager.DeferredMessageCountTotal());
+                Assert.AreEqual(4, manager.DeferredMessageCountTotal());
 
-                Assert.AreEqual(4, manager.DeferredMessageCountForType(IDeferredNetworkMessageManager.TriggerType.OnSpawn));
-                Assert.AreEqual(4, manager.DeferredMessageCountForKey(IDeferredNetworkMessageManager.TriggerType.OnSpawn, serverObject.GetComponent<NetworkObject>().NetworkObjectId));
+                Assert.AreEqual(3, manager.DeferredMessageCountForType(IDeferredNetworkMessageManager.TriggerType.OnSpawn));
+                Assert.AreEqual(3, manager.DeferredMessageCountForKey(IDeferredNetworkMessageManager.TriggerType.OnSpawn, serverObject.GetComponent<NetworkObject>().NetworkObjectId));
                 Assert.AreEqual(1, manager.DeferredMessageCountForType(IDeferredNetworkMessageManager.TriggerType.OnAddPrefab));
                 Assert.AreEqual(1, manager.DeferredMessageCountForKey(IDeferredNetworkMessageManager.TriggerType.OnAddPrefab, serverObject.GetComponent<NetworkObject>().GlobalObjectIdHash));
                 AddPrefabsToClient(client);
@@ -894,7 +897,7 @@ namespace Unity.Netcode.RuntimeTests
 
             foreach (var unused in m_ClientNetworkManagers)
             {
-                LogAssert.Expect(LogType.Warning, $"[Netcode] Deferred messages were received for a trigger of type {IDeferredNetworkMessageManager.TriggerType.OnSpawn} with key {serverObject.GetComponent<NetworkObject>().NetworkObjectId}, but that trigger was not received within within {timeout} second(s).");
+                LogAssert.Expect(LogType.Warning, $"[Netcode] Deferred messages were received for a trigger of type {IDeferredNetworkMessageManager.TriggerType.OnSpawn} associated with id ({serverObject.GetComponent<NetworkObject>().NetworkObjectId}), but the {nameof(NetworkObject)} was not received within the timeout period {timeout} second(s).");
             }
 
             int purgeCount = 0;
@@ -904,7 +907,7 @@ namespace Unity.Netcode.RuntimeTests
                 {
                     ++purgeCount;
                     var elapsed = client.RealTimeProvider.RealTimeSinceStartup - start;
-                    Debug.Log(client.RealTimeProvider.GetType().FullName);
+                    VerboseDebug(client.RealTimeProvider.GetType().FullName);
                     Assert.GreaterOrEqual(elapsed, timeout);
                     Assert.AreEqual(1, manager.DeferredMessageCountTotal());
                     Assert.AreEqual(1, manager.DeferredMessageCountForType(IDeferredNetworkMessageManager.TriggerType.OnSpawn));
@@ -990,7 +993,7 @@ namespace Unity.Netcode.RuntimeTests
 
             foreach (var unused in m_ClientNetworkManagers)
             {
-                LogAssert.Expect(LogType.Warning, $"[Netcode] Deferred messages were received for a trigger of type {IDeferredNetworkMessageManager.TriggerType.OnSpawn} with key {serverObject.GetComponent<NetworkObject>().NetworkObjectId}, but that trigger was not received within within {timeout} second(s).");
+                LogAssert.Expect(LogType.Warning, $"[Netcode] Deferred messages were received for a trigger of type {IDeferredNetworkMessageManager.TriggerType.OnSpawn} associated with id ({serverObject.GetComponent<NetworkObject>().NetworkObjectId}), but the {nameof(NetworkObject)} was not received within the timeout period {timeout} second(s).");
             }
 
             int purgeCount = 0;
@@ -1095,9 +1098,8 @@ namespace Unity.Netcode.RuntimeTests
 
             foreach (var unused in m_ClientNetworkManagers)
             {
-
-                LogAssert.Expect(LogType.Warning, $"[Netcode] Deferred messages were received for a trigger of type {IDeferredNetworkMessageManager.TriggerType.OnSpawn} with key {serverObject.GetComponent<NetworkObject>().NetworkObjectId}, but that trigger was not received within within {timeout} second(s).");
-                LogAssert.Expect(LogType.Warning, $"[Netcode] Deferred messages were received for a trigger of type {IDeferredNetworkMessageManager.TriggerType.OnSpawn} with key {serverObject2.GetComponent<NetworkObject>().NetworkObjectId}, but that trigger was not received within within {timeout} second(s).");
+                LogAssert.Expect(LogType.Warning, $"[Netcode] Deferred messages were received for a trigger of type {IDeferredNetworkMessageManager.TriggerType.OnSpawn} associated with id ({serverObject.GetComponent<NetworkObject>().NetworkObjectId}), but the {nameof(NetworkObject)} was not received within the timeout period {timeout} second(s).");
+                LogAssert.Expect(LogType.Warning, $"[Netcode] Deferred messages were received for a trigger of type {IDeferredNetworkMessageManager.TriggerType.OnSpawn} associated with id ({serverObject2.GetComponent<NetworkObject>().NetworkObjectId}), but the {nameof(NetworkObject)} was not received within the timeout period {timeout} second(s).");
             }
 
             int purgeCount = 0;
@@ -1188,7 +1190,7 @@ namespace Unity.Netcode.RuntimeTests
 
             foreach (var unused in m_ClientNetworkManagers)
             {
-                LogAssert.Expect(LogType.Warning, $"[Netcode] Deferred messages were received for a trigger of type {IDeferredNetworkMessageManager.TriggerType.OnSpawn} with key {serverObject.GetComponent<NetworkObject>().NetworkObjectId}, but that trigger was not received within within {timeout} second(s).");
+                LogAssert.Expect(LogType.Warning, $"[Netcode] Deferred messages were received for a trigger of type {IDeferredNetworkMessageManager.TriggerType.OnSpawn} associated with id ({serverObject.GetComponent<NetworkObject>().NetworkObjectId}), but the {nameof(NetworkObject)} was not received within the timeout period {timeout} second(s).");
             }
 
             int purgeCount = 0;
@@ -1271,7 +1273,11 @@ namespace Unity.Netcode.RuntimeTests
                 Assert.AreEqual(0, manager.DeferredMessageCountForKey(IDeferredNetworkMessageManager.TriggerType.OnSpawn, serverObject2.GetComponent<NetworkObject>().NetworkObjectId));
             }
 
-            serverObject2.GetComponent<NetworkObject>().ChangeOwnership(m_ServerNetworkManager.LocalClientId);
+            // KITTY-TODO: Review this change please:
+            // Changing ownership when the owner specified is already an owner should not send any messages
+            // The original test was changing ownership to the server when the object was spawned with the server being an owner.
+            //serverObject2.GetComponent<NetworkObject>().ChangeOwnership(m_ServerNetworkManager.LocalClientId);
+            serverObject2.GetComponent<NetworkObject>().ChangeOwnership(m_ClientNetworkManagers[1].LocalClientId);
             WaitForAllClientsToReceive<ChangeOwnershipMessage>();
 
             foreach (var client in m_ClientNetworkManagers)
@@ -1285,7 +1291,7 @@ namespace Unity.Netcode.RuntimeTests
 
             foreach (var unused in m_ClientNetworkManagers)
             {
-                LogAssert.Expect(LogType.Warning, $"[Netcode] Deferred messages were received for a trigger of type {IDeferredNetworkMessageManager.TriggerType.OnSpawn} with key {serverObject.GetComponent<NetworkObject>().NetworkObjectId}, but that trigger was not received within within {timeout} second(s).");
+                LogAssert.Expect(LogType.Warning, $"[Netcode] Deferred messages were received for a trigger of type {IDeferredNetworkMessageManager.TriggerType.OnSpawn} associated with id ({serverObject.GetComponent<NetworkObject>().NetworkObjectId}), but the {nameof(NetworkObject)} was not received within the timeout period {timeout} second(s).");
             }
 
             int purgeCount = 0;

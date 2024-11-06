@@ -64,7 +64,7 @@ pull_request_trigger:
           - "develop"
           - "develop-2.0.0"
           - "/release\/.*/"
-          
+
 # Currently, we need to have a trigger to updated badges
 # Only package badges currently exist
 badges_test_trigger:

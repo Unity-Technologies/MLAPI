@@ -10,6 +10,8 @@ using UnityEngine.TestTools;
 
 namespace TestProject.RuntimeTests
 {
+    [TestFixture(NetworkTopologyTypes.DistributedAuthority)]
+    [TestFixture(NetworkTopologyTypes.ClientServer)]
     public class NetworkObjectParentingTests
     {
         private const int k_ClientInstanceCount = 1;
@@ -29,6 +31,12 @@ namespace TestProject.RuntimeTests
 
         private Scene m_InitScene;
         private Scene m_TestScene;
+
+        private NetworkTopologyTypes m_NetworkTopologyType;
+        public NetworkObjectParentingTests(NetworkTopologyTypes networkTopologyType)
+        {
+            m_NetworkTopologyType = networkTopologyType;
+        }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
@@ -62,6 +70,15 @@ namespace TestProject.RuntimeTests
             Assert.That(m_ServerNetworkManager, Is.Not.Null);
             Assert.That(m_ClientNetworkManagers, Is.Not.Null);
             Assert.That(m_ClientNetworkManagers.Length, Is.EqualTo(k_ClientInstanceCount));
+
+            m_ServerNetworkManager.NetworkConfig.NetworkTopology = m_NetworkTopologyType;
+            m_ServerNetworkManager.NetworkConfig.AutoSpawnPlayerPrefabClientSide = m_NetworkTopologyType == NetworkTopologyTypes.DistributedAuthority;
+
+            foreach (var client in m_ClientNetworkManagers)
+            {
+                client.NetworkConfig.NetworkTopology = m_NetworkTopologyType;
+                client.NetworkConfig.AutoSpawnPlayerPrefabClientSide = m_NetworkTopologyType == NetworkTopologyTypes.DistributedAuthority;
+            }
 
             m_Dude_NetObjs = new Transform[setCount];
             m_Dude_LeftArm_NetObjs = new Transform[setCount];

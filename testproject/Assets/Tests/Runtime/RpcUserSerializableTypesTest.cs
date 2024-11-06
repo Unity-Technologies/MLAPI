@@ -47,6 +47,11 @@ namespace TestProject.RuntimeTests
             serializer.SerializeValue(ref Value);
         }
     }
+
+#if NGO_DAMODE
+    [TestFixture(NetworkTopologyTypes.DistributedAuthority)]
+    [TestFixture(NetworkTopologyTypes.ClientServer)]
+#endif 
     public class RpcUserSerializableTypesTest : NetcodeIntegrationTest
     {
         private UserSerializableClass m_UserSerializableClass;
@@ -78,6 +83,10 @@ namespace TestProject.RuntimeTests
 
         protected override int NumberOfClients => 1;
 
+#if NGO_DAMODE
+        public RpcUserSerializableTypesTest(NetworkTopologyTypes networkTopologyType) : base(networkTopologyType) { }
+#endif
+
         protected override NetworkManagerInstatiationMode OnSetIntegrationTestMode()
         {
             return NetworkManagerInstatiationMode.DoNotCreate;
@@ -103,15 +112,32 @@ namespace TestProject.RuntimeTests
             yield return StartServerAndClients();
 
             // [Client-Side] We only need to get the client side Player's NetworkObject so we can grab that instance of the TestSerializationComponent
-            var clientClientPlayerResult = new NetcodeIntegrationTestHelpers.ResultWrapper<NetworkObject>();
-            yield return NetcodeIntegrationTestHelpers.GetNetworkObjectByRepresentation((x => x.IsPlayerObject && x.OwnerClientId == m_ClientNetworkManagers[0].LocalClientId), m_ClientNetworkManagers[0], clientClientPlayerResult);
-            var clientSideNetworkBehaviourClass = clientClientPlayerResult.Result.gameObject.GetComponent<TestSerializationComponent>();
-            clientSideNetworkBehaviourClass.OnSerializableClassUpdated = OnClientReceivedUserSerializableClassUpdated;
-            clientSideNetworkBehaviourClass.OnSerializableStructUpdated = OnClientReceivedUserSerializableStructUpdated;
-            clientSideNetworkBehaviourClass.OnTemplateStructUpdated = OnClientReceivedUserSerializableTemplateStructUpdated;
-            clientSideNetworkBehaviourClass.OnNetworkSerializableTemplateStructUpdated = OnClientReceivedUserSerializableNetworkSerializableTemplateStructUpdated; clientSideNetworkBehaviourClass.OnTemplateStructsUpdated = OnClientReceivedUserSerializableTemplateStructsUpdated;
-            clientSideNetworkBehaviourClass.OnNetworkSerializableTemplateStructsUpdated = OnClientReceivedUserSerializableNetworkSerializableTemplateStructsUpdated;
+            // Use the client's instance of the 
+            var targetContext = m_ClientNetworkManagers[0];
+#if NGO_DAMODE
+            // When in distributed authority mode:
+            // Owner Instances
+            // - Can send ClientRpcs
+            // - Receive ServerRpcs and ClientRpcs
+            // Non-Owner Instances
+            // - Can send ServerRpcs
+            // - Can receive ClientRpcs
+            if (m_DistributedAuthority)
+            {
+                // Use the server instance of the client's player
+                targetContext = m_ServerNetworkManager;
+            }
+#endif
+            var clientContextPlayerResult = new NetcodeIntegrationTestHelpers.ResultWrapper<NetworkObject>();
+            yield return NetcodeIntegrationTestHelpers.GetNetworkObjectByRepresentation((x => x.IsPlayerObject && x.OwnerClientId == m_ClientNetworkManagers[0].LocalClientId), targetContext, clientContextPlayerResult);
 
+            var clientContextNetworkBehaviourClass = clientContextPlayerResult.Result.gameObject.GetComponent<TestSerializationComponent>();
+
+            clientContextNetworkBehaviourClass.OnSerializableClassUpdated = OnClientReceivedUserSerializableClassUpdated;
+            clientContextNetworkBehaviourClass.OnSerializableStructUpdated = OnClientReceivedUserSerializableStructUpdated;
+            clientContextNetworkBehaviourClass.OnTemplateStructUpdated = OnClientReceivedUserSerializableTemplateStructUpdated;
+            clientContextNetworkBehaviourClass.OnNetworkSerializableTemplateStructUpdated = OnClientReceivedUserSerializableNetworkSerializableTemplateStructUpdated; clientContextNetworkBehaviourClass.OnTemplateStructsUpdated = OnClientReceivedUserSerializableTemplateStructsUpdated;
+            clientContextNetworkBehaviourClass.OnNetworkSerializableTemplateStructsUpdated = OnClientReceivedUserSerializableNetworkSerializableTemplateStructsUpdated;
 
             var userSerializableClass = new UserSerializableClass();
             for (int i = 0; i < 32; i++)
@@ -140,12 +166,12 @@ namespace TestProject.RuntimeTests
             var networkSerializableT2vals = new[] { networkSerializableT2val };
             var enumVals = new[] { enumVal };
 
-            clientSideNetworkBehaviourClass.ClientStartTest(userSerializableClass);
-            clientSideNetworkBehaviourClass.ClientStartTest(userSerializableStruct);
-            clientSideNetworkBehaviourClass.ClientStartTest(t1val, t2val, enumVal);
-            clientSideNetworkBehaviourClass.ClientStartTest(networkSerializableT1val, networkSerializableT2val);
-            clientSideNetworkBehaviourClass.ClientStartTest(t1vals, t2vals, enumVals);
-            clientSideNetworkBehaviourClass.ClientStartTest(networkSerializableT1vals, networkSerializableT2vals);
+            clientContextNetworkBehaviourClass.ClientStartTest(userSerializableClass);
+            clientContextNetworkBehaviourClass.ClientStartTest(userSerializableStruct);
+            clientContextNetworkBehaviourClass.ClientStartTest(t1val, t2val, enumVal);
+            clientContextNetworkBehaviourClass.ClientStartTest(networkSerializableT1val, networkSerializableT2val);
+            clientContextNetworkBehaviourClass.ClientStartTest(t1vals, t2vals, enumVals);
+            clientContextNetworkBehaviourClass.ClientStartTest(networkSerializableT1vals, networkSerializableT2vals);
 
             // Wait until the test has finished or we time out
             var timeOutPeriod = Time.realtimeSinceStartup + 5;
@@ -313,11 +339,31 @@ namespace TestProject.RuntimeTests
                                  serverIntListCalled && serverStrListCalled;
             };
 
-            clientSideNetworkBehaviourClass.SendMyObjectServerRpc(obj);
-            clientSideNetworkBehaviourClass.SendMySharedObjectReferencedByIdServerRpc(obj2);
-            clientSideNetworkBehaviourClass.SendMyObjectPassedWithThisRefServerRpc(obj3);
-            clientSideNetworkBehaviourClass.SendIntListServerRpc(intList);
-            clientSideNetworkBehaviourClass.SendStringListServerRpc(strList);
+#if NGO_DAMODE
+            // When in distributed authority mode:
+            // Owner Instances
+            // - Can send ClientRpcs
+            // - Receive ServerRpcs and ClientRpcs
+            // Non-Owner Instances
+            // - Can send ServerRpcs
+            // - Can receive ClientRpcs
+            if (m_DistributedAuthority)
+            {
+                serverSideNetworkBehaviourClass.SendMyObjectOwnerRpc(obj);
+                serverSideNetworkBehaviourClass.SendMySharedObjectReferencedByIdOwnerRpc(obj2);
+                serverSideNetworkBehaviourClass.SendMyObjectPassedWithThisRefOwnerRpc(obj3);
+                serverSideNetworkBehaviourClass.SendIntListOwnerRpc(intList);
+                serverSideNetworkBehaviourClass.SendStringListOwnerRpc(strList);
+            }
+            else
+#endif
+            {
+                clientSideNetworkBehaviourClass.SendMyObjectServerRpc(obj);
+                clientSideNetworkBehaviourClass.SendMySharedObjectReferencedByIdServerRpc(obj2);
+                clientSideNetworkBehaviourClass.SendMyObjectPassedWithThisRefServerRpc(obj3);
+                clientSideNetworkBehaviourClass.SendIntListServerRpc(intList);
+                clientSideNetworkBehaviourClass.SendStringListServerRpc(strList);
+            }
 
             // Wait until the test has finished or we time out
             var timeOutPeriod = Time.realtimeSinceStartup + 5;
@@ -487,11 +533,31 @@ namespace TestProject.RuntimeTests
                                  serverIntListCalled && serverStrListCalled;
             };
 
-            clientSideNetworkBehaviourClass.SendMyObjectServerRpc(objs);
-            clientSideNetworkBehaviourClass.SendMySharedObjectReferencedByIdServerRpc(objs2);
-            clientSideNetworkBehaviourClass.SendMyObjectPassedWithThisRefServerRpc(objs3);
-            clientSideNetworkBehaviourClass.SendIntListServerRpc(intList);
-            clientSideNetworkBehaviourClass.SendStringListServerRpc(strList);
+#if NGO_DAMODE
+            // When in distributed authority mode:
+            // Owner Instances
+            // - Can send ClientRpcs
+            // - Receive ServerRpcs and ClientRpcs
+            // Non-Owner Instances
+            // - Can send ServerRpcs
+            // - Can receive ClientRpcs
+            if (m_DistributedAuthority)
+            {
+                serverSideNetworkBehaviourClass.SendMyObjectOwnerRpc(objs);
+                serverSideNetworkBehaviourClass.SendMySharedObjectReferencedByIdOwnerRpc(objs2);
+                serverSideNetworkBehaviourClass.SendMyObjectPassedWithThisRefOwnerRpc(objs3);
+                serverSideNetworkBehaviourClass.SendIntListOwnerRpc(intList);
+                serverSideNetworkBehaviourClass.SendStringListOwnerRpc(strList);
+            }
+            else
+#endif
+            {
+                clientSideNetworkBehaviourClass.SendMyObjectServerRpc(objs);
+                clientSideNetworkBehaviourClass.SendMySharedObjectReferencedByIdServerRpc(objs2);
+                clientSideNetworkBehaviourClass.SendMyObjectPassedWithThisRefServerRpc(objs3);
+                clientSideNetworkBehaviourClass.SendIntListServerRpc(intList);
+                clientSideNetworkBehaviourClass.SendStringListServerRpc(strList);
+            }
 
             // Wait until the test has finished or we time out
             var timeOutPeriod = Time.realtimeSinceStartup + 5;
@@ -630,15 +696,36 @@ namespace TestProject.RuntimeTests
             var serverClientPlayerResult = new NetcodeIntegrationTestHelpers.ResultWrapper<NetworkObject>();
             yield return NetcodeIntegrationTestHelpers.GetNetworkObjectByRepresentation((x => x.IsPlayerObject && x.OwnerClientId == m_ClientNetworkManagers[0].LocalClientId), m_ServerNetworkManager, serverClientPlayerResult);
             var serverSideNetworkBehaviourClass = serverClientPlayerResult.Result.gameObject.GetComponent<TestCustomTypesArrayComponent>();
-            serverSideNetworkBehaviourClass.OnSerializableClassesUpdatedServerRpc = OnServerReceivedUserSerializableClassesUpdated;
-            serverSideNetworkBehaviourClass.OnSerializableStructsUpdatedServerRpc = OnServerReceivedUserSerializableStructsUpdated;
+
 
             // [Client-Side] Get the client side Player's NetworkObject so we can grab that instance of the TestCustomTypesArrayComponent
             var clientClientPlayerResult = new NetcodeIntegrationTestHelpers.ResultWrapper<NetworkObject>();
             yield return NetcodeIntegrationTestHelpers.GetNetworkObjectByRepresentation((x => x.IsPlayerObject && x.OwnerClientId == m_ClientNetworkManagers[0].LocalClientId), m_ClientNetworkManagers[0], clientClientPlayerResult);
             var clientSideNetworkBehaviourClass = clientClientPlayerResult.Result.gameObject.GetComponent<TestCustomTypesArrayComponent>();
-            clientSideNetworkBehaviourClass.OnSerializableClassesUpdatedClientRpc = OnClientReceivedUserSerializableClassesUpdated;
-            clientSideNetworkBehaviourClass.OnSerializableStructsUpdatedClientRpc = OnClientReceivedUserSerializableStructsUpdated;
+
+#if NGO_DAMODE
+            // When in distributed authority mode:
+            // Owner Instances
+            // - Can send ClientRpcs
+            // - Receive ServerRpcs and ClientRpcs
+            // Non-Owner Instances
+            // - Can send ServerRpcs
+            // - Can receive ClientRpcs
+            if (m_DistributedAuthority)
+            {
+                clientSideNetworkBehaviourClass.OnSerializableClassesUpdatedServerRpc = OnServerReceivedUserSerializableClassesUpdated;
+                clientSideNetworkBehaviourClass.OnSerializableStructsUpdatedServerRpc = OnServerReceivedUserSerializableStructsUpdated;
+                serverSideNetworkBehaviourClass.OnSerializableClassesUpdatedClientRpc = OnClientReceivedUserSerializableClassesUpdated;
+                serverSideNetworkBehaviourClass.OnSerializableStructsUpdatedClientRpc = OnClientReceivedUserSerializableStructsUpdated;
+            }
+            else
+#endif
+            {
+                serverSideNetworkBehaviourClass.OnSerializableClassesUpdatedServerRpc = OnServerReceivedUserSerializableClassesUpdated;
+                serverSideNetworkBehaviourClass.OnSerializableStructsUpdatedServerRpc = OnServerReceivedUserSerializableStructsUpdated;
+                clientSideNetworkBehaviourClass.OnSerializableClassesUpdatedClientRpc = OnClientReceivedUserSerializableClassesUpdated;
+                clientSideNetworkBehaviourClass.OnSerializableStructsUpdatedClientRpc = OnClientReceivedUserSerializableStructsUpdated;
+            }
 
             m_UserSerializableClassArray = new List<UserSerializableClass>();
             m_UserSerializableStructArray = new List<UserSerializableStruct>();
@@ -662,14 +749,47 @@ namespace TestProject.RuntimeTests
                     };
                     m_UserSerializableStructArray.Add(userSerializableStruct);
                 }
-
-                clientSideNetworkBehaviourClass.ClientStartTest(m_UserSerializableClassArray.ToArray());
-                clientSideNetworkBehaviourClass.ClientStartStructTest(m_UserSerializableStructArray.ToArray());
+#if NGO_DAMODE
+                // When in distributed authority mode:
+                // Owner Instances
+                // - Can send ClientRpcs
+                // - Receive ServerRpcs and ClientRpcs
+                // Non-Owner Instances
+                // - Can send ServerRpcs
+                // - Can receive ClientRpcs
+                if (m_DistributedAuthority)
+                {
+                    serverSideNetworkBehaviourClass.ClientStartTest(m_UserSerializableClassArray.ToArray());
+                    serverSideNetworkBehaviourClass.ClientStartStructTest(m_UserSerializableStructArray.ToArray());
+                }
+                else
+#endif
+                {
+                    clientSideNetworkBehaviourClass.ClientStartTest(m_UserSerializableClassArray.ToArray());
+                    clientSideNetworkBehaviourClass.ClientStartStructTest(m_UserSerializableStructArray.ToArray());
+                }
             }
             else
             {
-                clientSideNetworkBehaviourClass.ClientStartTest(null);
-                clientSideNetworkBehaviourClass.ClientStartStructTest(null);
+#if NGO_DAMODE
+                // When in distributed authority mode:
+                // Owner Instances
+                // - Can send ClientRpcs
+                // - Receive ServerRpcs and ClientRpcs
+                // Non-Owner Instances
+                // - Can send ServerRpcs
+                // - Can receive ClientRpcs
+                if (m_DistributedAuthority)
+                {
+                    serverSideNetworkBehaviourClass.ClientStartTest(null);
+                    serverSideNetworkBehaviourClass.ClientStartStructTest(null);
+                }
+                else
+#endif
+                {
+                    clientSideNetworkBehaviourClass.ClientStartTest(null);
+                    clientSideNetworkBehaviourClass.ClientStartStructTest(null);
+                }
             }
 
             // Wait until the test has finished or we time out
@@ -831,21 +951,26 @@ namespace TestProject.RuntimeTests
         public delegate void OnMyObjectPassedWithThisRefUpdatedDelgateHandler(MyObjectPassedWithThisRef obj);
         public OnMyObjectPassedWithThisRefUpdatedDelgateHandler OnMyObjectPassedWithThisRefUpdated;
 
+        #region ClientStartTest(UserSerializableClass userSerializableClass)
         /// <summary>
         /// Starts the unit test and passes the UserSerializableClass from the client to the server
         /// </summary>
         /// <param name="userSerializableClass"></param>
         public void ClientStartTest(UserSerializableClass userSerializableClass)
         {
-            SendServerSerializedDataClassServerRpc(userSerializableClass);
+#if NGO_DAMODE
+            if (NetworkManager.DistributedAuthorityMode)
+            {
+                SendOwnerSerializedDataClassRpc(userSerializableClass);
+            }
+            else
+#endif
+            {
+                SendServerSerializedDataClassServerRpc(userSerializableClass);
+            }
         }
 
-        /// <summary>
-        /// Server receives the UserSerializableClass, modifies it, and sends it back
-        /// </summary>
-        /// <param name="userSerializableClass"></param>
-        [ServerRpc(RequireOwnership = false)]
-        private void SendServerSerializedDataClassServerRpc(UserSerializableClass userSerializableClass)
+        private void ProcessSerializedDataClass(UserSerializableClass userSerializableClass)
         {
             userSerializableClass.MyintValue++;
             userSerializableClass.MyulongValue++;
@@ -859,6 +984,29 @@ namespace TestProject.RuntimeTests
             {
                 userSerializableClass.MyByteListValues.Add((byte)i);
             }
+        }
+
+        [Rpc(SendTo.Owner)]
+        private void SendOwnerSerializedDataClassRpc(UserSerializableClass userSerializableClass)
+        {
+            ProcessSerializedDataClass(userSerializableClass);
+            SendNotOwnerSerializedDataClassRpc(userSerializableClass);
+        }
+
+        [Rpc(SendTo.NotOwner)]
+        private void SendNotOwnerSerializedDataClassRpc(UserSerializableClass userSerializableClass)
+        {
+            OnSerializableClassUpdated?.Invoke(userSerializableClass);
+        }
+
+        /// <summary>
+        /// Server receives the UserSerializableClass, modifies it, and sends it back
+        /// </summary>
+        /// <param name="userSerializableClass"></param>
+        [ServerRpc(RequireOwnership = false)]
+        private void SendServerSerializedDataClassServerRpc(UserSerializableClass userSerializableClass)
+        {
+            ProcessSerializedDataClass(userSerializableClass);
             SendClientSerializedDataClassClientRpc(userSerializableClass);
         }
 
@@ -871,10 +1019,39 @@ namespace TestProject.RuntimeTests
         {
             OnSerializableClassUpdated?.Invoke(userSerializableClass);
         }
+        #endregion
 
+        #region ClientStartTest(TemplatedType<int> t1val, TemplatedType<int>.NestedTemplatedType<int> t2val, TemplatedType<int>.Enum enumVal)
         public void ClientStartTest(TemplatedType<int> t1val, TemplatedType<int>.NestedTemplatedType<int> t2val, TemplatedType<int>.Enum enumVal)
         {
-            SendTemplateStructServerRpc(t1val, t2val, enumVal);
+#if NGO_DAMODE
+            if (NetworkManager.DistributedAuthorityMode)
+            {
+                SendTemplateStructOwnerRpc(t1val, t2val, enumVal);
+            }
+            else
+#endif
+            {
+                SendTemplateStructServerRpc(t1val, t2val, enumVal);
+            }
+        }
+
+        [Rpc(SendTo.Owner)]
+        private void SendTemplateStructOwnerRpc(TemplatedType<int> t1val, TemplatedType<int>.NestedTemplatedType<int> t2val, TemplatedType<int>.Enum enumVal)
+        {
+            Debug.Log($"Received server RPC values {t1val.Value} {t2val.Value1} {t2val.Value2} {enumVal}");
+            t1val.Value++;
+            t2val.Value1++;
+            t2val.Value2++;
+            enumVal += 1;
+            SendTemplateStructNotOwnerRpc(t1val, t2val, enumVal);
+        }
+
+        [Rpc(SendTo.NotOwner)]
+        private void SendTemplateStructNotOwnerRpc(TemplatedType<int> t1val, TemplatedType<int>.NestedTemplatedType<int> t2val, TemplatedType<int>.Enum enumVal)
+        {
+            Debug.Log($"Received client RPC values {t1val.Value} {t2val.Value1} {t2val.Value2}");
+            OnTemplateStructUpdated?.Invoke(t1val, t2val, enumVal);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -885,7 +1062,6 @@ namespace TestProject.RuntimeTests
             t2val.Value1++;
             t2val.Value2++;
             enumVal += 1;
-
             SendTemplateStructClientRpc(t1val, t2val, enumVal);
         }
 
@@ -895,10 +1071,39 @@ namespace TestProject.RuntimeTests
             Debug.Log($"Received client RPC values {t1val.Value} {t2val.Value1} {t2val.Value2}");
             OnTemplateStructUpdated?.Invoke(t1val, t2val, enumVal);
         }
+        #endregion
 
+        #region ClientStartTest(NetworkSerializableTemplatedType<int> t1val, NetworkSerializableTemplatedType<int>.NestedTemplatedType<int> t2val)
         public void ClientStartTest(NetworkSerializableTemplatedType<int> t1val, NetworkSerializableTemplatedType<int>.NestedTemplatedType<int> t2val)
         {
-            SendNetworkSerializableTemplateStructServerRpc(t1val, t2val);
+#if NGO_DAMODE
+            if (NetworkManager.DistributedAuthorityMode)
+            {
+                SendNetworkSerializableTemplateStructOwnerRpc(t1val, t2val);
+            }
+            else
+#endif
+            {
+                SendNetworkSerializableTemplateStructServerRpc(t1val, t2val);
+            }
+        }
+
+        [Rpc(SendTo.Owner)]
+        private void SendNetworkSerializableTemplateStructOwnerRpc(NetworkSerializableTemplatedType<int> t1val, NetworkSerializableTemplatedType<int>.NestedTemplatedType<int> t2val)
+        {
+            Debug.Log($"Received NetworkSerializable server RPC values {t1val.Value} {t2val.Value1} {t2val.Value2}");
+            t1val.Value++;
+            t2val.Value1++;
+            t2val.Value2++;
+
+            SendNetworkSerializableTemplateStructNotOwnerRpc(t1val, t2val);
+        }
+
+        [Rpc(SendTo.NotOwner)]
+        private void SendNetworkSerializableTemplateStructNotOwnerRpc(NetworkSerializableTemplatedType<int> t1val, NetworkSerializableTemplatedType<int>.NestedTemplatedType<int> t2val)
+        {
+            Debug.Log($"Received NetworkSerializable client RPC values {t1val.Value} {t2val.Value1} {t2val.Value2}");
+            OnNetworkSerializableTemplateStructUpdated?.Invoke(t1val, t2val);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -918,11 +1123,39 @@ namespace TestProject.RuntimeTests
             Debug.Log($"Received NetworkSerializable client RPC values {t1val.Value} {t2val.Value1} {t2val.Value2}");
             OnNetworkSerializableTemplateStructUpdated?.Invoke(t1val, t2val);
         }
+        #endregion
 
-
+        #region ClientStartTest(TemplatedType<int>[] t1val, TemplatedType<int>.NestedTemplatedType<int>[] t2val, TemplatedType<int>.Enum[] enumVal)
         public void ClientStartTest(TemplatedType<int>[] t1val, TemplatedType<int>.NestedTemplatedType<int>[] t2val, TemplatedType<int>.Enum[] enumVal)
         {
-            SendTemplateStructServerRpc(t1val, t2val, enumVal);
+#if NGO_DAMODE
+            if (NetworkManager.DistributedAuthorityMode)
+            {
+                SendTemplateStructOwnerRpc(t1val, t2val, enumVal);
+            }
+            else
+#endif
+            {
+                SendTemplateStructServerRpc(t1val, t2val, enumVal);
+            }
+        }
+
+        [Rpc(SendTo.Owner)]
+        private void SendTemplateStructOwnerRpc(TemplatedType<int>[] t1val, TemplatedType<int>.NestedTemplatedType<int>[] t2val, TemplatedType<int>.Enum[] enumVal)
+        {
+            Debug.Log($"Received server RPC values {t1val[0].Value} {t2val[0].Value1} {t2val[0].Value2} {enumVal[0]}");
+            t1val[0].Value++;
+            t2val[0].Value1++;
+            t2val[0].Value2++;
+            enumVal[0] += 1;
+            SendTemplateStructNotOwnerRpc(t1val, t2val, enumVal);
+        }
+
+        [Rpc(SendTo.NotOwner)]
+        private void SendTemplateStructNotOwnerRpc(TemplatedType<int>[] t1val, TemplatedType<int>.NestedTemplatedType<int>[] t2val, TemplatedType<int>.Enum[] enumVal)
+        {
+            Debug.Log($"Received client RPC values {t1val[0].Value} {t2val[0].Value1} {t2val[0].Value2}");
+            OnTemplateStructsUpdated?.Invoke(t1val, t2val, enumVal);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -943,10 +1176,39 @@ namespace TestProject.RuntimeTests
             Debug.Log($"Received client RPC values {t1val[0].Value} {t2val[0].Value1} {t2val[0].Value2}");
             OnTemplateStructsUpdated?.Invoke(t1val, t2val, enumVal);
         }
+        #endregion
 
+        #region ClientStartTest(NetworkSerializableTemplatedType<int>[] t1val, NetworkSerializableTemplatedType<int>.NestedTemplatedType<int>[] t2val)
         public void ClientStartTest(NetworkSerializableTemplatedType<int>[] t1val, NetworkSerializableTemplatedType<int>.NestedTemplatedType<int>[] t2val)
         {
-            SendNetworkSerializableTemplateStructServerRpc(t1val, t2val);
+#if NGO_DAMODE
+            if (NetworkManager.DistributedAuthorityMode)
+            {
+                SendNetworkSerializableTemplateStructOwnerRpc(t1val, t2val);
+            }
+            else
+#endif
+            {
+                SendNetworkSerializableTemplateStructServerRpc(t1val, t2val);
+            }
+        }
+
+        [Rpc(SendTo.Owner)]
+        private void SendNetworkSerializableTemplateStructOwnerRpc(NetworkSerializableTemplatedType<int>[] t1val, NetworkSerializableTemplatedType<int>.NestedTemplatedType<int>[] t2val)
+        {
+            Debug.Log($"Received NetworkSerializable server RPC values {t1val[0].Value} {t2val[0].Value1} {t2val[0].Value2}");
+            t1val[0].Value++;
+            t2val[0].Value1++;
+            t2val[0].Value2++;
+
+            SendNetworkSerializableTemplateStructNotOwnerRpc(t1val, t2val);
+        }
+
+        [Rpc(SendTo.NotOwner)]
+        private void SendNetworkSerializableTemplateStructNotOwnerRpc(NetworkSerializableTemplatedType<int>[] t1val, NetworkSerializableTemplatedType<int>.NestedTemplatedType<int>[] t2val)
+        {
+            Debug.Log($"Received NetworkSerializable client RPC values {t1val[0].Value} {t2val[0].Value1} {t2val[0].Value2}");
+            OnNetworkSerializableTemplateStructsUpdated?.Invoke(t1val, t2val);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -966,14 +1228,39 @@ namespace TestProject.RuntimeTests
             Debug.Log($"Received NetworkSerializable client RPC values {t1val[0].Value} {t2val[0].Value1} {t2val[0].Value2}");
             OnNetworkSerializableTemplateStructsUpdated?.Invoke(t1val, t2val);
         }
+        #endregion
 
+        #region ClientStartTest(UserSerializableStruct userSerializableStruct)
         /// <summary>
         /// Starts the unit test and passes the UserSerializableStruct from the client to the server
         /// </summary>
         /// <param name="userSerializableStruct"></param>
         public void ClientStartTest(UserSerializableStruct userSerializableStruct)
         {
-            SendServerSerializedDataStructServerRpc(userSerializableStruct);
+#if NGO_DAMODE
+            if (NetworkManager.DistributedAuthorityMode)
+            {
+                SendServerSerializedDataStructOwnerRpc(userSerializableStruct);
+            }
+            else
+#endif
+            {
+                SendServerSerializedDataStructServerRpc(userSerializableStruct);
+            }
+        }
+
+        [Rpc(SendTo.Owner)]
+        private void SendServerSerializedDataStructOwnerRpc(UserSerializableStruct userSerializableStruct)
+        {
+            userSerializableStruct.MyintValue++;
+            userSerializableStruct.MyulongValue++;
+            SendClientSerializedDataStructNotOwnerRpc(userSerializableStruct);
+        }
+
+        [Rpc(SendTo.NotOwner)]
+        private void SendClientSerializedDataStructNotOwnerRpc(UserSerializableStruct userSerializableStruct)
+        {
+            OnSerializableStructUpdated?.Invoke(userSerializableStruct);
         }
 
         /// <summary>
@@ -998,26 +1285,137 @@ namespace TestProject.RuntimeTests
         {
             OnSerializableStructUpdated?.Invoke(userSerializableStruct);
         }
+        #endregion
+
+
+
+
+
+
+        #region SendMyObject
+        [Rpc(SendTo.NotOwner)]
+        public void SendMyObjectNotOwnerRpc(MyObject obj)
+        {
+            OnMyObjectUpdated?.Invoke(obj);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void SendMyObjectOwnerRpc(MyObject obj)
+        {
+            OnMyObjectUpdated?.Invoke(obj);
+            SendMyObjectNotOwnerRpc(obj);
+        }
 
         [ClientRpc]
         public void SendMyObjectClientRpc(MyObject obj)
         {
             OnMyObjectUpdated?.Invoke(obj);
         }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void SendMyObjectServerRpc(MyObject obj)
+        {
+            OnMyObjectUpdated?.Invoke(obj);
+            SendMyObjectClientRpc(obj);
+        }
+        #endregion
+
+        #region SendIntList
+        [Rpc(SendTo.NotOwner)]
+        public void SendIntListNotOwnerRpc(List<int> lst)
+        {
+            OnIntListUpdated?.Invoke(lst);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void SendIntListOwnerRpc(List<int> lst)
+        {
+            OnIntListUpdated?.Invoke(lst);
+            SendIntListNotOwnerRpc(lst);
+        }
+
         [ClientRpc]
         public void SendIntListClientRpc(List<int> lst)
         {
             OnIntListUpdated?.Invoke(lst);
         }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void SendIntListServerRpc(List<int> lst)
+        {
+            OnIntListUpdated?.Invoke(lst);
+            SendIntListClientRpc(lst);
+        }
+        #endregion
+
+        #region SendStringList
+        [Rpc(SendTo.NotOwner)]
+        public void SendStringListNotOwnerRpc(List<string> lst)
+        {
+            OnStringListUpdated?.Invoke(lst);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void SendStringListOwnerRpc(List<string> lst)
+        {
+            OnStringListUpdated?.Invoke(lst);
+            SendStringListNotOwnerRpc(lst);
+        }
+
         [ClientRpc]
         public void SendStringListClientRpc(List<string> lst)
         {
             OnStringListUpdated?.Invoke(lst);
         }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void SendStringListServerRpc(List<string> lst)
+        {
+            OnStringListUpdated?.Invoke(lst);
+            SendStringListClientRpc(lst);
+        }
+        #endregion
+
+        #region SendMyObjectPassedWithThisRef
+        [Rpc(SendTo.NotOwner)]
+        public void SendMyObjectPassedWithThisRefNotOwnerRpc(MyObjectPassedWithThisRef obj)
+        {
+            OnMyObjectPassedWithThisRefUpdated?.Invoke(obj);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void SendMyObjectPassedWithThisRefOwnerRpc(MyObjectPassedWithThisRef obj)
+        {
+            OnMyObjectPassedWithThisRefUpdated?.Invoke(obj);
+            SendMyObjectPassedWithThisRefNotOwnerRpc(obj);
+        }
+
         [ClientRpc]
         public void SendMyObjectPassedWithThisRefClientRpc(MyObjectPassedWithThisRef obj)
         {
             OnMyObjectPassedWithThisRefUpdated?.Invoke(obj);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void SendMyObjectPassedWithThisRefServerRpc(MyObjectPassedWithThisRef obj)
+        {
+            OnMyObjectPassedWithThisRefUpdated?.Invoke(obj);
+            SendMyObjectPassedWithThisRefClientRpc(obj);
+        }
+        #endregion
+
+        #region SendMySharedObjectReferencedById
+        [Rpc(SendTo.NotOwner)]
+        public void SendMySharedObjectReferencedByIdNotOwnerRpc(MySharedObjectReferencedById obj)
+        {
+            OnMySharedObjectReferencedByIdUpdated?.Invoke(obj);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void SendMySharedObjectReferencedByIdOwnerRpc(MySharedObjectReferencedById obj)
+        {
+            OnMySharedObjectReferencedByIdUpdated?.Invoke(obj);
+            SendMySharedObjectReferencedByIdNotOwnerRpc(obj);
         }
 
         [ClientRpc]
@@ -1026,40 +1424,13 @@ namespace TestProject.RuntimeTests
             OnMySharedObjectReferencedByIdUpdated?.Invoke(obj);
         }
 
-        [ServerRpc]
-        public void SendMyObjectServerRpc(MyObject obj)
-        {
-            OnMyObjectUpdated?.Invoke(obj);
-            SendMyObjectClientRpc(obj);
-        }
-
-        [ServerRpc]
-        public void SendIntListServerRpc(List<int> lst)
-        {
-            OnIntListUpdated?.Invoke(lst);
-            SendIntListClientRpc(lst);
-        }
-
-        [ServerRpc]
-        public void SendStringListServerRpc(List<string> lst)
-        {
-            OnStringListUpdated?.Invoke(lst);
-            SendStringListClientRpc(lst);
-        }
-
-        [ServerRpc]
-        public void SendMyObjectPassedWithThisRefServerRpc(MyObjectPassedWithThisRef obj)
-        {
-            OnMyObjectPassedWithThisRefUpdated?.Invoke(obj);
-            SendMyObjectPassedWithThisRefClientRpc(obj);
-        }
-
-        [ServerRpc]
+        [ServerRpc(RequireOwnership = false)]
         public void SendMySharedObjectReferencedByIdServerRpc(MySharedObjectReferencedById obj)
         {
             OnMySharedObjectReferencedByIdUpdated?.Invoke(obj);
             SendMySharedObjectReferencedByIdClientRpc(obj);
         }
+        #endregion
     }
 
     /// <summary>
@@ -1090,6 +1461,7 @@ namespace TestProject.RuntimeTests
         public OnSerializableStructsUpdatedDelgateHandler OnSerializableStructsUpdatedServerRpc;
         public OnSerializableStructsUpdatedDelgateHandler OnSerializableStructsUpdatedClientRpc;
 
+        #region ClientStartTest(UserSerializableClass[] userSerializableClasses)
         /// <summary>
         /// Starts the unit test and passes the userSerializableClasses array
         /// from the client to the server
@@ -1097,7 +1469,39 @@ namespace TestProject.RuntimeTests
         /// <param name="userSerializableClass"></param>
         public void ClientStartTest(UserSerializableClass[] userSerializableClasses)
         {
-            SendServerSerializedDataClassArryServerRpc(userSerializableClasses);
+#if NGO_DAMODE
+            if (NetworkManager.DistributedAuthorityMode)
+            {
+                SendServerSerializedDataClassArryOwnerRpc(userSerializableClasses);
+            }
+            else
+#endif
+            {
+                SendServerSerializedDataClassArryServerRpc(userSerializableClasses);
+            }
+        }
+
+        /// <summary>
+        /// Server receives the UserSerializableClasses array, invokes the callback
+        /// that checks the order, and then passes it back to the client
+        /// </summary>
+        /// <param name="userSerializableClass"></param>
+        [Rpc(SendTo.Owner)]
+        private void SendServerSerializedDataClassArryOwnerRpc(UserSerializableClass[] userSerializableClasses)
+        {
+            OnSerializableClassesUpdatedServerRpc?.Invoke(userSerializableClasses);
+            SendClientSerializedDataClassArrayNotOwnerRpc(userSerializableClasses);
+        }
+
+        /// <summary>
+        /// Client receives the UserSerializableClass array and invokes the callback
+        /// for verification and signaling the test is complete.
+        /// </summary>
+        /// <param name="userSerializableClasses"></param>
+        [Rpc(SendTo.NotOwner)]
+        private void SendClientSerializedDataClassArrayNotOwnerRpc(UserSerializableClass[] userSerializableClasses)
+        {
+            OnSerializableClassesUpdatedClientRpc?.Invoke(userSerializableClasses);
         }
 
         /// <summary>
@@ -1122,7 +1526,9 @@ namespace TestProject.RuntimeTests
         {
             OnSerializableClassesUpdatedClientRpc?.Invoke(userSerializableClasses);
         }
+        #endregion
 
+        #region ClientStartStructTest(UserSerializableStruct[] userSerializableStructs)
         /// <summary>
         /// Starts the unit test and passes the userSerializableStructs array
         /// from the client to the server
@@ -1130,7 +1536,39 @@ namespace TestProject.RuntimeTests
         /// <param name="userSerializableStructs"></param>
         public void ClientStartStructTest(UserSerializableStruct[] userSerializableStructs)
         {
-            SendServerSerializedDataStructArrayServerRpc(userSerializableStructs);
+#if NGO_DAMODE
+            if (NetworkManager.DistributedAuthorityMode)
+            {
+                SendServerSerializedDataStructArrayOwnerRpc(userSerializableStructs);
+            }
+            else
+#endif
+            {
+                SendServerSerializedDataStructArrayServerRpc(userSerializableStructs);
+            }
+        }
+
+        /// <summary>
+        /// Owner receives the UserSerializableStructs array, invokes the callback
+        /// that checks the order, and then passes it back to the client
+        /// </summary>
+        /// <param name="userSerializableStructs"></param>
+        [Rpc(SendTo.Owner)]
+        private void SendServerSerializedDataStructArrayOwnerRpc(UserSerializableStruct[] userSerializableStructs)
+        {
+            OnSerializableStructsUpdatedServerRpc?.Invoke(userSerializableStructs);
+            SendClientSerializedDataStructArrayNotOwnerRpc(userSerializableStructs);
+        }
+
+        /// <summary>
+        /// NotOwner receives the userSerializableStructs array and invokes the callback
+        /// for verification and signaling the test is complete.
+        /// </summary>
+        /// <param name="userSerializableStructs"></param>
+        [Rpc(SendTo.NotOwner)]
+        private void SendClientSerializedDataStructArrayNotOwnerRpc(UserSerializableStruct[] userSerializableStructs)
+        {
+            OnSerializableStructsUpdatedClientRpc?.Invoke(userSerializableStructs);
         }
 
         /// <summary>
@@ -1155,11 +1593,48 @@ namespace TestProject.RuntimeTests
         {
             OnSerializableStructsUpdatedClientRpc?.Invoke(userSerializableStructs);
         }
+        #endregion
+
+        #region SendMyObject Array
+        [Rpc(SendTo.NotOwner)]
+        public void SendMyObjectNotOwnerRpc(MyObject[] objs)
+        {
+            OnMyObjectUpdated?.Invoke(objs);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void SendMyObjectOwnerRpc(MyObject[] objs)
+        {
+            OnMyObjectUpdated?.Invoke(objs);
+            SendMyObjectNotOwnerRpc(objs);
+        }
 
         [ClientRpc]
         public void SendMyObjectClientRpc(MyObject[] objs)
         {
             OnMyObjectUpdated?.Invoke(objs);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void SendMyObjectServerRpc(MyObject[] objs)
+        {
+            OnMyObjectUpdated?.Invoke(objs);
+            SendMyObjectClientRpc(objs);
+        }
+        #endregion
+
+        #region SendIntList Array
+        [Rpc(SendTo.NotOwner)]
+        public void SendIntListNotOwnerRpc(List<int>[] lists)
+        {
+            OnIntListUpdated?.Invoke(lists);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void SendIntListOwnerRpc(List<int>[] lists)
+        {
+            OnIntListUpdated?.Invoke(lists);
+            SendIntListNotOwnerRpc(lists);
         }
 
         [ClientRpc]
@@ -1168,10 +1643,54 @@ namespace TestProject.RuntimeTests
             OnIntListUpdated?.Invoke(lists);
         }
 
+        [ServerRpc(RequireOwnership = false)]
+        public void SendIntListServerRpc(List<int>[] lists)
+        {
+            OnIntListUpdated?.Invoke(lists);
+            SendIntListClientRpc(lists);
+        }
+        #endregion
+
+        #region SendStringList Array
+        [Rpc(SendTo.NotOwner)]
+        public void SendStringListNotOwnerRpc(List<string>[] lists)
+        {
+            OnStringListUpdated?.Invoke(lists);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void SendStringListOwnerRpc(List<string>[] lists)
+        {
+            OnStringListUpdated?.Invoke(lists);
+            SendStringListNotOwnerRpc(lists);
+        }
+
         [ClientRpc]
         public void SendStringListClientRpc(List<string>[] lists)
         {
             OnStringListUpdated?.Invoke(lists);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void SendStringListServerRpc(List<string>[] lists)
+        {
+            OnStringListUpdated?.Invoke(lists);
+            SendStringListClientRpc(lists);
+        }
+        #endregion
+
+        #region SendMyObjectPassedWithThisRef Array
+        [Rpc(SendTo.NotOwner)]
+        public void SendMyObjectPassedWithThisRefNotOwnerRpc(MyObjectPassedWithThisRef[] objs)
+        {
+            OnMyObjectPassedWithThisRefUpdated?.Invoke(objs);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void SendMyObjectPassedWithThisRefOwnerRpc(MyObjectPassedWithThisRef[] objs)
+        {
+            OnMyObjectPassedWithThisRefUpdated?.Invoke(objs);
+            SendMyObjectPassedWithThisRefNotOwnerRpc(objs);
         }
 
         [ClientRpc]
@@ -1180,47 +1699,43 @@ namespace TestProject.RuntimeTests
             OnMyObjectPassedWithThisRefUpdated?.Invoke(objs);
         }
 
+        [ServerRpc(RequireOwnership = false)]
+        public void SendMyObjectPassedWithThisRefServerRpc(MyObjectPassedWithThisRef[] objs)
+        {
+            OnMyObjectPassedWithThisRefUpdated?.Invoke(objs);
+            SendMyObjectPassedWithThisRefClientRpc(objs);
+        }
+        #endregion
+
+        #region SendMySharedObjectReferencedById Array
+        [Rpc(SendTo.NotOwner)]
+        public void SendMySharedObjectReferencedByIdNotOwnerRpc(MySharedObjectReferencedById[] objs)
+        {
+            OnMySharedObjectReferencedByIdUpdated?.Invoke(objs);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void SendMySharedObjectReferencedByIdOwnerRpc(MySharedObjectReferencedById[] objs)
+        {
+            OnMySharedObjectReferencedByIdUpdated?.Invoke(objs);
+
+            SendMySharedObjectReferencedByIdNotOwnerRpc(objs);
+        }
+
         [ClientRpc]
         public void SendMySharedObjectReferencedByIdClientRpc(MySharedObjectReferencedById[] objs)
         {
             OnMySharedObjectReferencedByIdUpdated?.Invoke(objs);
         }
 
-        [ServerRpc]
-        public void SendMyObjectServerRpc(MyObject[] objs)
-        {
-            OnMyObjectUpdated?.Invoke(objs);
-            SendMyObjectClientRpc(objs);
-        }
-
-        [ServerRpc]
-        public void SendIntListServerRpc(List<int>[] lists)
-        {
-            OnIntListUpdated?.Invoke(lists);
-            SendIntListClientRpc(lists);
-        }
-
-        [ServerRpc]
-        public void SendStringListServerRpc(List<string>[] lists)
-        {
-            OnStringListUpdated?.Invoke(lists);
-            SendStringListClientRpc(lists);
-        }
-
-        [ServerRpc]
-        public void SendMyObjectPassedWithThisRefServerRpc(MyObjectPassedWithThisRef[] objs)
-        {
-            OnMyObjectPassedWithThisRefUpdated?.Invoke(objs);
-            SendMyObjectPassedWithThisRefClientRpc(objs);
-        }
-
-
-        [ServerRpc]
+        [ServerRpc(RequireOwnership = false)]
         public void SendMySharedObjectReferencedByIdServerRpc(MySharedObjectReferencedById[] objs)
         {
             OnMySharedObjectReferencedByIdUpdated?.Invoke(objs);
+
             SendMySharedObjectReferencedByIdClientRpc(objs);
         }
+        #endregion
     }
 
     /// <summary>

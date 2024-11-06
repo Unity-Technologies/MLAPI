@@ -10,6 +10,8 @@ using UnityEngine.TestTools;
 
 namespace TestProject.RuntimeTests
 {
+    [TestFixture(HostOrServer.DAHost, LoadSceneMode.Single)]
+    [TestFixture(HostOrServer.DAHost, LoadSceneMode.Additive)]
     [TestFixture(HostOrServer.Host, LoadSceneMode.Single)]
     [TestFixture(HostOrServer.Host, LoadSceneMode.Additive)]
     [TestFixture(HostOrServer.Server, LoadSceneMode.Single)]

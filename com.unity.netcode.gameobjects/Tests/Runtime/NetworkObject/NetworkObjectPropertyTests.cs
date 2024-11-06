@@ -7,7 +7,7 @@ namespace Unity.Netcode.RuntimeTests
     /// <summary>
     /// Tests properties of NetworkObject for proper functionality.
     /// </summary>
-    public class NetworkObjectPropertyTests : NetcodeIntegrationTest
+    internal class NetworkObjectPropertyTests : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 1;
 

@@ -6,7 +6,7 @@ using Random = System.Random;
 
 namespace Unity.Netcode.EditorTests
 {
-    public abstract class BaseFastBufferReaderWriterTest
+    internal abstract class BaseFastBufferReaderWriterTest
     {
         protected enum ByteEnum : byte
         {

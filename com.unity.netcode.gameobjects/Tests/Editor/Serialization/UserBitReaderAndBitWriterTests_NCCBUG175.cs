@@ -3,7 +3,7 @@ using Unity.Collections;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class UserBitReaderAndBitWriterTests_NCCBUG175
+    internal class UserBitReaderAndBitWriterTests_NCCBUG175
     {
 
         [Test]

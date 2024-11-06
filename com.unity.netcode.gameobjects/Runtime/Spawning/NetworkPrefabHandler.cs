@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using TrollKing.Core;
 using UnityEngine;
 
 namespace Unity.Netcode
@@ -50,6 +51,8 @@ namespace Unity.Netcode
     /// </summary>
     public class NetworkPrefabHandler
     {
+        private static readonly NetworkLogScope k_Log = new NetworkLogScope(nameof(NetworkPrefabHandler));
+
         private NetworkManager m_NetworkManager;
 
         /// <summary>
@@ -315,7 +318,12 @@ namespace Unity.Netcode
                         case NetworkPrefabOverride.Hash:
                         case NetworkPrefabOverride.Prefab:
                             {
-                                return m_NetworkManager.NetworkConfig.Prefabs.NetworkPrefabOverrideLinks[networkObject.GlobalObjectIdHash].OverridingTargetPrefab;
+                                var res = m_NetworkManager.NetworkConfig.Prefabs.NetworkPrefabOverrideLinks[networkObject.GlobalObjectIdHash].OverridingTargetPrefab;
+                                k_Log.Debug(() => $"NetworkPrefabHandler GetNetworkPrefabOverride [gameObject={gameObject.name}] [networkPrefab={networkObject.GlobalObjectIdHash}]" +
+                                          $"[overrideType={m_NetworkManager.NetworkConfig.Prefabs.NetworkPrefabOverrideLinks[networkObject.GlobalObjectIdHash].Override}]" +
+                                          $"[overrideObj={m_NetworkManager.NetworkConfig.Prefabs.NetworkPrefabOverrideLinks[networkObject.GlobalObjectIdHash].OverridingTargetPrefab}]");
+
+                                return res;
                             }
                     }
                 }
@@ -360,10 +368,16 @@ namespace Unity.Netcode
 
             var networkPrefab = new NetworkPrefab { Prefab = prefab };
             bool added = m_NetworkManager.NetworkConfig.Prefabs.Add(networkPrefab);
+            k_Log.Debug(() => $"NetworkPrefabHandler AddNetworkPrefab prefab={prefab.name} hash={networkObject.GlobalObjectIdHash}");
             if (m_NetworkManager.IsListening && added)
             {
                 m_NetworkManager.DeferredMessageManager.ProcessTriggers(IDeferredNetworkMessageManager.TriggerType.OnAddPrefab, networkObject.GlobalObjectIdHash);
             }
+        }
+
+        public IReadOnlyList<NetworkPrefab> GetPrefabs()
+        {
+            return m_NetworkManager.NetworkConfig.Prefabs.Prefabs;
         }
 
         /// <summary>
@@ -405,6 +419,7 @@ namespace Unity.Netcode
                     //In the event there is no NetworkPrefab entry (i.e. no override for default player prefab)
                     if (!networkConfig.Prefabs.NetworkPrefabOverrideLinks.ContainsKey(playerPrefabNetworkObject.GlobalObjectIdHash))
                     {
+                        k_Log.Debug(() => $"[NetworkPrefabHandler] RegisterPlayerPrefab - PlayerPrefab={networkConfig.PlayerPrefab.name} hash={playerPrefabNetworkObject.GlobalObjectIdHash}");
                         //Then add a new entry for the player prefab
                         AddNetworkPrefab(networkConfig.PlayerPrefab);
                     }

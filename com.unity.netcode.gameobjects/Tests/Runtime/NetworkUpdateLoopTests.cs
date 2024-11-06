@@ -9,7 +9,7 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class NetworkUpdateLoopTests
+    internal class NetworkUpdateLoopTests
     {
         [Test]
         public void RegisterCustomLoopInTheMiddle()

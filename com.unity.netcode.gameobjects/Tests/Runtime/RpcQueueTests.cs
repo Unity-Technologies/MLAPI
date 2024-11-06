@@ -13,7 +13,7 @@ namespace Unity.Netcode.RuntimeTests
     ///     - That all RPCs invoke at the appropriate `NetworkUpdateStage` (Client and Server)
     ///     - A lower level `MessageQueueContainer` test that validates `MessageQueueFrameItems` after they have been put into the queue
     /// </summary>
-    public class RpcQueueTests
+    internal class RpcQueueTests
     {
         [SetUp]
         public void Setup()

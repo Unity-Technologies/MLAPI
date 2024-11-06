@@ -36,16 +36,16 @@ namespace TestProject.RuntimeTests
             }
         }
 
-        public override void OnNetworkSpawn()
+        protected override void OnNetworkPostSpawn()
         {
-            base.OnNetworkSpawn();
             if (CanCommitToTransform)
             {
                 UpdateDestination();
             }
+            base.OnNetworkPostSpawn();
         }
 
-        protected override void Update()
+        private void Update()
         {
             if (!IsSpawned)
             {
@@ -85,7 +85,7 @@ namespace TestProject.RuntimeTests
             }
             else
             {
-                base.Update();
+                base.OnUpdate();
             }
         }
     }

@@ -5,7 +5,7 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class StopStartRuntimeTests : NetcodeIntegrationTest
+    internal class StopStartRuntimeTests : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 1;
 

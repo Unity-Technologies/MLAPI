@@ -30,7 +30,6 @@ namespace Unity.Netcode
 
         public unsafe void Handle(ref NetworkContext context)
         {
-
             var networkManager = (NetworkManager)context.SystemOwner;
             if (!networkManager.SpawnManager.SpawnedObjects.TryGetValue(WrappedMessage.Metadata.NetworkObjectId, out var networkObject))
             {

@@ -12,7 +12,7 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests.Metrics
 {
-    public class MessagingMetricsTests : DualClientMetricTestBase
+    internal class MessagingMetricsTests : DualClientMetricTestBase
     {
         private const uint k_MessageNameHashSize = 8;
         // Header is dynamically sized due to packing, will be 2 bytes for all test messages.

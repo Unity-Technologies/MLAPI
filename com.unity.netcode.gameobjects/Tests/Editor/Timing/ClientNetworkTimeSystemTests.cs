@@ -7,7 +7,7 @@ namespace Unity.Netcode.EditorTests
     /// <summary>
     /// Tests for running a <see cref="NetworkTimeSystem"/> as a client.
     /// </summary>
-    public class ClientNetworkTimeSystemTests
+    internal class ClientNetworkTimeSystemTests
     {
         private const double k_AcceptableRttOffset = 0.03d; // 30ms offset is fine
 

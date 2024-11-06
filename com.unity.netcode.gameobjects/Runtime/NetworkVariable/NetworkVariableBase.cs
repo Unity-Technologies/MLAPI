@@ -32,12 +32,10 @@ namespace Unity.Netcode
         /// Maintains a link to the associated NetworkBehaviour
         /// </summary>
         private protected NetworkBehaviour m_NetworkBehaviour;
+
         private NetworkManager m_InternalNetworkManager;
 
-        public NetworkBehaviour GetBehaviour()
-        {
-            return m_NetworkBehaviour;
-        }
+        internal virtual NetworkVariableType Type => NetworkVariableType.Unknown;
 
         internal string GetWritePermissionError()
         {
@@ -61,6 +59,11 @@ namespace Unity.Netcode
             }
         }
 
+        public NetworkBehaviour GetBehaviour()
+        {
+            return m_NetworkBehaviour;
+        }
+
         /// <summary>
         /// Initializes the NetworkVariable
         /// </summary>
@@ -72,6 +75,8 @@ namespace Unity.Netcode
             if (m_NetworkBehaviour && m_NetworkBehaviour.NetworkObject?.NetworkManager)
             {
                 m_InternalNetworkManager = m_NetworkBehaviour.NetworkObject?.NetworkManager;
+                // When in distributed authority mode, there is no such thing as server write permissions
+                InternalWritePerm = m_InternalNetworkManager.DistributedAuthorityMode ? NetworkVariableWritePermission.Owner : InternalWritePerm;
 
                 if (m_NetworkBehaviour.NetworkManager.NetworkTimeSystem != null)
                 {
@@ -131,7 +136,7 @@ namespace Unity.Netcode
             NetworkVariableWritePermission writePerm = DefaultWritePerm)
         {
             ReadPerm = readPerm;
-            WritePerm = writePerm;
+            InternalWritePerm = writePerm;
         }
 
         /// <summary>
@@ -154,7 +159,17 @@ namespace Unity.Netcode
         /// <summary>
         /// The write permission for this var
         /// </summary>
-        public readonly NetworkVariableWritePermission WritePerm;
+        public NetworkVariableWritePermission WritePerm
+        {
+            get
+            {
+                return InternalWritePerm;
+            }
+        }
+
+        // We had to change the Write Permission in distributed authority.
+        // (It is too bad we initially declared it as readonly)
+        internal NetworkVariableWritePermission InternalWritePerm;
 
         /// <summary>
         /// Sets whether or not the variable needs to be delta synced
@@ -172,7 +187,9 @@ namespace Unity.Netcode
 
         internal bool CanSend()
         {
-            var timeSinceLastUpdate = m_NetworkBehaviour.NetworkManager.NetworkTimeSystem.LocalTime - LastUpdateSent;
+            // When connected to a service or not the server, always use the synchronized server time as opposed to the local time
+            var time = m_InternalNetworkManager.CMBServiceConnection || !m_InternalNetworkManager.IsServer ? m_NetworkBehaviour.NetworkManager.ServerTime.Time : m_NetworkBehaviour.NetworkManager.NetworkTimeSystem.LocalTime;
+            var timeSinceLastUpdate = time - LastUpdateSent;
             return
                 (
                     UpdateTraits.MaxSecondsBetweenUpdates > 0 &&
@@ -186,15 +203,21 @@ namespace Unity.Netcode
 
         internal void UpdateLastSentTime()
         {
-            LastUpdateSent = m_NetworkBehaviour.NetworkManager.NetworkTimeSystem.LocalTime;
+            // When connected to a service or not the server, always use the synchronized server time as opposed to the local time
+            LastUpdateSent = m_InternalNetworkManager.CMBServiceConnection || !m_InternalNetworkManager.IsServer ? m_NetworkBehaviour.NetworkManager.ServerTime.Time : m_NetworkBehaviour.NetworkManager.NetworkTimeSystem.LocalTime;
         }
+
+        internal static bool IgnoreInitializeWarning;
 
         protected void MarkNetworkBehaviourDirty()
         {
             if (m_NetworkBehaviour == null)
             {
-                Debug.LogWarning($"NetworkVariable is written to, but doesn't know its NetworkBehaviour yet. " +
-                                 "Are you modifying a NetworkVariable before the NetworkObject is spawned?");
+                if (!IgnoreInitializeWarning)
+                {
+                    Debug.LogWarning($"NetworkVariable is written to, but doesn't know its NetworkBehaviour yet. " +
+                                     "Are you modifying a NetworkVariable before the NetworkObject is spawned?");
+                }
                 return;
             }
             if (m_NetworkBehaviour.NetworkManager.ShutdownInProgress)
@@ -216,7 +239,8 @@ namespace Unity.Netcode
                 }
                 return;
             }
-            m_NetworkBehaviour.NetworkManager.BehaviourUpdater.AddForUpdate(m_NetworkBehaviour.NetworkObject);
+
+            m_NetworkBehaviour.NetworkManager.BehaviourUpdater?.AddForUpdate(m_NetworkBehaviour.NetworkObject);
         }
 
         /// <summary>
@@ -226,6 +250,12 @@ namespace Unity.Netcode
         {
             m_IsDirty = false;
         }
+
+        /// <summary>
+        /// Only used during the NetworkBehaviourUpdater pass and only used for NetworkVariable.
+        /// This is to bypass duplication of the "original internal value" for collections.
+        /// </summary>
+        internal bool NetworkUpdaterCheck;
 
         /// <summary>
         /// Gets Whether or not the container is dirty
@@ -248,6 +278,11 @@ namespace Unity.Netcode
                 return false;
             }
 
+            // When in distributed authority mode, everyone can read (but only the owner can write)
+            if (m_NetworkManager != null && m_NetworkManager.DistributedAuthorityMode)
+            {
+                return true;
+            }
             switch (ReadPerm)
             {
                 default:
@@ -305,7 +340,6 @@ namespace Unity.Netcode
         /// </summary>
         /// <param name="reader">The stream to read the state from</param>
         public abstract void ReadField(FastBufferReader reader);
-
         /// <summary>
         /// Reads delta from the reader and applies them to the internal value
         /// </summary>
@@ -314,10 +348,37 @@ namespace Unity.Netcode
         public abstract void ReadDelta(FastBufferReader reader, bool keepDirtyDelta);
 
         /// <summary>
+        /// This should be always invoked (client & server) to assure the previous values are set
+        /// !! IMPORTANT !!
+        /// When a server forwards delta updates to connected clients, it needs to preserve the previous dirty value(s)
+        /// until it is done serializing all valid NetworkVariable field deltas (relative to each client). This is invoked 
+        /// after it is done forwarding the deltas at the end of the <see cref="NetworkVariableDeltaMessage.Handle(ref NetworkContext)"/> method.
+        /// </summary>
+        internal virtual void PostDeltaRead()
+        {
+        }
+
+        /// <summary>
+        /// There are scenarios, specifically with collections, where a client could be synchronizing and
+        /// some NetworkVariables have pending updates. To avoid duplicating entries, this is invoked only
+        /// when sending the full synchronization information.
+        /// </summary>
+        /// <remarks>
+        /// Derrived classes should send the previous value for synchronization so when the updated value
+        /// is sent (after synchronizing the client) it will apply the updates.
+        /// </remarks>
+        /// <param name="writer"></param>
+        internal virtual void WriteFieldSynchronization(FastBufferWriter writer)
+        {
+            WriteField(writer);
+        }
+
+        /// <summary>
         /// Virtual <see cref="IDisposable"/> implementation
         /// </summary>
         public virtual void Dispose()
         {
+            m_InternalNetworkManager = null;
         }
     }
 }

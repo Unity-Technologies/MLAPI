@@ -10,7 +10,7 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class MessageCorruptionTests
+    internal class MessageCorruptionTests
     {
 
         private struct TestMessage : INetworkMessage, INetworkSerializeByMemcpy

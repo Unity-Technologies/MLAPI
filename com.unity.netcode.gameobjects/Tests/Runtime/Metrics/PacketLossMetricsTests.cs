@@ -15,7 +15,7 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests.Metrics
 {
-    public class PacketLossMetricsTests : NetcodeIntegrationTest
+    internal class PacketLossMetricsTests : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 1;
         private readonly int m_PacketLossRate = 25;

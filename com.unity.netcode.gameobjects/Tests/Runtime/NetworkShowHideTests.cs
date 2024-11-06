@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using NUnit.Framework;
 using Unity.Netcode.TestHelpers.Runtime;
 using UnityEngine;
@@ -8,7 +9,7 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class ShowHideObject : NetworkBehaviour
+    internal class ShowHideObject : NetworkBehaviour
     {
         public static List<ShowHideObject> ClientTargetedNetworkObjects = new List<ShowHideObject>();
         public static ulong ClientIdToTarget;
@@ -16,7 +17,6 @@ namespace Unity.Netcode.RuntimeTests
         public static int ValueAfterOwnershipChange = 0;
         public static Dictionary<ulong, ShowHideObject> ObjectsPerClientId = new Dictionary<ulong, ShowHideObject>();
         public static List<ulong> ClientIdsRpcCalledOn;
-
         public static NetworkObject GetNetworkObjectById(ulong networkObjectId)
         {
             foreach (var entry in ClientTargetedNetworkObjects)
@@ -113,7 +113,10 @@ namespace Unity.Netcode.RuntimeTests
         [ClientRpc]
         public void SomeRandomClientRPC()
         {
-            Debug.Log($"RPC called {NetworkManager.LocalClientId}");
+            if (!Silent)
+            {
+                Debug.Log($"RPC called {NetworkManager.LocalClientId}");
+            }
             ClientIdsRpcCalledOn?.Add(NetworkManager.LocalClientId);
         }
 
@@ -123,12 +126,15 @@ namespace Unity.Netcode.RuntimeTests
         }
     }
 
-    public class NetworkShowHideTests : NetcodeIntegrationTest
+    [TestFixture(NetworkTopologyTypes.ClientServer)]
+    [TestFixture(NetworkTopologyTypes.DistributedAuthority)]
+    internal class NetworkShowHideTests : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 4;
 
         private ulong m_ClientId0;
         private GameObject m_PrefabToSpawn;
+        private GameObject m_PrefabSpawnWithoutObservers;
 
         private NetworkObject m_NetSpawnedObject1;
         private NetworkObject m_NetSpawnedObject2;
@@ -137,10 +143,15 @@ namespace Unity.Netcode.RuntimeTests
         private NetworkObject m_Object2OnClient0;
         private NetworkObject m_Object3OnClient0;
 
+        public NetworkShowHideTests(NetworkTopologyTypes networkTopologyType) : base(networkTopologyType) { }
+
         protected override void OnServerAndClientsCreated()
         {
             m_PrefabToSpawn = CreateNetworkObjectPrefab("ShowHideObject");
             m_PrefabToSpawn.AddComponent<ShowHideObject>();
+
+            m_PrefabSpawnWithoutObservers = CreateNetworkObjectPrefab("ObserversObject");
+            m_PrefabSpawnWithoutObservers.GetComponent<NetworkObject>().SpawnWithObservers = false;
         }
 
         // Check that the first client see them, or not, as expected
@@ -377,6 +388,105 @@ namespace Unity.Netcode.RuntimeTests
             LogAssert.NoUnexpectedReceived();
         }
 
+
+        private List<ulong> m_ClientsWithVisibility = new List<ulong>();
+        private NetworkObject m_ObserverTestObject;
+
+        private bool CheckListedClientsVisibility()
+        {
+            if (m_ClientsWithVisibility.Contains(m_ServerNetworkManager.LocalClientId))
+            {
+                if (!m_ServerNetworkManager.SpawnManager.SpawnedObjects.ContainsKey(m_ObserverTestObject.NetworkObjectId))
+                {
+                    return false;
+                }
+            }
+
+            foreach (var client in m_ClientNetworkManagers)
+            {
+                if (m_ClientsWithVisibility.Contains(client.LocalClientId))
+                {
+                    if (!client.SpawnManager.SpawnedObjects.ContainsKey(m_ObserverTestObject.NetworkObjectId))
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        [UnityTest]
+        public IEnumerator SpawnWithoutObserversTest()
+        {
+            var spawnedObject = SpawnObject(m_PrefabSpawnWithoutObservers, m_ServerNetworkManager);
+
+            m_ObserverTestObject = spawnedObject.GetComponent<NetworkObject>();
+
+            yield return WaitForTicks(m_ServerNetworkManager, 3);
+
+            // When in client-server, the server can spawn a NetworkObject without any observers (even when running as a host the host-client should not have visibility)
+            // When in distributed authority mode, the owner client has to be an observer of the object
+            if (!m_DistributedAuthority)
+            {
+                // No observers should be assigned at this point
+                Assert.True(m_ObserverTestObject.Observers.Count == m_ClientsWithVisibility.Count, $"Expected the observer count to be {m_ClientsWithVisibility.Count} but it was {m_ObserverTestObject.Observers.Count}!");
+                m_ObserverTestObject.NetworkShow(m_ServerNetworkManager.LocalClientId);
+            }
+            m_ClientsWithVisibility.Add(m_ServerNetworkManager.LocalClientId);
+
+            Assert.True(m_ObserverTestObject.Observers.Count == m_ClientsWithVisibility.Count, $"Expected the observer count to be {m_ClientsWithVisibility.Count} but it was {m_ObserverTestObject.Observers.Count}!");
+
+            yield return WaitForConditionOrTimeOut(CheckListedClientsVisibility);
+            AssertOnTimeout($"[Authority-Only] Timed out waiting for only the authority to be an observer!");
+
+            foreach (var client in m_ClientNetworkManagers)
+            {
+                m_ObserverTestObject.NetworkShow(client.LocalClientId);
+                m_ClientsWithVisibility.Add(client.LocalClientId);
+                Assert.True(m_ObserverTestObject.Observers.Contains(client.LocalClientId), $"[NetworkShow] Client-{client.LocalClientId} is still not an observer!");
+                Assert.True(m_ObserverTestObject.Observers.Count == m_ClientsWithVisibility.Count, $"Expected the observer count to be {m_ClientsWithVisibility.Count} but it was {m_ObserverTestObject.Observers.Count}!");
+
+                yield return WaitForConditionOrTimeOut(CheckListedClientsVisibility);
+                AssertOnTimeout($"[Client-{client.LocalClientId}] Timed out waiting for the client to be an observer and spawn the {nameof(NetworkObject)}!");
+                Assert.False(client.SpawnManager.SpawnedObjects[m_ObserverTestObject.NetworkObjectId].SpawnWithObservers, $"Client-{client.LocalClientId} instance of {m_ObserverTestObject.name} has a {nameof(NetworkObject.SpawnWithObservers)} value of true!");
+            }
+        }
+
+        private bool ClientsSpawnedObject1()
+        {
+            foreach (var client in m_ClientNetworkManagers)
+            {
+                if (!client.SpawnManager.SpawnedObjects.ContainsKey(m_NetSpawnedObject1.NetworkObjectId))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private StringBuilder m_ErrorLog = new StringBuilder();
+        private ulong m_ClientWithoutVisibility;
+        private bool Object1IsNotVisibileToClient()
+        {
+            m_ErrorLog.Clear();
+            foreach (var client in m_ClientNetworkManagers)
+            {
+                if (client.LocalClientId == m_ClientWithoutVisibility)
+                {
+                    if (client.SpawnManager.SpawnedObjects.ContainsKey(m_NetSpawnedObject1.NetworkObjectId))
+                    {
+                        m_ErrorLog.AppendLine($"{m_NetSpawnedObject1.name} is still visible to Client-{m_ClientWithoutVisibility}!");
+                    }
+                }
+                else
+                if (client.SpawnManager.SpawnedObjects[m_NetSpawnedObject1.NetworkObjectId].IsNetworkVisibleTo(m_ClientWithoutVisibility))
+                {
+                    m_ErrorLog.AppendLine($"Local instance of {m_NetSpawnedObject1.name} on Client-{client.LocalClientId} thinks Client-{m_ClientWithoutVisibility} still has visibility!");
+                }
+            }
+            return m_ErrorLog.Length == 0;
+        }
+
         [UnityTest]
         public IEnumerator NetworkHideChangeOwnership()
         {
@@ -387,11 +497,28 @@ namespace Unity.Netcode.RuntimeTests
             var spawnedObject1 = SpawnObject(m_PrefabToSpawn, m_ServerNetworkManager);
             m_NetSpawnedObject1 = spawnedObject1.GetComponent<NetworkObject>();
 
+            yield return WaitForConditionOrTimeOut(ClientsSpawnedObject1);
+            AssertOnTimeout($"Not all clients spawned object!");
+
             m_NetSpawnedObject1.GetComponent<ShowHideObject>().MyNetworkVariable.Value++;
             // Hide an object to a client
             m_NetSpawnedObject1.NetworkHide(m_ClientNetworkManagers[1].LocalClientId);
+            m_ClientWithoutVisibility = m_ClientNetworkManagers[1].LocalClientId;
+
+            yield return WaitForConditionOrTimeOut(Object1IsNotVisibileToClient);
+            AssertOnTimeout($"NetworkObject is still visible to Client-{m_ClientWithoutVisibility} or other clients think it is still visible to Client-{m_ClientWithoutVisibility}:\n {m_ErrorLog}");
 
             yield return WaitForConditionOrTimeOut(() => ShowHideObject.ClientTargetedNetworkObjects.Count == 0);
+
+            foreach (var client in m_ClientNetworkManagers)
+            {
+                if (m_ClientNetworkManagers[1].LocalClientId == client.LocalClientId)
+                {
+                    continue;
+                }
+                var clientInstance = client.SpawnManager.SpawnedObjects[m_NetSpawnedObject1.NetworkObjectId];
+                Assert.IsFalse(clientInstance.IsNetworkVisibleTo(m_ClientNetworkManagers[1].LocalClientId), $"Object instance on Client-{client.LocalClientId} is still visible to Client-{m_ClientNetworkManagers[1].LocalClientId}!");
+            }
 
             // Change ownership while the object is hidden to some
             m_NetSpawnedObject1.ChangeOwnership(m_ClientNetworkManagers[0].LocalClientId);
@@ -400,30 +527,49 @@ namespace Unity.Netcode.RuntimeTests
             yield return new WaitForSeconds(1.25f);
 
             LogAssert.NoUnexpectedReceived();
-
             // Show the object again to check nothing unexpected happens
-            m_NetSpawnedObject1.NetworkShow(m_ClientNetworkManagers[1].LocalClientId);
+            if (m_DistributedAuthority)
+            {
+                Assert.True(m_ClientNetworkManagers[0].SpawnManager.SpawnedObjects.ContainsKey(m_NetSpawnedObject1.NetworkObjectId), $"Client-{m_ClientNetworkManagers[0].LocalClientId} has no spawned object with an ID of: {m_NetSpawnedObject1.NetworkObjectId}!");
+                var clientInstance = m_ClientNetworkManagers[0].SpawnManager.SpawnedObjects[m_NetSpawnedObject1.NetworkObjectId];
+                Assert.True(clientInstance.HasAuthority, $"Client-{m_ClientNetworkManagers[0].LocalClientId} does not have authority to hide NetworkObject ID: {m_NetSpawnedObject1.NetworkObjectId}!");
+                clientInstance.NetworkShow(m_ClientNetworkManagers[1].LocalClientId);
+            }
+            else
+            {
+                m_NetSpawnedObject1.NetworkShow(m_ClientNetworkManagers[1].LocalClientId);
+            }
 
             yield return WaitForConditionOrTimeOut(() => ShowHideObject.ClientTargetedNetworkObjects.Count == 1);
 
             Assert.True(ShowHideObject.ClientTargetedNetworkObjects[0].OwnerClientId == m_ClientNetworkManagers[0].LocalClientId);
         }
 
+        private bool AllClientsSpawnedObject1()
+        {
+            foreach (var client in m_ClientNetworkManagers)
+            {
+                if (!ShowHideObject.ObjectsPerClientId.ContainsKey(client.LocalClientId))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         [UnityTest]
         public IEnumerator NetworkHideChangeOwnershipNotHidden()
         {
             ShowHideObject.ClientTargetedNetworkObjects.Clear();
+            ShowHideObject.ObjectsPerClientId.Clear();
             ShowHideObject.ClientIdToTarget = m_ClientNetworkManagers[1].LocalClientId;
             ShowHideObject.Silent = true;
 
             var spawnedObject1 = SpawnObject(m_PrefabToSpawn, m_ServerNetworkManager);
             m_NetSpawnedObject1 = spawnedObject1.GetComponent<NetworkObject>();
 
-            // wait for host to have spawned and gained ownership
-            while (ShowHideObject.GainOwnershipCount == 0)
-            {
-                yield return new WaitForSeconds(0.0f);
-            }
+            yield return WaitForConditionOrTimeOut(AllClientsSpawnedObject1);
+            AssertOnTimeout($"Timed out waiting for all clients to spawn {spawnedObject1.name}!");
 
             // change the value
             m_NetSpawnedObject1.GetComponent<ShowHideObject>().MyOwnerReadNetworkVariable.Value++;
@@ -445,10 +591,10 @@ namespace Unity.Netcode.RuntimeTests
             yield return WaitForTicks(m_ClientNetworkManagers[0], 3);
 
             // verify ownership changed
-            Assert.True(ShowHideObject.ClientTargetedNetworkObjects[0].OwnerClientId == m_ClientNetworkManagers[0].LocalClientId);
+            Assert.AreEqual(ShowHideObject.ClientTargetedNetworkObjects[0].OwnerClientId, m_ClientNetworkManagers[0].LocalClientId);
 
             // verify the expected client got the OnValueChanged. (Only client 1 sets this value)
-            Assert.True(ShowHideObject.ValueAfterOwnershipChange == 1);
+            Assert.AreEqual(1, ShowHideObject.ValueAfterOwnershipChange);
         }
 
         private string Display(NetworkList<int> list)
@@ -487,20 +633,20 @@ namespace Unity.Netcode.RuntimeTests
 
         private IEnumerator HideThenShowAndHideThenModifyAndShow()
         {
-            Debug.Log("Hiding");
+            VerboseDebug("Hiding");
             // hide
             m_NetSpawnedObject1.NetworkHide(1);
             yield return WaitForTicks(m_ServerNetworkManager, 3);
             yield return WaitForTicks(m_ClientNetworkManagers[0], 3);
 
-            Debug.Log("Showing and Hiding");
+            VerboseDebug("Showing and Hiding");
             // show and hide
             m_NetSpawnedObject1.NetworkShow(1);
             m_NetSpawnedObject1.NetworkHide(1);
             yield return WaitForTicks(m_ServerNetworkManager, 3);
             yield return WaitForTicks(m_ClientNetworkManagers[0], 3);
 
-            Debug.Log("Modifying and Showing");
+            VerboseDebug("Modifying and Showing");
             // modify and show
             m_NetSpawnedObject1.GetComponent<ShowHideObject>().MyList.Add(5);
             m_NetSpawnedObject1.NetworkShow(1);
@@ -575,19 +721,19 @@ namespace Unity.Netcode.RuntimeTests
                 switch (i)
                 {
                     case 0:
-                        Debug.Log("Running HideThenModifyAndShow");
+                        VerboseDebug("Running HideThenModifyAndShow");
                         yield return HideThenModifyAndShow();
                         break;
                     case 1:
-                        Debug.Log("Running HideThenShowAndModify");
+                        VerboseDebug("Running HideThenShowAndModify");
                         yield return HideThenShowAndModify();
                         break;
                     case 2:
-                        Debug.Log("Running HideThenShowAndHideThenModifyAndShow");
+                        VerboseDebug("Running HideThenShowAndHideThenModifyAndShow");
                         yield return HideThenShowAndHideThenModifyAndShow();
                         break;
                     case 3:
-                        Debug.Log("Running HideThenShowAndRPC");
+                        VerboseDebug("Running HideThenShowAndRPC");
                         ShowHideObject.ClientIdsRpcCalledOn = new List<ulong>();
                         yield return HideThenShowAndRPC();
                         // Provide enough time for slower systems or VM systems possibly under a heavy load could fail on this test

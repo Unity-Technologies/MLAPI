@@ -7,7 +7,7 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class IntegrationTestUpdated : NetcodeIntegrationTest
+    internal class IntegrationTestUpdated : NetcodeIntegrationTest
     {
         private GameObject m_MyNetworkPrefab;
         protected override int NumberOfClients => 1;
@@ -45,7 +45,7 @@ namespace Unity.Netcode.RuntimeTests
 
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
-    public class IntegrationTestExtended : NetcodeIntegrationTest
+    internal class IntegrationTestExtended : NetcodeIntegrationTest
     {
         private GameObject m_MyNetworkPrefab;
         protected override int NumberOfClients => 1;
@@ -84,11 +84,11 @@ namespace Unity.Netcode.RuntimeTests
         }
     }
 
-    public class ExampleTestComponent : NetworkBehaviour
+    internal class ExampleTestComponent : NetworkBehaviour
     {
     }
 
-    public class IntegrationTestPlayers : NetcodeIntegrationTest
+    internal class IntegrationTestPlayers : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 5;
 
@@ -126,13 +126,13 @@ namespace Unity.Netcode.RuntimeTests
         }
     }
 
-    public class SpawnTest : NetworkBehaviour
+    internal class SpawnTest : NetworkBehaviour
     {
         public static int TotalSpawned;
         public override void OnNetworkSpawn() { TotalSpawned++; }
         public override void OnNetworkDespawn() { TotalSpawned--; }
     }
-    public class IntegrationTestSpawning : NetcodeIntegrationTest
+    internal class IntegrationTestSpawning : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 2;
         private GameObject m_NetworkPrefabToSpawn;

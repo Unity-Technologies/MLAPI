@@ -8,12 +8,12 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class DisconnectReasonObject : NetworkBehaviour
+    internal class DisconnectReasonObject : NetworkBehaviour
     {
 
     }
 
-    public class DisconnectReasonTests : NetcodeIntegrationTest
+    internal class DisconnectReasonTests : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 2;
 

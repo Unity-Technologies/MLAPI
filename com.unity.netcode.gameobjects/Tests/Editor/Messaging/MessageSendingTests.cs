@@ -10,7 +10,7 @@ using Random = System.Random;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class MessageSendingTests
+    internal class MessageSendingTests
     {
         private struct TestMessage : INetworkMessage, INetworkSerializeByMemcpy
         {

@@ -1,0 +1,188 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f51159758cdc14734b2cb6ec1e40e18e, type: 3}
+  m_Name: NetStateMonitorConfiguration
+  m_EditorClassIdentifier: 
+  <DisplayElements>k__BackingField:
+  - <FieldsInitialized>k__BackingField: 1
+    <Type>k__BackingField: 2
+    <Label>k__BackingField: Bandwidth Consumption
+    <Stats>k__BackingField:
+    - <TypeIndex>k__BackingField: 0
+      <EnumValue>k__BackingField: 6
+    - <TypeIndex>k__BackingField: 0
+      <EnumValue>k__BackingField: 5
+    <CounterConfiguration>k__BackingField:
+      <SmoothingMethod>k__BackingField: 1
+      <AggregationMethod>k__BackingField: 1
+      m_SignificantDigits: 3
+      <HighlightLowerBound>k__BackingField: -3.402823e+38
+      <HighlightUpperBound>k__BackingField: 3.402823e+38
+      <ExponentialMovingAverageParams>k__BackingField:
+        m_HalfLife: 1000000000
+      <SimpleMovingAverageParams>k__BackingField:
+        m_SampleCount: 512
+        <SampleRate>k__BackingField: 0
+    <GraphConfiguration>k__BackingField:
+      m_SampleCount: 30
+      <SampleRate>k__BackingField: 1
+      <VariableColors>k__BackingField: []
+      <XAxisType>k__BackingField: 0
+      <LineGraphConfiguration>k__BackingField:
+        m_LineThickness: 2
+    <SerializedStats>k__BackingField:
+    - <TypeName>k__BackingField: Unity.Multiplayer.Tools.MetricTypes.DirectedMetricType,
+        Unity.Multiplayer.Tools.MetricTypes, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+      <ValueName>k__BackingField: TotalBytesSent
+    - <TypeName>k__BackingField: Unity.Multiplayer.Tools.MetricTypes.DirectedMetricType,
+        Unity.Multiplayer.Tools.MetricTypes, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+      <ValueName>k__BackingField: TotalBytesReceived
+  - <FieldsInitialized>k__BackingField: 1
+    <Type>k__BackingField: 0
+    <Label>k__BackingField: Packet Loss
+    <Stats>k__BackingField:
+    - <TypeIndex>k__BackingField: 0
+      <EnumValue>k__BackingField: 65
+    <CounterConfiguration>k__BackingField:
+      <SmoothingMethod>k__BackingField: 1
+      <AggregationMethod>k__BackingField: 1
+      m_SignificantDigits: 3
+      <HighlightLowerBound>k__BackingField: -3.402823e+38
+      <HighlightUpperBound>k__BackingField: 3.402823e+38
+      <ExponentialMovingAverageParams>k__BackingField:
+        m_HalfLife: 1000000000
+      <SimpleMovingAverageParams>k__BackingField:
+        m_SampleCount: 512
+        <SampleRate>k__BackingField: 0
+    <GraphConfiguration>k__BackingField:
+      m_SampleCount: 30
+      <SampleRate>k__BackingField: 1
+      <VariableColors>k__BackingField: []
+      <XAxisType>k__BackingField: 0
+      <LineGraphConfiguration>k__BackingField:
+        m_LineThickness: 2
+    <SerializedStats>k__BackingField:
+    - <TypeName>k__BackingField: Unity.Multiplayer.Tools.MetricTypes.DirectedMetricType,
+        Unity.Multiplayer.Tools.MetricTypes, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+      <ValueName>k__BackingField: PacketLoss
+  - <FieldsInitialized>k__BackingField: 1
+    <Type>k__BackingField: 0
+    <Label>k__BackingField: Bytes Sent
+    <Stats>k__BackingField:
+    - <TypeIndex>k__BackingField: 0
+      <EnumValue>k__BackingField: 6
+    <CounterConfiguration>k__BackingField:
+      <SmoothingMethod>k__BackingField: 1
+      <AggregationMethod>k__BackingField: 1
+      m_SignificantDigits: 3
+      <HighlightLowerBound>k__BackingField: -3.402823e+38
+      <HighlightUpperBound>k__BackingField: 3.402823e+38
+      <ExponentialMovingAverageParams>k__BackingField:
+        m_HalfLife: 1000000000
+      <SimpleMovingAverageParams>k__BackingField:
+        m_SampleCount: 512
+        <SampleRate>k__BackingField: 0
+    <GraphConfiguration>k__BackingField:
+      m_SampleCount: 30
+      <SampleRate>k__BackingField: 1
+      <VariableColors>k__BackingField: []
+      <XAxisType>k__BackingField: 0
+      <LineGraphConfiguration>k__BackingField:
+        m_LineThickness: 2
+    <SerializedStats>k__BackingField:
+    - <TypeName>k__BackingField: Unity.Multiplayer.Tools.MetricTypes.DirectedMetricType,
+        Unity.Multiplayer.Tools.MetricTypes, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+      <ValueName>k__BackingField: TotalBytesSent
+  - <FieldsInitialized>k__BackingField: 1
+    <Type>k__BackingField: 0
+    <Label>k__BackingField: Bytes Received
+    <Stats>k__BackingField:
+    - <TypeIndex>k__BackingField: 0
+      <EnumValue>k__BackingField: 5
+    <CounterConfiguration>k__BackingField:
+      <SmoothingMethod>k__BackingField: 1
+      <AggregationMethod>k__BackingField: 1
+      m_SignificantDigits: 3
+      <HighlightLowerBound>k__BackingField: -3.402823e+38
+      <HighlightUpperBound>k__BackingField: 3.402823e+38
+      <ExponentialMovingAverageParams>k__BackingField:
+        m_HalfLife: 1000000000
+      <SimpleMovingAverageParams>k__BackingField:
+        m_SampleCount: 512
+        <SampleRate>k__BackingField: 0
+    <GraphConfiguration>k__BackingField:
+      m_SampleCount: 30
+      <SampleRate>k__BackingField: 1
+      <VariableColors>k__BackingField: []
+      <XAxisType>k__BackingField: 0
+      <LineGraphConfiguration>k__BackingField:
+        m_LineThickness: 2
+    <SerializedStats>k__BackingField:
+    - <TypeName>k__BackingField: Unity.Multiplayer.Tools.MetricTypes.DirectedMetricType,
+        Unity.Multiplayer.Tools.MetricTypes, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+      <ValueName>k__BackingField: TotalBytesReceived
+  - <FieldsInitialized>k__BackingField: 1
+    <Type>k__BackingField: 0
+    <Label>k__BackingField: Packets Sent
+    <Stats>k__BackingField:
+    - <TypeIndex>k__BackingField: 0
+      <EnumValue>k__BackingField: 50
+    <CounterConfiguration>k__BackingField:
+      <SmoothingMethod>k__BackingField: 1
+      <AggregationMethod>k__BackingField: 1
+      m_SignificantDigits: 3
+      <HighlightLowerBound>k__BackingField: -3.402823e+38
+      <HighlightUpperBound>k__BackingField: 3.402823e+38
+      <ExponentialMovingAverageParams>k__BackingField:
+        m_HalfLife: 1000000000
+      <SimpleMovingAverageParams>k__BackingField:
+        m_SampleCount: 512
+        <SampleRate>k__BackingField: 0
+    <GraphConfiguration>k__BackingField:
+      m_SampleCount: 30
+      <SampleRate>k__BackingField: 1
+      <VariableColors>k__BackingField: []
+      <XAxisType>k__BackingField: 0
+      <LineGraphConfiguration>k__BackingField:
+        m_LineThickness: 2
+    <SerializedStats>k__BackingField:
+    - <TypeName>k__BackingField: Unity.Multiplayer.Tools.MetricTypes.DirectedMetricType,
+        Unity.Multiplayer.Tools.MetricTypes, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+      <ValueName>k__BackingField: PacketsSent
+  - <FieldsInitialized>k__BackingField: 1
+    <Type>k__BackingField: 0
+    <Label>k__BackingField: Packets Received
+    <Stats>k__BackingField:
+    - <TypeIndex>k__BackingField: 0
+      <EnumValue>k__BackingField: 49
+    <CounterConfiguration>k__BackingField:
+      <SmoothingMethod>k__BackingField: 1
+      <AggregationMethod>k__BackingField: 1
+      m_SignificantDigits: 3
+      <HighlightLowerBound>k__BackingField: -3.402823e+38
+      <HighlightUpperBound>k__BackingField: 3.402823e+38
+      <ExponentialMovingAverageParams>k__BackingField:
+        m_HalfLife: 1000000000
+      <SimpleMovingAverageParams>k__BackingField:
+        m_SampleCount: 512
+        <SampleRate>k__BackingField: 0
+    <GraphConfiguration>k__BackingField:
+      m_SampleCount: 30
+      <SampleRate>k__BackingField: 1
+      <VariableColors>k__BackingField: []
+      <XAxisType>k__BackingField: 0
+      <LineGraphConfiguration>k__BackingField:
+        m_LineThickness: 2
+    <SerializedStats>k__BackingField:
+    - <TypeName>k__BackingField: Unity.Multiplayer.Tools.MetricTypes.DirectedMetricType,
+        Unity.Multiplayer.Tools.MetricTypes, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+      <ValueName>k__BackingField: PacketsReceived

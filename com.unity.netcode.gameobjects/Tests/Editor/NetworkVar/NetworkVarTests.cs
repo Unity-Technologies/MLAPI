@@ -3,9 +3,9 @@ using UnityEngine;
 
 namespace Unity.Netcode.EditorTests.NetworkVar
 {
-    public class NetworkVarTests
+    internal class NetworkVarTests
     {
-        public class NetworkVarComponent : NetworkBehaviour
+        internal class NetworkVarComponent : NetworkBehaviour
         {
             public NetworkVariable<int> NetworkVariable = new NetworkVariable<int>();
         }

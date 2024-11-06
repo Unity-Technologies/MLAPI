@@ -24,6 +24,7 @@ namespace Unity.Netcode
         /// The callback to be invoked when the list gets changed
         /// </summary>
         public event OnListChangedDelegate OnListChanged;
+        internal override NetworkVariableType Type => NetworkVariableType.NetworkList;
 
         /// <summary>
         /// Constructor method for <see cref="NetworkList"/>
@@ -93,29 +94,29 @@ namespace Unity.Netcode
                 {
                     case NetworkListEvent<T>.EventType.Add:
                         {
-                            NetworkVariableSerialization<T>.Write(writer, ref element.Value);
+                            NetworkVariableSerialization<T>.Serializer.Write(writer, ref element.Value);
                         }
                         break;
                     case NetworkListEvent<T>.EventType.Insert:
                         {
-                            writer.WriteValueSafe(element.Index);
-                            NetworkVariableSerialization<T>.Write(writer, ref element.Value);
+                            BytePacker.WriteValueBitPacked(writer, element.Index);
+                            NetworkVariableSerialization<T>.Serializer.Write(writer, ref element.Value);
                         }
                         break;
                     case NetworkListEvent<T>.EventType.Remove:
                         {
-                            NetworkVariableSerialization<T>.Write(writer, ref element.Value);
+                            NetworkVariableSerialization<T>.Serializer.Write(writer, ref element.Value);
                         }
                         break;
                     case NetworkListEvent<T>.EventType.RemoveAt:
                         {
-                            writer.WriteValueSafe(element.Index);
+                            BytePacker.WriteValueBitPacked(writer, element.Index);
                         }
                         break;
                     case NetworkListEvent<T>.EventType.Value:
                         {
-                            writer.WriteValueSafe(element.Index);
-                            NetworkVariableSerialization<T>.Write(writer, ref element.Value);
+                            BytePacker.WriteValueBitPacked(writer, element.Index);
+                            NetworkVariableSerialization<T>.Serializer.Write(writer, ref element.Value);
                         }
                         break;
                     case NetworkListEvent<T>.EventType.Clear:
@@ -130,10 +131,24 @@ namespace Unity.Netcode
         /// <inheritdoc />
         public override void WriteField(FastBufferWriter writer)
         {
+            if (m_NetworkManager.DistributedAuthorityMode)
+            {
+                writer.WriteValueSafe(NetworkVariableSerialization<T>.Serializer.Type);
+                if (NetworkVariableSerialization<T>.Serializer.Type == NetworkVariableType.Unmanaged)
+                {
+                    // Write the size of the unmanaged serialized type as it has a fixed size. This allows the CMB runtime to correctly read the unmanged type.
+                    var placeholder = new T();
+                    var startPos = writer.Position;
+                    NetworkVariableSerialization<T>.Serializer.Write(writer, ref placeholder);
+                    var size = writer.Position - startPos;
+                    writer.Seek(startPos);
+                    BytePacker.WriteValueBitPacked(writer, size);
+                }
+            }
             writer.WriteValueSafe((ushort)m_List.Length);
             for (int i = 0; i < m_List.Length; i++)
             {
-                NetworkVariableSerialization<T>.Write(writer, ref m_List.ElementAt(i));
+                NetworkVariableSerialization<T>.Serializer.Write(writer, ref m_List.ElementAt(i));
             }
         }
 
@@ -141,11 +156,20 @@ namespace Unity.Netcode
         public override void ReadField(FastBufferReader reader)
         {
             m_List.Clear();
+            if (m_NetworkManager.DistributedAuthorityMode)
+            {
+                SerializationTools.ReadType(reader, NetworkVariableSerialization<T>.Serializer);
+                // Collection item type is used by the DA server, drop value here.
+                if (NetworkVariableSerialization<T>.Serializer.Type == NetworkVariableType.Unmanaged)
+                {
+                    ByteUnpacker.ReadValueBitPacked(reader, out int _);
+                }
+            }
             reader.ReadValueSafe(out ushort count);
             for (int i = 0; i < count; i++)
             {
                 var value = new T();
-                NetworkVariableSerialization<T>.Read(reader, ref value);
+                NetworkVariableSerialization<T>.Serializer.Read(reader, ref value);
                 m_List.Add(value);
             }
         }
@@ -153,6 +177,13 @@ namespace Unity.Netcode
         /// <inheritdoc />
         public override void ReadDelta(FastBufferReader reader, bool keepDirtyDelta)
         {
+            /// This is only invoked by <see cref="NetworkVariableDeltaMessage"/> and the only time
+            /// keepDirtyDelta is set is when it is the server processing. To be able to handle previous
+            /// versions, we use IsServer to keep the dirty states received and the keepDirtyDelta to
+            /// actually mark this as dirty and add it to the list of <see cref="NetworkObject"/>s to
+            /// be updated. With the forwarding of deltas being handled by <see cref="NetworkVariableDeltaMessage"/>,
+            /// once all clients have been forwarded the dirty events, we clear them by invoking <see cref="PostDeltaRead"/>.
+            var isServer = m_NetworkManager.IsServer;
             reader.ReadValueSafe(out ushort deltaCount);
             for (int i = 0; i < deltaCount; i++)
             {
@@ -162,7 +193,7 @@ namespace Unity.Netcode
                     case NetworkListEvent<T>.EventType.Add:
                         {
                             var value = new T();
-                            NetworkVariableSerialization<T>.Read(reader, ref value);
+                            NetworkVariableSerialization<T>.Serializer.Read(reader, ref value);
                             m_List.Add(value);
 
                             if (OnListChanged != null)
@@ -175,7 +206,7 @@ namespace Unity.Netcode
                                 });
                             }
 
-                            if (keepDirtyDelta)
+                            if (isServer)
                             {
                                 m_DirtyEvents.Add(new NetworkListEvent<T>()
                                 {
@@ -183,15 +214,19 @@ namespace Unity.Netcode
                                     Index = m_List.Length - 1,
                                     Value = m_List[m_List.Length - 1]
                                 });
-                                MarkNetworkObjectDirty();
+                                // Preserve the legacy way of handling this
+                                if (keepDirtyDelta)
+                                {
+                                    MarkNetworkObjectDirty();
+                                }
                             }
                         }
                         break;
                     case NetworkListEvent<T>.EventType.Insert:
                         {
-                            reader.ReadValueSafe(out int index);
+                            ByteUnpacker.ReadValueBitPacked(reader, out int index);
                             var value = new T();
-                            NetworkVariableSerialization<T>.Read(reader, ref value);
+                            NetworkVariableSerialization<T>.Serializer.Read(reader, ref value);
 
                             if (index < m_List.Length)
                             {
@@ -213,7 +248,7 @@ namespace Unity.Netcode
                                 });
                             }
 
-                            if (keepDirtyDelta)
+                            if (isServer)
                             {
                                 m_DirtyEvents.Add(new NetworkListEvent<T>()
                                 {
@@ -221,14 +256,18 @@ namespace Unity.Netcode
                                     Index = index,
                                     Value = m_List[index]
                                 });
-                                MarkNetworkObjectDirty();
+                                // Preserve the legacy way of handling this
+                                if (keepDirtyDelta)
+                                {
+                                    MarkNetworkObjectDirty();
+                                }
                             }
                         }
                         break;
                     case NetworkListEvent<T>.EventType.Remove:
                         {
                             var value = new T();
-                            NetworkVariableSerialization<T>.Read(reader, ref value);
+                            NetworkVariableSerialization<T>.Serializer.Read(reader, ref value);
                             int index = m_List.IndexOf(value);
                             if (index == -1)
                             {
@@ -247,7 +286,7 @@ namespace Unity.Netcode
                                 });
                             }
 
-                            if (keepDirtyDelta)
+                            if (isServer)
                             {
                                 m_DirtyEvents.Add(new NetworkListEvent<T>()
                                 {
@@ -255,13 +294,17 @@ namespace Unity.Netcode
                                     Index = index,
                                     Value = value
                                 });
-                                MarkNetworkObjectDirty();
+                                // Preserve the legacy way of handling this
+                                if (keepDirtyDelta)
+                                {
+                                    MarkNetworkObjectDirty();
+                                }
                             }
                         }
                         break;
                     case NetworkListEvent<T>.EventType.RemoveAt:
                         {
-                            reader.ReadValueSafe(out int index);
+                            ByteUnpacker.ReadValueBitPacked(reader, out int index);
                             T value = m_List[index];
                             m_List.RemoveAt(index);
 
@@ -275,7 +318,7 @@ namespace Unity.Netcode
                                 });
                             }
 
-                            if (keepDirtyDelta)
+                            if (isServer)
                             {
                                 m_DirtyEvents.Add(new NetworkListEvent<T>()
                                 {
@@ -283,15 +326,19 @@ namespace Unity.Netcode
                                     Index = index,
                                     Value = value
                                 });
-                                MarkNetworkObjectDirty();
+                                // Preserve the legacy way of handling this
+                                if (keepDirtyDelta)
+                                {
+                                    MarkNetworkObjectDirty();
+                                }
                             }
                         }
                         break;
                     case NetworkListEvent<T>.EventType.Value:
                         {
-                            reader.ReadValueSafe(out int index);
+                            ByteUnpacker.ReadValueBitPacked(reader, out int index);
                             var value = new T();
-                            NetworkVariableSerialization<T>.Read(reader, ref value);
+                            NetworkVariableSerialization<T>.Serializer.Read(reader, ref value);
                             if (index >= m_List.Length)
                             {
                                 throw new Exception("Shouldn't be here, index is higher than list length");
@@ -311,7 +358,7 @@ namespace Unity.Netcode
                                 });
                             }
 
-                            if (keepDirtyDelta)
+                            if (isServer)
                             {
                                 m_DirtyEvents.Add(new NetworkListEvent<T>()
                                 {
@@ -320,7 +367,11 @@ namespace Unity.Netcode
                                     Value = value,
                                     PreviousValue = previousValue
                                 });
-                                MarkNetworkObjectDirty();
+                                // Preserve the legacy way of handling this
+                                if (keepDirtyDelta)
+                                {
+                                    MarkNetworkObjectDirty();
+                                }
                             }
                         }
                         break;
@@ -337,13 +388,18 @@ namespace Unity.Netcode
                                 });
                             }
 
-                            if (keepDirtyDelta)
+                            if (isServer)
                             {
                                 m_DirtyEvents.Add(new NetworkListEvent<T>()
                                 {
                                     Type = eventType
                                 });
-                                MarkNetworkObjectDirty();
+
+                                // Preserve the legacy way of handling this
+                                if (keepDirtyDelta)
+                                {
+                                    MarkNetworkObjectDirty();
+                                }
                             }
                         }
                         break;
@@ -358,6 +414,18 @@ namespace Unity.Netcode
         }
 
         /// <inheritdoc />
+        /// <remarks>
+        /// For NetworkList, we just need to reset dirty if a server has read deltas
+        /// </remarks>
+        internal override void PostDeltaRead()
+        {
+            if (m_NetworkManager.IsServer)
+            {
+                ResetDirty();
+            }
+        }
+
+        /// <inheritdoc />
         public IEnumerator<T> GetEnumerator()
         {
             return m_List.GetEnumerator();
@@ -367,7 +435,7 @@ namespace Unity.Netcode
         public void Add(T item)
         {
             // check write permissions
-            if (!CanClientWrite(m_NetworkBehaviour.NetworkManager.LocalClientId))
+            if (!CanClientWrite(m_NetworkManager.LocalClientId))
             {
                 LogWritePermissionError();
                 return;
@@ -389,7 +457,7 @@ namespace Unity.Netcode
         public void Clear()
         {
             // check write permissions
-            if (!CanClientWrite(m_NetworkBehaviour.NetworkManager.LocalClientId))
+            if (!CanClientWrite(m_NetworkManager.LocalClientId))
             {
                 LogWritePermissionError();
                 return;
@@ -416,7 +484,7 @@ namespace Unity.Netcode
         public bool Remove(T item)
         {
             // check write permissions
-            if (!CanClientWrite(m_NetworkBehaviour.NetworkManager.LocalClientId))
+            if (!CanClientWrite(m_NetworkManager.LocalClientId))
             {
                 LogWritePermissionError();
                 return false;
@@ -452,7 +520,7 @@ namespace Unity.Netcode
         public void Insert(int index, T item)
         {
             // check write permissions
-            if (!CanClientWrite(m_NetworkBehaviour.NetworkManager.LocalClientId))
+            if (!CanClientWrite(m_NetworkManager.LocalClientId))
             {
                 LogWritePermissionError();
                 return;
@@ -482,7 +550,7 @@ namespace Unity.Netcode
         public void RemoveAt(int index)
         {
             // check write permissions
-            if (!CanClientWrite(m_NetworkBehaviour.NetworkManager.LocalClientId))
+            if (!CanClientWrite(m_NetworkManager.LocalClientId))
             {
                 LogWritePermissionError();
                 return;
@@ -501,6 +569,8 @@ namespace Unity.Netcode
             HandleAddListEvent(listEvent);
         }
 
+
+
         /// <inheritdoc />
         public T this[int index]
         {
@@ -508,7 +578,7 @@ namespace Unity.Netcode
             set
             {
                 // check write permissions
-                if (!CanClientWrite(m_NetworkBehaviour.NetworkManager.LocalClientId))
+                if (!CanClientWrite(m_NetworkManager.LocalClientId))
                 {
                     LogWritePermissionError();
                     return;
@@ -557,6 +627,7 @@ namespace Unity.Netcode
         {
             m_List.Dispose();
             m_DirtyEvents.Dispose();
+            base.Dispose();
         }
     }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using TrollKing.Core;
 using UnityEngine;
 
 namespace Unity.Netcode
@@ -13,6 +14,8 @@ namespace Unity.Netcode
     [Serializable]
     public class NetworkPrefabs
     {
+        private static readonly NetworkLogScope k_Log = new NetworkLogScope(nameof(NetworkPrefabs));
+
         /// <summary>
         /// Edit-time scripted object containing a list of NetworkPrefabs.
         /// </summary>
@@ -49,6 +52,7 @@ namespace Unity.Netcode
 
         private void AddTriggeredByNetworkPrefabList(NetworkPrefab networkPrefab)
         {
+            k_Log.Debug(() => $"NetworkPrefabs AddTriggeredByNetworkPrefabList [networkPrefab={networkPrefab}]");
             if (AddPrefabRegistration(networkPrefab))
             {
                 // Don't add this to m_RuntimeAddedPrefabs
@@ -59,6 +63,7 @@ namespace Unity.Netcode
 
         private void RemoveTriggeredByNetworkPrefabList(NetworkPrefab networkPrefab)
         {
+            k_Log.Debug(() => $"NetworkPrefabs RemoveTriggeredByNetworkPrefabList [networkPrefab={networkPrefab}]");
             m_Prefabs.Remove(networkPrefab);
         }
 
@@ -86,6 +91,7 @@ namespace Unity.Netcode
         /// </summary>
         public void Initialize(bool warnInvalid = true)
         {
+            k_Log.Debug(() => $"NetworkPrefabs Initialize [warnInvalid={warnInvalid}]");
             m_Prefabs.Clear();
             foreach (var list in NetworkPrefabsLists)
             {
@@ -104,6 +110,8 @@ namespace Unity.Netcode
                 {
                     foreach (var networkPrefab in list.PrefabList)
                     {
+                        var netObj = networkPrefab.Prefab.GetComponent<NetworkObject>();
+                        k_Log.Debug(() => $"NetworkPrefabs Add networkPrefab [networkPrefab={networkPrefab}] [prefab={networkPrefab.Prefab}] [prefabHash={netObj.PrefabIdHash}] [globalHash={netObj.GlobalObjectIdHash}]");
                         prefabs.Add(networkPrefab);
                     }
                 }
@@ -277,9 +285,19 @@ namespace Unity.Netcode
             {
                 return false;
             }
+
+            var netObj = networkPrefab.Prefab.GetComponent<NetworkObject>();
+            if (netObj)
+            {
+                k_Log.Debug(() => $"NetworkPrefabs AddPrefabRegistration [prefab={networkPrefab.Prefab.name}] [networkPrefab={networkPrefab}] [hash={netObj.PrefabIdHash}] [global={netObj.GlobalObjectIdHash}]");
+            }
+
+
+
             // Safeguard validation check since this method is called from outside of NetworkConfig and we can't control what's passed in.
             if (!networkPrefab.Validate())
             {
+                Debug.LogError($"NetworkPrefabs AddPrefabRegistration INVALID [networkPrefab={networkPrefab}]");
                 return false;
             }
 
@@ -292,7 +310,7 @@ namespace Unity.Netcode
                 var networkObject = networkPrefab.Prefab.GetComponent<NetworkObject>();
 
                 // This should never happen, but in the case it somehow does log an error and remove the duplicate entry
-                Debug.LogError($"{nameof(NetworkPrefab)} ({networkObject.name}) has a duplicate {nameof(NetworkObject.GlobalObjectIdHash)} source entry value of: {source}!");
+                Debug.LogError($"NetworkPrefabs {nameof(NetworkPrefab)} ({networkObject.name}) has a duplicate {nameof(NetworkObject.GlobalObjectIdHash)} source entry value of: {source}!");
                 return false;
             }
 
@@ -300,6 +318,7 @@ namespace Unity.Netcode
             if (networkPrefab.Override == NetworkPrefabOverride.None)
             {
                 NetworkPrefabOverrideLinks.Add(source, networkPrefab);
+                k_Log.Debug(() => $"NetworkPrefabs AddPrefabRegistration NetworkPrefabOverrideLinks [prefab={networkPrefab.Prefab.name}] [source={source}] [networkPrefab={networkPrefab}]");
                 return true;
             }
 

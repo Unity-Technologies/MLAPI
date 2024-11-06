@@ -6,7 +6,7 @@ using Object = UnityEngine.Object;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class NestedNetworkManagerTests
+    internal class NestedNetworkManagerTests
     {
         [Test]
         public void CheckNestedNetworkManager()

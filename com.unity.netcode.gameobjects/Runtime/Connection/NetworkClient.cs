@@ -1,7 +1,8 @@
-using System.Collections.Generic;
+using UnityEngine;
 
 namespace Unity.Netcode
 {
+
     /// <summary>
     /// A NetworkClient
     /// </summary>
@@ -33,6 +34,15 @@ namespace Unity.Netcode
         /// </summary>
         internal bool IsApproved { get; set; }
 
+        public NetworkTopologyTypes NetworkTopologyType { get; internal set; }
+
+        public bool DAHost { get; internal set; }
+
+        /// <summary>
+        /// Is true when the client has been assigned session ownership in distributed authority mode
+        /// </summary>
+        public bool IsSessionOwner { get; internal set; }
+
         /// <summary>
         /// The ClientId of the NetworkClient
         /// </summary>
@@ -44,27 +54,60 @@ namespace Unity.Netcode
         public NetworkObject PlayerObject;
 
         /// <summary>
-        /// The list of NetworkObject's owned by this client instance
+        /// The NetworkObject's owned by this client instance
         /// </summary>
-        public List<NetworkObject> OwnedObjects => IsConnected ? SpawnManager.GetClientOwnedObjects(ClientId) : new List<NetworkObject>();
+        public NetworkObject[] OwnedObjects => IsConnected ? SpawnManager.GetClientOwnedObjects(ClientId) : new NetworkObject[] { };
 
         internal NetworkSpawnManager SpawnManager { get; private set; }
 
-        internal void SetRole(bool isServer, bool isClient, NetworkManager networkManager = null)
+        internal bool SetRole(bool isServer, bool isClient, NetworkManager networkManager = null)
         {
+            ResetClient(isServer, isClient);
+
             IsServer = isServer;
             IsClient = isClient;
-            if (!IsServer && !isClient)
+
+            if (networkManager != null)
+            {
+                SpawnManager = networkManager.SpawnManager;
+                NetworkTopologyType = networkManager.NetworkConfig.NetworkTopology;
+
+                if (NetworkTopologyType == NetworkTopologyTypes.DistributedAuthority)
+                {
+                    DAHost = IsClient && IsServer;
+
+                    // DANGO-TODO: We might allow a dedicated mock CMB server, but for now do not allow this
+                    if (!IsClient && IsServer)
+                    {
+                        Debug.LogError("You cannot start NetworkManager as a server when operating in distributed authority mode!");
+                        return false;
+                    }
+
+                    if (DAHost && networkManager.CMBServiceConnection)
+                    {
+                        Debug.LogError("You cannot start a host when connecting to a distributed authority CMB Service!");
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Only to be invoked when setting the role.
+        /// This resets the current NetworkClient's properties.
+        /// </summary>
+        private void ResetClient(bool isServer, bool isClient)
+        {
+            // If we are niether client nor server, then reset properties (i.e. client has no role)
+            if (!IsServer && !IsClient)
             {
                 PlayerObject = null;
                 ClientId = 0;
                 IsConnected = false;
                 IsApproved = false;
-            }
-
-            if (networkManager != null)
-            {
-                SpawnManager = networkManager.SpawnManager;
+                SpawnManager = null;
+                DAHost = false;
             }
         }
 

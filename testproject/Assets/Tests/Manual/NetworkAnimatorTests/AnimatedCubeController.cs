@@ -36,15 +36,6 @@ namespace Tests.Manual.NetworkAnimatorTests
             m_Rotate = m_Animator.GetBool("Rotate");
         }
 
-        private bool HasAuthority()
-        {
-            if (IsOwnerAuthority() || IsServerAuthority())
-            {
-                return true;
-            }
-            return false;
-        }
-
         private bool IsServerAuthority()
         {
             if (IsServer && m_IsServerAuthoritative)

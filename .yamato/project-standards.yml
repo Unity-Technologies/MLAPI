@@ -4,7 +4,7 @@ standards_{{ projects.first.name }}:
   name: Standards Check {{ projects.first.name }}
   agent:
     type: Unity::VM
-    image: desktop/logging-testing-linux:v0.1.2-926285
+    image: package-ci/ubuntu-20.04:v4
     flavor: b1.large
   commands:
     - dotnet --version

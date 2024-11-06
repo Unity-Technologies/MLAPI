@@ -129,9 +129,9 @@ namespace Unity.Netcode
         public int LoadSceneTimeOut = 120;
 
         /// <summary>
-        /// The amount of time a message should be buffered if the asset or object needed to process it doesn't exist yet. If the asset is not added/object is not spawned within this time, it will be dropped.
+        /// The amount of time a message will be held (deferred) if the destination NetworkObject needed to process the message doesn't exist yet. If the NetworkObject is not spawned within this time period, all deferred messages for that NetworkObject will be dropped.
         /// </summary>
-        [Tooltip("The amount of time a message should be buffered if the asset or object needed to process it doesn't exist yet. If the asset is not added/object is not spawned within this time, it will be dropped")]
+        [Tooltip("The amount of time a message will be held (deferred) if the destination NetworkObject needed to process the message doesn't exist yet. If the NetworkObject is not spawned within this time period, all deferred messages for that NetworkObject will be dropped.")]
         public float SpawnTimeout = 10f;
 
         /// <summary>
@@ -148,6 +148,33 @@ namespace Unity.Netcode
         /// The number of slots used for RTT calculations. This is the maximum amount of in-flight messages
         /// </summary>
         public const int RttWindowSize = 64; // number of slots to use for RTT computations (max number of in-flight packets)
+
+        [Tooltip("Determines whether to use the client-server or distributed authority network topology.")]
+        public NetworkTopologyTypes NetworkTopology;
+
+        [HideInInspector]
+        public bool UseCMBService;
+
+        [Tooltip("When enabled (default), the player prefab will automatically be spawned (client-side) upon the client being approved and synchronized.")]
+        public bool AutoSpawnPlayerPrefabClientSide = true;
+
+#if MULTIPLAYER_TOOLS
+        /// <summary>
+        /// Controls whether network messaging metrics will be gathered. (defaults to true)
+        /// There is a slight performance cost to having this enabled, and can increase in processing time based on network message traffic.
+        /// </summary>
+        /// <remarks>
+        /// The Realtime Network Stats Monitoring tool requires this to be enabled.
+        /// </remarks>
+        [Tooltip("Enable (default) if you want to gather messaging metrics. Realtime Network Stats Monitor requires this to be enabled. Disabling this can improve performance in release builds.")]
+        public bool NetworkMessageMetrics = true;
+#endif
+        /// <summary>
+        /// When enabled (default, this enables network profiling information. This does come with a per message processing cost.
+        /// Network profiling information is automatically disabled in release builds.
+        /// </summary>
+        [Tooltip("Enable (default) if you want to profile network messages with development builds and defaults to being disabled in release builds. When disabled, network messaging profiling will be disabled in development builds.")]
+        public bool NetworkProfilingMetrics = true;
 
         /// <summary>
         /// Returns a base64 encoded version of the configuration
@@ -238,8 +265,8 @@ namespace Unity.Netcode
                 {
                     var sortedDictionary = Prefabs.NetworkPrefabOverrideLinks.OrderBy(x => x.Key);
                     foreach (var sortedEntry in sortedDictionary)
-
                     {
+                        Debug.Log($"[NetworkConfig] - GetConfig - [{sortedEntry.Key}={sortedEntry.Value.Prefab}]");
                         writer.WriteValueSafe(sortedEntry.Key);
                     }
                 }

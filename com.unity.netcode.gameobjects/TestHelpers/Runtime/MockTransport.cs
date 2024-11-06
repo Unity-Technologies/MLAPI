@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Unity.Collections;
 using Random = UnityEngine.Random;
 
 namespace Unity.Netcode.TestHelpers.Runtime
@@ -10,107 +9,61 @@ namespace Unity.Netcode.TestHelpers.Runtime
         private struct MessageData
         {
             public ulong FromClientId;
-            public FastBufferReader Payload;
+            public ArraySegment<byte> Payload;
             public NetworkEvent Event;
             public float AvailableTime;
-            public int Sequence;
-            public NetworkDelivery Delivery;
         }
 
-        private static Dictionary<ulong, List<MessageData>> s_MessageQueue = new Dictionary<ulong, List<MessageData>>();
+        private static Dictionary<ulong, Queue<MessageData>> s_MessageQueue = new Dictionary<ulong, Queue<MessageData>>();
 
         public override ulong ServerClientId { get; } = 0;
 
         public static ulong HighTransportId = 0;
         public ulong TransportId = 0;
-
         public float SimulatedLatencySeconds;
         public float PacketDropRate;
         public float LatencyJitter;
-
-        public Dictionary<ulong, int> LastSentSequence = new Dictionary<ulong, int>();
-        public Dictionary<ulong, int> LastReceivedSequence = new Dictionary<ulong, int>();
 
         public NetworkManager NetworkManager;
 
         public override void Send(ulong clientId, ArraySegment<byte> payload, NetworkDelivery networkDelivery)
         {
-            if ((networkDelivery == NetworkDelivery.Unreliable || networkDelivery == NetworkDelivery.UnreliableSequenced) && Random.Range(0, 1) < PacketDropRate)
+            if (Random.Range(0, 1) < PacketDropRate)
             {
                 return;
             }
-
-            if (!LastSentSequence.ContainsKey(clientId))
-            {
-                LastSentSequence[clientId] = 1;
-            }
-
-            var reader = new FastBufferReader(payload, Allocator.TempJob);
-            s_MessageQueue[clientId].Add(new MessageData
+            var copy = new byte[payload.Array.Length];
+            Array.Copy(payload.Array, copy, payload.Array.Length);
+            s_MessageQueue[clientId].Enqueue(new MessageData
             {
                 FromClientId = TransportId,
-                Payload = reader,
+                Payload = new ArraySegment<byte>(copy, payload.Offset, payload.Count),
                 Event = NetworkEvent.Data,
-                AvailableTime = NetworkManager.RealTimeProvider.UnscaledTime + SimulatedLatencySeconds + Random.Range(-LatencyJitter, LatencyJitter),
-                Sequence = ++LastSentSequence[clientId],
-                Delivery = networkDelivery
+                AvailableTime =
+                NetworkManager.RealTimeProvider.UnscaledTime + SimulatedLatencySeconds + Random.Range(-LatencyJitter, LatencyJitter)
             });
-            s_MessageQueue[clientId].Sort(((a, b) => a.AvailableTime.CompareTo(b.AvailableTime)));
         }
 
         public override NetworkEvent PollEvent(out ulong clientId, out ArraySegment<byte> payload, out float receiveTime)
         {
             if (s_MessageQueue[TransportId].Count > 0)
             {
-                MessageData data;
-                for (; ; )
+                var data = s_MessageQueue[TransportId].Peek();
+                if (data.AvailableTime > NetworkManager.RealTimeProvider.UnscaledTime)
                 {
-                    data = s_MessageQueue[TransportId][0];
-                    if (data.AvailableTime > NetworkManager.RealTimeProvider.UnscaledTime)
-                    {
-                        clientId = 0;
-                        payload = new ArraySegment<byte>();
-                        receiveTime = 0;
-                        return NetworkEvent.Nothing;
-                    }
-
-                    s_MessageQueue[TransportId].RemoveAt(0);
-                    clientId = data.FromClientId;
-                    if (data.Event == NetworkEvent.Data && data.Delivery == NetworkDelivery.UnreliableSequenced && LastReceivedSequence.ContainsKey(clientId) && data.Sequence <= LastReceivedSequence[clientId])
-                    {
-                        continue;
-                    }
-
-                    break;
+                    clientId = 0;
+                    payload = new ArraySegment<byte>();
+                    receiveTime = 0;
+                    return NetworkEvent.Nothing;
                 }
 
-                if (data.Delivery == NetworkDelivery.UnreliableSequenced)
-                {
-                    LastReceivedSequence[clientId] = data.Sequence;
-                }
-
-                payload = new ArraySegment<byte>();
-                if (data.Event == NetworkEvent.Data)
-                {
-                    payload = data.Payload.ToArray();
-                    data.Payload.Dispose();
-                }
-
+                s_MessageQueue[TransportId].Dequeue();
+                clientId = data.FromClientId;
+                payload = data.Payload;
                 receiveTime = NetworkManager.RealTimeProvider.RealTimeSinceStartup;
                 if (NetworkManager.IsServer && data.Event == NetworkEvent.Connect)
                 {
-                    if (!LastSentSequence.ContainsKey(data.FromClientId))
-                    {
-                        LastSentSequence[data.FromClientId] = 1;
-                    }
-                    s_MessageQueue[data.FromClientId].Add(
-                        new MessageData
-                        {
-                            Event = NetworkEvent.Connect,
-                            FromClientId = ServerClientId,
-                            AvailableTime = NetworkManager.RealTimeProvider.UnscaledTime + SimulatedLatencySeconds + Random.Range(-LatencyJitter, LatencyJitter),
-                            Sequence = ++LastSentSequence[data.FromClientId]
-                        });
+                    s_MessageQueue[data.FromClientId].Enqueue(new MessageData { Event = NetworkEvent.Connect, FromClientId = ServerClientId, Payload = new ArraySegment<byte>() });
                 }
                 return data.Event;
             }
@@ -123,49 +76,39 @@ namespace Unity.Netcode.TestHelpers.Runtime
         public override bool StartClient()
         {
             TransportId = ++HighTransportId;
-            s_MessageQueue[TransportId] = new List<MessageData>();
-            s_MessageQueue[ServerClientId].Add(
-                new MessageData
-                {
-                    Event = NetworkEvent.Connect,
-                    FromClientId = TransportId,
-                });
+            s_MessageQueue[TransportId] = new Queue<MessageData>();
+            s_MessageQueue[ServerClientId].Enqueue(new MessageData { Event = NetworkEvent.Connect, FromClientId = TransportId, Payload = new ArraySegment<byte>() });
             return true;
         }
 
         public override bool StartServer()
         {
-            s_MessageQueue[ServerClientId] = new List<MessageData>();
+            s_MessageQueue[ServerClientId] = new Queue<MessageData>();
             return true;
         }
 
         public override void DisconnectRemoteClient(ulong clientId)
         {
-            s_MessageQueue[clientId].Add(
-                new MessageData
-                {
-                    Event = NetworkEvent.Disconnect,
-                    FromClientId = TransportId,
-                });
+            s_MessageQueue[clientId].Enqueue(new MessageData { Event = NetworkEvent.Disconnect, FromClientId = TransportId, Payload = new ArraySegment<byte>() });
         }
 
         public override void DisconnectLocalClient()
         {
-            s_MessageQueue[ServerClientId].Add(
-                new MessageData
-                {
-                    Event = NetworkEvent.Disconnect,
-                    FromClientId = TransportId,
-                });
+            s_MessageQueue[ServerClientId].Enqueue(new MessageData { Event = NetworkEvent.Disconnect, FromClientId = TransportId, Payload = new ArraySegment<byte>() });
         }
 
         public override ulong GetCurrentRtt(ulong clientId)
         {
-            return (ulong)(SimulatedLatencySeconds * 1000);
+            return 0;
         }
 
         public override void Shutdown()
         {
+        }
+
+        protected override NetworkTopologyTypes OnCurrentTopology()
+        {
+            return NetworkManager != null ? NetworkManager.NetworkConfig.NetworkTopology : NetworkTopologyTypes.ClientServer;
         }
 
         public override void Initialize(NetworkManager networkManager = null)
@@ -173,30 +116,14 @@ namespace Unity.Netcode.TestHelpers.Runtime
             NetworkManager = networkManager;
         }
 
-        protected static void DisposeQueueItems()
-        {
-            foreach (var kvp in s_MessageQueue)
-            {
-                foreach (var value in kvp.Value)
-                {
-                    if (value.Event == NetworkEvent.Data)
-                    {
-                        value.Payload.Dispose();
-                    }
-                }
-            }
-        }
-
         public static void Reset()
         {
-            DisposeQueueItems();
             s_MessageQueue.Clear();
             HighTransportId = 0;
         }
 
         public static void ClearQueues()
         {
-            DisposeQueueItems();
             foreach (var kvp in s_MessageQueue)
             {
                 kvp.Value.Clear();

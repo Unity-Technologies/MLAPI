@@ -1,8 +1,10 @@
 // TODO: Rewrite test to use the tools package. Debug simulator not available in UTP 2.X.
 #if !UTP_TRANSPORT_2_0_ABOVE
+using System.Collections;
 using NUnit.Framework;
 using Unity.Netcode.Components;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests
 {
@@ -12,13 +14,19 @@ namespace Unity.Netcode.RuntimeTests
     /// models for each operating mode when packet loss and latency is
     /// present.
     /// </summary>
+    [TestFixture(HostOrServer.DAHost, Authority.OwnerAuthority, RotationCompression.None, Rotation.Euler, Precision.Full)]
+    [TestFixture(HostOrServer.DAHost, Authority.OwnerAuthority, RotationCompression.None, Rotation.Euler, Precision.Half)]
+    [TestFixture(HostOrServer.DAHost, Authority.OwnerAuthority, RotationCompression.None, Rotation.Quaternion, Precision.Full)]
+    [TestFixture(HostOrServer.DAHost, Authority.OwnerAuthority, RotationCompression.None, Rotation.Quaternion, Precision.Half)]
+    [TestFixture(HostOrServer.DAHost, Authority.OwnerAuthority, RotationCompression.QuaternionCompress, Rotation.Quaternion, Precision.Full)]
+    [TestFixture(HostOrServer.DAHost, Authority.OwnerAuthority, RotationCompression.QuaternionCompress, Rotation.Quaternion, Precision.Half)]
     [TestFixture(HostOrServer.Host, Authority.ServerAuthority, RotationCompression.None, Rotation.Euler, Precision.Full)]
     [TestFixture(HostOrServer.Host, Authority.ServerAuthority, RotationCompression.None, Rotation.Euler, Precision.Half)]
     [TestFixture(HostOrServer.Host, Authority.ServerAuthority, RotationCompression.None, Rotation.Quaternion, Precision.Full)]
     [TestFixture(HostOrServer.Host, Authority.ServerAuthority, RotationCompression.None, Rotation.Quaternion, Precision.Half)]
     [TestFixture(HostOrServer.Host, Authority.ServerAuthority, RotationCompression.QuaternionCompress, Rotation.Quaternion, Precision.Full)]
     [TestFixture(HostOrServer.Host, Authority.ServerAuthority, RotationCompression.QuaternionCompress, Rotation.Quaternion, Precision.Half)]
-    public class NetworkTransformPacketLossTests : NetworkTransformBase
+    internal class NetworkTransformPacketLossTests : NetworkTransformBase
     {
         private const int k_Latency = 50;
         private const int k_PacketLoss = 2;
@@ -36,29 +44,29 @@ namespace Unity.Netcode.RuntimeTests
             base(testWithHost, authority, rotationCompression, rotation, precision)
         { }
 
-        protected override bool m_EnableTimeTravel => true;
-        protected override bool m_SetupIsACoroutine => true;
-        protected override bool m_TearDownIsACoroutine => true;
-
-        protected override void OnTimeTravelServerAndClientsConnected()
+        protected override void OnServerAndClientsCreated()
         {
-            base.OnTimeTravelServerAndClientsConnected();
+            base.OnServerAndClientsCreated();
 
-            SetTimeTravelSimulatedLatency(k_Latency * 0.001f);
-            SetTimeTravelSimulatedDropRate(k_PacketLoss * 0.01f);
+            var unityTransport = m_ServerNetworkManager.NetworkConfig.NetworkTransport as Transports.UTP.UnityTransport;
+            unityTransport.SetDebugSimulatorParameters(k_Latency, 0, k_PacketLoss);
         }
 
         /// <summary>
         /// Handles validating all children of the test objects have matching local and global space vaues.
         /// </summary>
-        private void AllChildrenLocalTransformValuesMatch(bool useSubChild, ChildrenTransformCheckType checkType)
+        private IEnumerator AllChildrenLocalTransformValuesMatch(bool useSubChild, ChildrenTransformCheckType checkType)
         {
             // We don't assert on timeout here because we want to log this information during PostAllChildrenLocalTransformValuesMatch
-            WaitForConditionOrTimeOutWithTimeTravel(() => AllInstancesKeptLocalTransformValues(useSubChild));
+            yield return WaitForConditionOrTimeOut(() => AllInstancesKeptLocalTransformValues(useSubChild));
             var success = true;
             if (s_GlobalTimeoutHelper.TimedOut)
             {
-                //var waitForMs = new WaitForSeconds(0.001f);
+                var waitForMs = new WaitForSeconds(0.0025f);
+                if (m_Precision == Precision.Half)
+                {
+                    m_CurrentHalfPrecision = 0.2156f;
+                }
                 // If we timed out, then wait for a full range of ticks to assure all data has been synchronized before declaring this a failed test.
                 for (int j = 0; j < m_ServerNetworkManager.NetworkConfig.TickRate; j++)
                 {
@@ -66,8 +74,7 @@ namespace Unity.Netcode.RuntimeTests
                     m_InfoMessage.AppendLine($"[{checkType}][{useSubChild}] Timed out waiting for all children to have the correct local space values:\n");
                     var instances = useSubChild ? ChildObjectComponent.SubInstances : ChildObjectComponent.Instances;
                     success = PostAllChildrenLocalTransformValuesMatch(useSubChild);
-                    TimeTravel(0.001f);
-                    //yield return waitForMs;
+                    yield return waitForMs;
                 }
             }
 
@@ -82,8 +89,8 @@ namespace Unity.Netcode.RuntimeTests
         /// parented under another NetworkTransform under all of the possible axial conditions
         /// as well as when the parent has a varying scale.
         /// </summary>
-        [Test]
-        public void ParentedNetworkTransformTest([Values] Interpolation interpolation, [Values] bool worldPositionStays, [Values(0.5f, 1.0f, 5.0f)] float scale)
+        [UnityTest]
+        public IEnumerator ParentedNetworkTransformTest([Values] Interpolation interpolation, [Values] bool worldPositionStays, [Values(0.5f, 1.0f, 5.0f)] float scale)
         {
             ChildObjectComponent.EnableChildLog = m_EnableVerboseDebug;
             if (m_EnableVerboseDebug)
@@ -104,8 +111,13 @@ namespace Unity.Netcode.RuntimeTests
             var serverSideChild = SpawnObject(m_ChildObject.gameObject, authorityNetworkManager).GetComponent<NetworkObject>();
             var serverSideSubChild = SpawnObject(m_SubChildObject.gameObject, authorityNetworkManager).GetComponent<NetworkObject>();
 
+            yield return s_DefaultWaitForTick;
+            yield return s_DefaultWaitForTick;
+            yield return s_DefaultWaitForTick;
+            yield return s_DefaultWaitForTick;
+
             // Assure all of the child object instances are spawned before proceeding to parenting
-            WaitForConditionOrTimeOutWithTimeTravel(AllChildObjectInstancesAreSpawned);
+            yield return WaitForConditionOrTimeOut(AllChildObjectInstancesAreSpawned);
             AssertOnTimeout("Timed out waiting for all child instances to be spawned!");
 
             // Get the authority parent and child instances
@@ -143,7 +155,7 @@ namespace Unity.Netcode.RuntimeTests
 
             // Allow one tick for authority to update these changes
 
-            WaitForConditionOrTimeOutWithTimeTravel(PositionRotationScaleMatches);
+            yield return WaitForConditionOrTimeOut(PositionRotationScaleMatches);
 
             AssertOnTimeout("All transform values did not match prior to parenting!");
 
@@ -154,37 +166,37 @@ namespace Unity.Netcode.RuntimeTests
             Assert.True(serverSideSubChild.TrySetParent(serverSideChild.transform, worldPositionStays), "[Server-Side SubChild] Failed to set sub-child's parent!");
 
             // This waits for all child instances to be parented
-            WaitForConditionOrTimeOutWithTimeTravel(AllChildObjectInstancesHaveChild);
+            yield return WaitForConditionOrTimeOut(AllChildObjectInstancesHaveChild);
             AssertOnTimeout("Timed out waiting for all instances to have parented a child!");
-            var latencyWait = k_Latency * 0.003f;
+            var latencyWait = new WaitForSeconds(k_Latency * 0.003f);
             // Wait for at least 3x designated latency period
-            TimeTravel(latencyWait);
+            yield return latencyWait;
 
             // This validates each child instance has preserved their local space values
-            AllChildrenLocalTransformValuesMatch(false, ChildrenTransformCheckType.Connected_Clients);
+            yield return AllChildrenLocalTransformValuesMatch(false, ChildrenTransformCheckType.Connected_Clients);
 
             // This validates each sub-child instance has preserved their local space values
-            AllChildrenLocalTransformValuesMatch(true, ChildrenTransformCheckType.Connected_Clients);
+            yield return AllChildrenLocalTransformValuesMatch(true, ChildrenTransformCheckType.Connected_Clients);
 
             // Verify that a late joining client will synchronize to the parented NetworkObjects properly
-            CreateAndStartNewClientWithTimeTravel();
+            yield return CreateAndStartNewClient();
 
             // Assure all of the child object instances are spawned (basically for the newly connected client)
-            WaitForConditionOrTimeOutWithTimeTravel(AllChildObjectInstancesAreSpawned);
+            yield return WaitForConditionOrTimeOut(AllChildObjectInstancesAreSpawned);
             AssertOnTimeout("Timed out waiting for all child instances to be spawned!");
 
             // This waits for all child instances to be parented
-            WaitForConditionOrTimeOutWithTimeTravel(AllChildObjectInstancesHaveChild);
+            yield return WaitForConditionOrTimeOut(AllChildObjectInstancesHaveChild);
             AssertOnTimeout("Timed out waiting for all instances to have parented a child!");
 
             // Wait for at least 3x designated latency period
-            TimeTravel(latencyWait);
+            yield return latencyWait;
 
             // This validates each child instance has preserved their local space values
-            AllChildrenLocalTransformValuesMatch(false, ChildrenTransformCheckType.Late_Join_Client);
+            yield return AllChildrenLocalTransformValuesMatch(false, ChildrenTransformCheckType.Late_Join_Client);
 
             // This validates each sub-child instance has preserved their local space values
-            AllChildrenLocalTransformValuesMatch(true, ChildrenTransformCheckType.Late_Join_Client);
+            yield return AllChildrenLocalTransformValuesMatch(true, ChildrenTransformCheckType.Late_Join_Client);
         }
 
         /// <summary>
@@ -196,10 +208,10 @@ namespace Unity.Netcode.RuntimeTests
         /// When testing 3 axis: Interpolation is enabled, sometimes an axis is intentionally excluded during a
         /// delta update, and it runs through 8 delta updates per unique test.
         /// </remarks>
-        [Test]
-        public void NetworkTransformMultipleChangesOverTime([Values] TransformSpace testLocalTransform, [Values] Axis axis)
+        [UnityTest]
+        public IEnumerator NetworkTransformMultipleChangesOverTime([Values] TransformSpace testLocalTransform, [Values] Axis axis)
         {
-            TimeTravelAdvanceTick();
+            yield return s_DefaultWaitForTick;
             // Just test for OverrideState.Update (they are already being tested for functionality in normal NetworkTransformTests)
             var overideState = OverrideState.Update;
             var tickRelativeTime = new WaitForSeconds(1.0f / m_ServerNetworkManager.NetworkConfig.TickRate);
@@ -259,7 +271,7 @@ namespace Unity.Netcode.RuntimeTests
 
 
             // Wait for the deltas to be pushed
-            WaitForConditionOrTimeOutWithTimeTravel(() => m_AuthoritativeTransform.StatePushed);
+            yield return WaitForConditionOrTimeOut(() => m_AuthoritativeTransform.StatePushed);
 
             // Just in case we drop the first few state updates
             if (s_GlobalTimeoutHelper.TimedOut)
@@ -270,17 +282,17 @@ namespace Unity.Netcode.RuntimeTests
                 state.InLocalSpace = !m_AuthoritativeTransform.InLocalSpace;
                 m_AuthoritativeTransform.LocalAuthoritativeNetworkState = state;
                 // Wait for the deltas to be pushed
-                WaitForConditionOrTimeOutWithTimeTravel(() => m_AuthoritativeTransform.StatePushed);
+                yield return WaitForConditionOrTimeOut(() => m_AuthoritativeTransform.StatePushed);
             }
             AssertOnTimeout("State was never pushed!");
 
             // Allow the precision settings to propagate first as changing precision
             // causes a teleport event to occur
-            TimeTravelAdvanceTick();
-            TimeTravelAdvanceTick();
-            TimeTravelAdvanceTick();
-            TimeTravelAdvanceTick();
-            TimeTravelAdvanceTick();
+            yield return s_DefaultWaitForTick;
+            yield return s_DefaultWaitForTick;
+            yield return s_DefaultWaitForTick;
+            yield return s_DefaultWaitForTick;
+            yield return s_DefaultWaitForTick;
             var iterations = axisCount == 3 ? k_PositionRotationScaleIterations3Axis : k_PositionRotationScaleIterations;
 
             // Move and rotate within the same tick, validate the non-authoritative instance updates
@@ -315,7 +327,7 @@ namespace Unity.Netcode.RuntimeTests
                 MoveRotateAndScaleAuthority(position, rotation, scale, overideState);
 
                 // Wait for the deltas to be pushed (unlike the original test, we don't wait for state to be updated as that could be dropped here)
-                WaitForConditionOrTimeOutWithTimeTravel(() => m_AuthoritativeTransform.StatePushed);
+                yield return WaitForConditionOrTimeOut(() => m_AuthoritativeTransform.StatePushed);
                 AssertOnTimeout($"[Non-Interpolate {i}] Timed out waiting for state to be pushed ({m_AuthoritativeTransform.StatePushed})!");
 
                 // For 3 axis, we will skip validating that the non-authority interpolates to its target point at least once.
@@ -325,7 +337,7 @@ namespace Unity.Netcode.RuntimeTests
                 if (m_AxisExcluded || axisCount < 3)
                 {
                     // Wait for deltas to synchronize on non-authoritative side
-                    WaitForConditionOrTimeOutWithTimeTravel(PositionRotationScaleMatches);
+                    yield return WaitForConditionOrTimeOut(PositionRotationScaleMatches);
                     // Provide additional debug info about what failed (if it fails)
                     if (s_GlobalTimeoutHelper.TimedOut)
                     {
@@ -339,7 +351,7 @@ namespace Unity.Netcode.RuntimeTests
                                 // If we matched, then something was dropped and recovered when synchronized
                                 break;
                             }
-                            TimeTravelAdvanceTick();
+                            yield return s_DefaultWaitForTick;
                         }
 
                         // Only if we still didn't match
@@ -358,7 +370,7 @@ namespace Unity.Netcode.RuntimeTests
             if (axisCount == 3)
             {
                 // As a final test, wait for deltas to synchronize on non-authoritative side to assure it interpolates to the correct values
-                WaitForConditionOrTimeOutWithTimeTravel(PositionRotationScaleMatches);
+                yield return WaitForConditionOrTimeOut(PositionRotationScaleMatches);
                 // Provide additional debug info about what failed (if it fails)
                 if (s_GlobalTimeoutHelper.TimedOut)
                 {
@@ -372,7 +384,7 @@ namespace Unity.Netcode.RuntimeTests
                             // If we matched, then something was dropped and recovered when synchronized
                             break;
                         }
-                        TimeTravelAdvanceTick();
+                        yield return s_DefaultWaitForTick;
                     }
 
                     // Only if we still didn't match
@@ -396,8 +408,8 @@ namespace Unity.Netcode.RuntimeTests
         /// - While in local space and world space
         /// - While interpolation is enabled and disabled
         /// </summary>
-        [Test]
-        public void TestAuthoritativeTransformChangeOneAtATime([Values] TransformSpace testLocalTransform, [Values] Interpolation interpolation)
+        [UnityTest]
+        public IEnumerator TestAuthoritativeTransformChangeOneAtATime([Values] TransformSpace testLocalTransform, [Values] Interpolation interpolation)
         {
             // Just test for OverrideState.Update (they are already being tested for functionality in normal NetworkTransformTests)
             m_AuthoritativeTransform.Interpolate = interpolation == Interpolation.EnableInterpolate;
@@ -415,7 +427,7 @@ namespace Unity.Netcode.RuntimeTests
 
             m_AuthoritativeTransform.transform.position = GetRandomVector3(2f, 30f);
 
-            WaitForConditionOrTimeOutWithTimeTravel(() => PositionsMatch());
+            yield return WaitForConditionOrTimeOut(() => PositionsMatch());
             AssertOnTimeout($"Timed out waiting for positions to match {m_AuthoritativeTransform.transform.position} | {m_NonAuthoritativeTransform.transform.position}");
 
             // test rotation
@@ -424,19 +436,19 @@ namespace Unity.Netcode.RuntimeTests
             m_AuthoritativeTransform.transform.rotation = Quaternion.Euler(GetRandomVector3(5, 60)); // using euler angles instead of quaternions directly to really see issues users might encounter
 
             // Make sure the values match
-            WaitForConditionOrTimeOutWithTimeTravel(() => RotationsMatch());
+            yield return WaitForConditionOrTimeOut(() => RotationsMatch());
             AssertOnTimeout($"Timed out waiting for rotations to match");
 
             m_AuthoritativeTransform.StatePushed = false;
             m_AuthoritativeTransform.transform.localScale = GetRandomVector3(1, 6);
 
             // Make sure the scale values match
-            WaitForConditionOrTimeOutWithTimeTravel(() => ScaleValuesMatch());
+            yield return WaitForConditionOrTimeOut(() => ScaleValuesMatch());
             AssertOnTimeout($"Timed out waiting for scale values to match");
         }
 
-        [Test]
-        public void TestSameFrameDeltaStateAndTeleport([Values] TransformSpace testLocalTransform, [Values] Interpolation interpolation)
+        [UnityTest]
+        public IEnumerator TestSameFrameDeltaStateAndTeleport([Values] TransformSpace testLocalTransform, [Values] Interpolation interpolation)
         {
             m_AuthoritativeTransform.Interpolate = interpolation == Interpolation.EnableInterpolate;
 
@@ -453,10 +465,10 @@ namespace Unity.Netcode.RuntimeTests
             m_RandomPosition = GetRandomVector3(2f, 30f);
             m_AuthoritativeTransform.transform.position = m_RandomPosition;
             m_Teleported = false;
-            WaitForConditionOrTimeOutWithTimeTravel(() => m_Teleported);
+            yield return WaitForConditionOrTimeOut(() => m_Teleported);
             AssertOnTimeout($"Timed out waiting for random position to be pushed!");
 
-            WaitForConditionOrTimeOutWithTimeTravel(() => PositionsMatch());
+            yield return WaitForConditionOrTimeOut(() => PositionsMatch());
             AssertOnTimeout($"Timed out waiting for positions to match {m_AuthoritativeTransform.transform.position} | {m_NonAuthoritativeTransform.transform.position}");
 
             var authPosition = m_AuthoritativeTransform.GetSpaceRelativePosition();
@@ -478,7 +490,7 @@ namespace Unity.Netcode.RuntimeTests
             // Match the first position update
             if (Approximately(m_RandomPosition, networkTransformState.GetPosition()))
             {
-                // Teleport to the m_RandomPosition plus the 
+                // Teleport to the m_RandomPosition plus the
                 m_AuthoritativeTransform.SetState(m_TeleportOffset + m_RandomPosition, null, null, false);
                 m_AuthoritativeTransform.AuthorityPushedTransformState -= OnAuthorityPushedTransformState;
                 m_Teleported = true;

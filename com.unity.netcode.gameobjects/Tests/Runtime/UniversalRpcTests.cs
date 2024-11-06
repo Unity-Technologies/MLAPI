@@ -1,6 +1,5 @@
 #if !MULTIPLAYER_TOOLS && !NGO_MINIMALPROJECT
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -9,7 +8,6 @@ using NUnit.Framework;
 using Unity.Collections;
 using Unity.Netcode.TestHelpers.Runtime;
 using UnityEngine;
-using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 using Random = System.Random;
 
@@ -21,7 +19,7 @@ using Random = System.Random;
 // I put them in their own namespace so they would be easier to navigate in the test list.
 namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 {
-    public class UniversalRpcNetworkBehaviour : NetworkBehaviour
+    internal class UniversalRpcNetworkBehaviour : NetworkBehaviour
     {
         public bool Stop = false;
         public string Received = string.Empty;
@@ -99,6 +97,18 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
             OnRpcReceived();
         }
 
+        [Rpc(SendTo.Authority)]
+        public void DefaultToAuthorityRpc()
+        {
+            OnRpcReceived();
+        }
+
+        [Rpc(SendTo.NotAuthority)]
+        public void DefaultToNotAuthorityRpc()
+        {
+            OnRpcReceived();
+        }
+
         // RPCs with parameters
 
         [Rpc(SendTo.Everyone)]
@@ -145,6 +155,18 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
         [Rpc(SendTo.ClientsAndHost)]
         public void DefaultToClientsAndHostWithParamsRpc(int i, bool b, float f, string s)
+        {
+            OnRpcReceivedWithParams(i, b, f, s);
+        }
+
+        [Rpc(SendTo.Authority)]
+        public void DefaultToAuthorityWithParamsRpc(int i, bool b, float f, string s)
+        {
+            OnRpcReceivedWithParams(i, b, f, s);
+        }
+
+        [Rpc(SendTo.NotAuthority)]
+        public void DefaultToNotAuthorityWithParamsRpc(int i, bool b, float f, string s)
         {
             OnRpcReceivedWithParams(i, b, f, s);
         }
@@ -207,6 +229,19 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
             ReceivedFrom = rpcParams.Receive.SenderClientId;
         }
 
+        [Rpc(SendTo.Authority)]
+        public void DefaultToAuthorityWithRpcParamsRpc(RpcParams rpcParams)
+        {
+            OnRpcReceived();
+            ReceivedFrom = rpcParams.Receive.SenderClientId;
+        }
+
+        [Rpc(SendTo.NotAuthority)]
+        public void DefaultToNotAuthorityWithRpcParamsRpc(RpcParams rpcParams)
+        {
+            OnRpcReceived();
+            ReceivedFrom = rpcParams.Receive.SenderClientId;
+        }
 
         // RPCs with parameters and RPC parameters
 
@@ -254,6 +289,18 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
         [Rpc(SendTo.ClientsAndHost)]
         public void DefaultToClientsAndHostWithParamsAndRpcParamsRpc(int i, bool b, float f, string s, RpcParams rpcParams)
+        {
+            OnRpcReceivedWithParams(i, b, f, s);
+        }
+
+        [Rpc(SendTo.Authority)]
+        public void DefaultToAuthorityWithParamsAndRpcParamsRpc(int i, bool b, float f, string s, RpcParams rpcParams)
+        {
+            OnRpcReceivedWithParams(i, b, f, s);
+        }
+
+        [Rpc(SendTo.NotAuthority)]
+        public void DefaultToNotAuthorityWithParamsAndRpcParamsRpc(int i, bool b, float f, string s, RpcParams rpcParams)
         {
             OnRpcReceivedWithParams(i, b, f, s);
         }
@@ -316,6 +363,18 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
             OnRpcReceived();
         }
 
+        [Rpc(SendTo.Authority, AllowTargetOverride = true)]
+        public void DefaultToAuthorityAllowOverrideRpc(RpcParams rpcParams)
+        {
+            OnRpcReceived();
+        }
+
+        [Rpc(SendTo.NotAuthority, AllowTargetOverride = true)]
+        public void DefaultToNotAuthorityAllowOverrideRpc(RpcParams rpcParams)
+        {
+            OnRpcReceived();
+        }
+
         // RPCs with DeferLocal = true
 
         [Rpc(SendTo.Everyone, DeferLocal = true)]
@@ -356,6 +415,18 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
         [Rpc(SendTo.ClientsAndHost, DeferLocal = true)]
         public void DefaultToClientsAndHostDeferLocalRpc(RpcParams rpcParams)
+        {
+            OnRpcReceived();
+        }
+
+        [Rpc(SendTo.Authority, DeferLocal = true)]
+        public void DefaultToAuthorityDeferLocalRpc(RpcParams rpcParams)
+        {
+            OnRpcReceived();
+        }
+
+        [Rpc(SendTo.NotAuthority, DeferLocal = true)]
+        public void DefaultToNotAuthorityDeferLocalRpc(RpcParams rpcParams)
         {
             OnRpcReceived();
         }
@@ -416,6 +487,17 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
             OnRpcReceived();
         }
 
+        [Rpc(SendTo.Authority, RequireOwnership = true)]
+        public void DefaultToAuthorityRequireOwnershipRpc()
+        {
+            OnRpcReceived();
+        }
+
+        [Rpc(SendTo.NotAuthority, RequireOwnership = true)]
+        public void DefaultToNotAuthorityRequireOwnershipRpc()
+        {
+            OnRpcReceived();
+        }
 
         // Mutual RPC Recursion
 
@@ -452,11 +534,8 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
         }
     }
 
-    public class UniversalRpcTestsBase : NetcodeIntegrationTest
+    internal class UniversalRpcTestsBase : NetcodeIntegrationTest
     {
-        public static int YieldCheck = 0;
-        public const int YieldCycleCount = 10;
-
         protected override int NumberOfClients => 2;
 
         public UniversalRpcTestsBase(HostOrServer hostOrServer) : base(hostOrServer)
@@ -497,7 +576,6 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
         protected override void OnInlineTearDown()
         {
-            MockTransport.ClearQueues();
             Clear();
         }
 
@@ -821,6 +899,26 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
             VerifySentToNotId(objectOwner, sender, sender, methodName, false);
         }
 
+        public void VerifySentToAuthority(ulong objectOwner, ulong sender, string methodName)
+        {
+            var receiver = objectOwner;
+            if (!m_DistributedAuthority)
+            {
+                receiver = NetworkManager.ServerClientId;
+            }
+            VerifySentToId(objectOwner, sender, receiver, methodName, false);
+        }
+
+        public void VerifySentToNotAuthority(ulong objectOwner, ulong sender, string methodName)
+        {
+            var receiver = objectOwner;
+            if (!m_DistributedAuthority)
+            {
+                receiver = NetworkManager.ServerClientId;
+            }
+            VerifySentToNotId(objectOwner, sender, receiver, methodName, false);
+        }
+
         public void VerifySentToOwnerWithReceivedFrom(ulong objectOwner, ulong sender, string methodName)
         {
             VerifySentToId(objectOwner, sender, objectOwner, methodName, true);
@@ -861,6 +959,26 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
         public void VerifySentToNotMeWithReceivedFrom(ulong objectOwner, ulong sender, string methodName)
         {
             VerifySentToNotId(objectOwner, sender, sender, methodName, true);
+        }
+
+        public void VerifySentToAuthorityWithReceivedFrom(ulong objectOwner, ulong sender, string methodName)
+        {
+            var receiver = objectOwner;
+            if (!m_DistributedAuthority)
+            {
+                receiver = NetworkManager.ServerClientId;
+            }
+            VerifySentToId(objectOwner, sender, receiver, methodName, true);
+        }
+
+        public void VerifySentToNotAuthorityWithReceivedFrom(ulong objectOwner, ulong sender, string methodName)
+        {
+            var receiver = objectOwner;
+            if (!m_DistributedAuthority)
+            {
+                receiver = NetworkManager.ServerClientId;
+            }
+            VerifySentToNotId(objectOwner, sender, receiver, methodName, true);
         }
 
         public void VerifySentToOwnerWithParams(ulong objectOwner, ulong sender, string methodName, int i, bool b, float f, string s)
@@ -905,6 +1023,26 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
             VerifySentToNotIdWithParams(objectOwner, sender, sender, methodName, i, b, f, s);
         }
 
+        public void VerifySentToAuthorityWithParams(ulong objectOwner, ulong sender, string methodName, int i, bool b, float f, string s)
+        {
+            var receiver = objectOwner;
+            if (!m_DistributedAuthority)
+            {
+                receiver = NetworkManager.ServerClientId;
+            }
+            VerifySentToIdWithParams(objectOwner, sender, receiver, methodName, i, b, f, s);
+        }
+
+        public void VerifySentToNotAuthorityWithParams(ulong objectOwner, ulong sender, string methodName, int i, bool b, float f, string s)
+        {
+            var receiver = objectOwner;
+            if (!m_DistributedAuthority)
+            {
+                receiver = NetworkManager.ServerClientId;
+            }
+            VerifySentToNotIdWithParams(objectOwner, sender, receiver, methodName, i, b, f, s);
+        }
+
         public void RethrowTargetInvocationException(Action action)
         {
             try
@@ -918,6 +1056,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
         }
     }
 
+    [TestFixture(HostOrServer.DAHost)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestSendingNoOverride : UniversalRpcTestsBase
@@ -930,7 +1069,8 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
         [Test]
         public void TestSendingNoOverride(
             // Excludes SendTo.SpecifiedInParams
-            [Values(SendTo.Everyone, SendTo.Me, SendTo.Owner, SendTo.Server, SendTo.NotMe, SendTo.NotOwner, SendTo.NotServer, SendTo.ClientsAndHost)] SendTo sendTo,
+            [Values(SendTo.Everyone, SendTo.Me, SendTo.Owner, SendTo.Server, SendTo.NotMe, SendTo.NotOwner, SendTo.NotServer,
+            SendTo.ClientsAndHost, SendTo.Authority, SendTo.NotAuthority)] SendTo sendTo,
             [Values(0u, 1u, 2u)] ulong objectOwner,
             [Values(0u, 1u, 2u)] ulong sender
         )
@@ -948,6 +1088,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
     }
 
+    [TestFixture(HostOrServer.DAHost)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestSenderClientId : UniversalRpcTestsBase
@@ -960,7 +1101,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
         [Test]
         public void TestSenderClientId(
             // Excludes SendTo.SpecifiedInParams
-            [Values(SendTo.Everyone, SendTo.Me, SendTo.Owner, SendTo.Server, SendTo.NotMe, SendTo.NotOwner, SendTo.NotServer, SendTo.ClientsAndHost)] SendTo sendTo,
+            [Values(SendTo.Everyone, SendTo.Me, SendTo.Owner, SendTo.Server, SendTo.NotMe, SendTo.NotOwner, SendTo.NotServer, SendTo.ClientsAndHost, SendTo.Authority, SendTo.NotAuthority)] SendTo sendTo,
             [Values(0u, 1u, 2u)] ulong objectOwner,
             [Values(0u, 1u, 2u)] ulong sender
         )
@@ -978,6 +1119,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
     }
 
+    [TestFixture(HostOrServer.DAHost)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestSendingNoOverrideWithParams : UniversalRpcTestsBase
@@ -990,7 +1132,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
         [Test]
         public void TestSendingNoOverrideWithParams(
             // Excludes SendTo.SpecifiedInParams
-            [Values(SendTo.Everyone, SendTo.Me, SendTo.Owner, SendTo.Server, SendTo.NotMe, SendTo.NotOwner, SendTo.NotServer, SendTo.ClientsAndHost)] SendTo sendTo,
+            [Values(SendTo.Everyone, SendTo.Me, SendTo.Owner, SendTo.Server, SendTo.NotMe, SendTo.NotOwner, SendTo.NotServer, SendTo.ClientsAndHost, SendTo.Authority, SendTo.NotAuthority)] SendTo sendTo,
             [Values(0u, 1u, 2u)] ulong objectOwner,
             [Values(0u, 1u, 2u)] ulong sender
         )
@@ -1020,6 +1162,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
     }
 
+    [TestFixture(HostOrServer.DAHost)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestSendingNoOverrideWithParamsAndRpcParams : UniversalRpcTestsBase
@@ -1032,7 +1175,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
         [Test]
         public void TestSendingNoOverrideWithParamsAndRpcParams(
             // Excludes SendTo.SpecifiedInParams
-            [Values(SendTo.Everyone, SendTo.Me, SendTo.Owner, SendTo.Server, SendTo.NotMe, SendTo.NotOwner, SendTo.NotServer, SendTo.ClientsAndHost)] SendTo sendTo,
+            [Values(SendTo.Everyone, SendTo.Me, SendTo.Owner, SendTo.Server, SendTo.NotMe, SendTo.NotOwner, SendTo.NotServer, SendTo.ClientsAndHost, SendTo.Authority, SendTo.NotAuthority)] SendTo sendTo,
             [Values(0u, 1u, 2u)] ulong objectOwner,
             [Values(0u, 1u, 2u)] ulong sender
         )
@@ -1062,6 +1205,8 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
     }
 
+
+    [TestFixture(HostOrServer.DAHost)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestRequireOwnership : UniversalRpcTestsBase
@@ -1074,7 +1219,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
         [Test]
         public void TestRequireOwnership(
             // Excludes SendTo.SpecifiedInParams
-            [Values(SendTo.Everyone, SendTo.Me, SendTo.Owner, SendTo.Server, SendTo.NotMe, SendTo.NotOwner, SendTo.NotServer, SendTo.ClientsAndHost)] SendTo sendTo,
+            [Values(SendTo.Everyone, SendTo.Me, SendTo.Owner, SendTo.Server, SendTo.NotMe, SendTo.NotOwner, SendTo.NotServer, SendTo.ClientsAndHost, SendTo.Authority, SendTo.NotAuthority)] SendTo sendTo,
             [Values(0u, 1u, 2u)] ulong objectOwner,
             [Values(0u, 1u, 2u)] ulong sender
         )
@@ -1098,6 +1243,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
         }
     }
 
+    [TestFixture(HostOrServer.DAHost)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestDisallowedOverride : UniversalRpcTestsBase
@@ -1107,10 +1253,11 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
         }
 
+        // Add both authority and nonauthority
         [Test]
         public void TestDisallowedOverride(
             // Excludes SendTo.SpecifiedInParams
-            [Values(SendTo.Everyone, SendTo.Me, SendTo.Owner, SendTo.Server, SendTo.NotMe, SendTo.NotOwner, SendTo.NotServer, SendTo.ClientsAndHost)] SendTo sendTo,
+            [Values(SendTo.Everyone, SendTo.Me, SendTo.Owner, SendTo.Server, SendTo.NotMe, SendTo.NotOwner, SendTo.NotServer, SendTo.ClientsAndHost, SendTo.Authority, SendTo.NotAuthority)] SendTo sendTo,
             [Values(0u, 1u, 2u)] ulong objectOwner,
             [Values(0u, 1u, 2u)] ulong sender)
         {
@@ -1142,6 +1289,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
         }
 
+        // Look at the implementations and add both
         [Test]
         public void TestSendingWithTargetOverride(
             [Values] SendTo defaultSendTo,
@@ -1175,40 +1323,27 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
         }
 
-        [UnityTest]
-        public IEnumerator TestSendingWithSingleOverride()
+        [Test]
+        public void TestSendingWithSingleOverride(
+            [Values] SendTo defaultSendTo,
+            [Values(0u, 1u, 2u)] ulong recipient,
+            [Values(0u, 1u, 2u)] ulong objectOwner,
+            [Values(0u, 1u, 2u)] ulong sender
+        )
         {
-            foreach (var defaultSendTo in Enum.GetValues(typeof(SendTo)))
-            {
-                for (ulong recipient = 0u; recipient <= 2u; ++recipient)
-                {
-                    for (ulong objectOwner = 0u; objectOwner <= 2u; ++objectOwner)
-                    {
-                        for (ulong sender = 0u; sender <= 2u; ++sender)
-                        {
-                            if (++YieldCheck % YieldCycleCount == 0)
-                            {
-                                yield return null;
-                            }
-                            OnInlineSetup();
-                            var sendMethodName = $"DefaultTo{defaultSendTo}AllowOverrideRpc";
+            var sendMethodName = $"DefaultTo{defaultSendTo}AllowOverrideRpc";
 
-                            var senderObject = GetPlayerObject(objectOwner, sender);
-                            var target = senderObject.RpcTarget.Single(recipient, RpcTargetUse.Temp);
-                            var sendMethod = senderObject.GetType().GetMethod(sendMethodName);
-                            sendMethod.Invoke(senderObject, new object[] { (RpcParams)target });
+            var senderObject = GetPlayerObject(objectOwner, sender);
+            var target = senderObject.RpcTarget.Single(recipient, RpcTargetUse.Temp);
+            var sendMethod = senderObject.GetType().GetMethod(sendMethodName);
+            sendMethod.Invoke(senderObject, new object[] { (RpcParams)target });
 
-                            VerifyRemoteReceived(objectOwner, sender, sendMethodName, new[] { recipient }, false);
-                            VerifyNotReceived(objectOwner, s_ClientIds.Where(c => recipient != c).ToArray());
+            VerifyRemoteReceived(objectOwner, sender, sendMethodName, new[] { recipient }, false);
+            VerifyNotReceived(objectOwner, s_ClientIds.Where(c => recipient != c).ToArray());
 
-                            // Pass some time to make sure that no other client ever receives this
-                            TimeTravel(1f, 30);
-                            VerifyNotReceived(objectOwner, s_ClientIds.Where(c => recipient != c).ToArray());
-                            OnInlineTearDown();
-                        }
-                    }
-                }
-            }
+            // Pass some time to make sure that no other client ever receives this
+            TimeTravel(1f, 30);
+            VerifyNotReceived(objectOwner, s_ClientIds.Where(c => recipient != c).ToArray());
         }
 
     }
@@ -1222,40 +1357,27 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
         }
 
-        [UnityTest]
-        public IEnumerator TestSendingWithSingleNotOverride()
+        [Test]
+        public void TestSendingWithSingleNotOverride(
+            [Values] SendTo defaultSendTo,
+            [Values(0u, 1u, 2u)] ulong recipient,
+            [Values(0u, 1u, 2u)] ulong objectOwner,
+            [Values(0u, 1u, 2u)] ulong sender
+        )
         {
-            foreach (var defaultSendTo in Enum.GetValues(typeof(SendTo)))
-            {
-                for (ulong recipient = 0u; recipient <= 2u; ++recipient)
-                {
-                    for (ulong objectOwner = 0u; objectOwner <= 2u; ++objectOwner)
-                    {
-                        for (ulong sender = 0u; sender <= 2u; ++sender)
-                        {
-                            if (++YieldCheck % YieldCycleCount == 0)
-                            {
-                                yield return null;
-                            }
-                            OnInlineSetup();
-                            var sendMethodName = $"DefaultTo{defaultSendTo}AllowOverrideRpc";
+            var sendMethodName = $"DefaultTo{defaultSendTo}AllowOverrideRpc";
 
-                            var senderObject = GetPlayerObject(objectOwner, sender);
-                            var target = senderObject.RpcTarget.Not(recipient, RpcTargetUse.Temp);
-                            var sendMethod = senderObject.GetType().GetMethod(sendMethodName);
-                            sendMethod.Invoke(senderObject, new object[] { (RpcParams)target });
+            var senderObject = GetPlayerObject(objectOwner, sender);
+            var target = senderObject.RpcTarget.Not(recipient, RpcTargetUse.Temp);
+            var sendMethod = senderObject.GetType().GetMethod(sendMethodName);
+            sendMethod.Invoke(senderObject, new object[] { (RpcParams)target });
 
-                            VerifyRemoteReceived(objectOwner, sender, sendMethodName, s_ClientIds.Where(c => recipient != c).ToArray(), false);
-                            VerifyNotReceived(objectOwner, new[] { recipient });
+            VerifyRemoteReceived(objectOwner, sender, sendMethodName, s_ClientIds.Where(c => recipient != c).ToArray(), false);
+            VerifyNotReceived(objectOwner, new[] { recipient });
 
-                            // Pass some time to make sure that no other client ever receives this
-                            TimeTravel(1f, 30);
-                            VerifyNotReceived(objectOwner, new[] { recipient });
-                            OnInlineTearDown();
-                        }
-                    }
-                }
-            }
+            // Pass some time to make sure that no other client ever receives this
+            TimeTravel(1f, 30);
+            VerifyNotReceived(objectOwner, new[] { recipient });
         }
 
     }
@@ -1285,80 +1407,56 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
             List
         }
 
-        // Extending timeout since the added yield return causes this test to commonly timeout
-        [Timeout(600000)]
-        [UnityTest]
-        public IEnumerator TestSendingWithGroupOverride()
+        [Test]
+        public void TestSendingWithGroupOverride(
+            [Values] SendTo defaultSendTo,
+            [ValueSource(nameof(RecipientGroups))] ulong[] recipient,
+            [Values(0u, 1u, 2u)] ulong objectOwner,
+            [Values(0u, 1u, 2u)] ulong sender,
+            [Values] AllocationType allocationType
+        )
         {
-            var waitFor = new WaitForFixedUpdate();
-            foreach (var defaultSendTo in Enum.GetValues(typeof(SendTo)))
+            var sendMethodName = $"DefaultTo{defaultSendTo}AllowOverrideRpc";
+
+            var senderObject = GetPlayerObject(objectOwner, sender);
+            BaseRpcTarget target = null;
+            switch (allocationType)
             {
-                m_EnableVerboseDebug = true;
-                VerboseDebug($"Processing: {defaultSendTo}");
-                m_EnableVerboseDebug = false;
-
-                foreach (var recipient in RecipientGroups)
-                {
-                    for (ulong objectOwner = 0u; objectOwner <= 2u; ++objectOwner)
+                case AllocationType.Array:
+                    target = senderObject.RpcTarget.Group(recipient, RpcTargetUse.Temp);
+                    break;
+                case AllocationType.List:
+                    target = senderObject.RpcTarget.Group(recipient.ToList(), RpcTargetUse.Temp);
+                    break;
+                case AllocationType.NativeArray:
+                    var arr = new NativeArray<ulong>(recipient, Allocator.Temp);
+                    target = senderObject.RpcTarget.Group(arr, RpcTargetUse.Temp);
+                    arr.Dispose();
+                    break;
+                case AllocationType.NativeList:
+                    // For some reason on 2020.3, calling list.AsArray() and passing that to the next function
+                    // causes Allocator.Temp allocations to become invalid somehow. This is not an issue on later
+                    // versions of Unity.
+                    var list = new NativeList<ulong>(recipient.Length, Allocator.TempJob);
+                    foreach (var id in recipient)
                     {
-                        for (ulong sender = 0u; sender <= 2u; ++sender)
-                        {
-                            yield return waitFor;
-                            foreach (var allocationType in Enum.GetValues(typeof(AllocationType)))
-                            {
-                                //if (++YieldCheck % YieldCycleCount == 0)
-                                //{
-                                //    yield return null;
-                                //}
-                                OnInlineSetup();
-                                var sendMethodName = $"DefaultTo{defaultSendTo}AllowOverrideRpc";
-
-                                var senderObject = GetPlayerObject(objectOwner, sender);
-                                BaseRpcTarget target = null;
-                                switch (allocationType)
-                                {
-                                    case AllocationType.Array:
-                                        target = senderObject.RpcTarget.Group(recipient, RpcTargetUse.Temp);
-                                        break;
-                                    case AllocationType.List:
-                                        target = senderObject.RpcTarget.Group(recipient.ToList(), RpcTargetUse.Temp);
-                                        break;
-                                    case AllocationType.NativeArray:
-                                        var arr = new NativeArray<ulong>(recipient, Allocator.Temp);
-                                        target = senderObject.RpcTarget.Group(arr, RpcTargetUse.Temp);
-                                        arr.Dispose();
-                                        break;
-                                    case AllocationType.NativeList:
-                                        // For some reason on 2020.3, calling list.AsArray() and passing that to the next function
-                                        // causes Allocator.Temp allocations to become invalid somehow. This is not an issue on later
-                                        // versions of Unity.
-                                        var list = new NativeList<ulong>(recipient.Length, Allocator.TempJob);
-                                        foreach (var id in recipient)
-                                        {
-                                            list.Add(id);
-                                        }
-
-                                        target = senderObject.RpcTarget.Group(list, RpcTargetUse.Temp);
-                                        list.Dispose();
-                                        break;
-                                }
-
-                                var sendMethod = senderObject.GetType().GetMethod(sendMethodName);
-                                sendMethod.Invoke(senderObject, new object[] { (RpcParams)target });
-
-                                VerifyRemoteReceived(objectOwner, sender, sendMethodName, s_ClientIds.Where(c => recipient.Contains(c)).ToArray(), false);
-                                VerifyNotReceived(objectOwner, s_ClientIds.Where(c => !recipient.Contains(c)).ToArray());
-
-                                // Pass some time to make sure that no other client ever receives this
-                                TimeTravel(1f, 30);
-                                VerifyNotReceived(objectOwner, s_ClientIds.Where(c => !recipient.Contains(c)).ToArray());
-                                OnInlineTearDown();
-                            }
-                        }
+                        list.Add(id);
                     }
-                }
+                    target = senderObject.RpcTarget.Group(list, RpcTargetUse.Temp);
+                    list.Dispose();
+                    break;
             }
+            var sendMethod = senderObject.GetType().GetMethod(sendMethodName);
+            sendMethod.Invoke(senderObject, new object[] { (RpcParams)target });
+
+            VerifyRemoteReceived(objectOwner, sender, sendMethodName, s_ClientIds.Where(c => recipient.Contains(c)).ToArray(), false);
+            VerifyNotReceived(objectOwner, s_ClientIds.Where(c => !recipient.Contains(c)).ToArray());
+
+            // Pass some time to make sure that no other client ever receives this
+            TimeTravel(1f, 30);
+            VerifyNotReceived(objectOwner, s_ClientIds.Where(c => !recipient.Contains(c)).ToArray());
         }
+
     }
 
     [TestFixture(HostOrServer.Host)]
@@ -1386,78 +1484,54 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
             List
         }
 
-        // Extending timeout since the added yield return causes this test to commonly timeout
-        [Timeout(600000)]
-        [UnityTest]
-        public IEnumerator TestSendingWithGroupNotOverride()
+        [Test]
+        public void TestSendingWithGroupNotOverride(
+            [Values] SendTo defaultSendTo,
+            [ValueSource(nameof(RecipientGroups))] ulong[] recipient,
+            [Values(0u, 1u, 2u)] ulong objectOwner,
+            [Values(0u, 1u, 2u)] ulong sender,
+            [Values] AllocationType allocationType
+        )
         {
-            var waitFor = new WaitForFixedUpdate();
-            foreach (var defaultSendTo in Enum.GetValues(typeof(SendTo)))
+            var sendMethodName = $"DefaultTo{defaultSendTo}AllowOverrideRpc";
+
+            var senderObject = GetPlayerObject(objectOwner, sender);
+            BaseRpcTarget target = null;
+            switch (allocationType)
             {
-                m_EnableVerboseDebug = true;
-                VerboseDebug($"Processing: {defaultSendTo}");
-                m_EnableVerboseDebug = false;
-                foreach (var recipient in RecipientGroups)
-                {
-                    for (ulong objectOwner = 0u; objectOwner <= 2u; ++objectOwner)
+                case AllocationType.Array:
+                    target = senderObject.RpcTarget.Not(recipient, RpcTargetUse.Temp);
+                    break;
+                case AllocationType.List:
+                    target = senderObject.RpcTarget.Not(recipient.ToList(), RpcTargetUse.Temp);
+                    break;
+                case AllocationType.NativeArray:
+                    var arr = new NativeArray<ulong>(recipient, Allocator.Temp);
+                    target = senderObject.RpcTarget.Not(arr, RpcTargetUse.Temp);
+                    arr.Dispose();
+                    break;
+                case AllocationType.NativeList:
+                    // For some reason on 2020.3, calling list.AsArray() and passing that to the next function
+                    // causes Allocator.Temp allocations to become invalid somehow. This is not an issue on later
+                    // versions of Unity.
+                    var list = new NativeList<ulong>(recipient.Length, Allocator.TempJob);
+                    foreach (var id in recipient)
                     {
-                        for (ulong sender = 0u; sender <= 2u; ++sender)
-                        {
-                            yield return waitFor;
-
-                            foreach (var allocationType in Enum.GetValues(typeof(AllocationType)))
-                            {
-                                //if (++YieldCheck % YieldCycleCount == 0)
-                                //{
-                                //    yield return waitFor;
-                                //}
-
-                                OnInlineSetup();
-                                var sendMethodName = $"DefaultTo{defaultSendTo}AllowOverrideRpc";
-
-                                var senderObject = GetPlayerObject(objectOwner, sender);
-                                BaseRpcTarget target = null;
-                                switch (allocationType)
-                                {
-                                    case AllocationType.Array:
-                                        target = senderObject.RpcTarget.Not(recipient, RpcTargetUse.Temp);
-                                        break;
-                                    case AllocationType.List:
-                                        target = senderObject.RpcTarget.Not(recipient.ToList(), RpcTargetUse.Temp);
-                                        break;
-                                    case AllocationType.NativeArray:
-                                        var arr = new NativeArray<ulong>(recipient, Allocator.Temp);
-                                        target = senderObject.RpcTarget.Not(arr, RpcTargetUse.Temp);
-                                        arr.Dispose();
-                                        break;
-                                    case AllocationType.NativeList:
-                                        // For some reason on 2020.3, calling list.AsArray() and passing that to the next function
-                                        // causes Allocator.Temp allocations to become invalid somehow. This is not an issue on later
-                                        // versions of Unity.
-                                        var list = new NativeList<ulong>(recipient.Length, Allocator.TempJob);
-                                        foreach (var id in recipient)
-                                        {
-                                            list.Add(id);
-                                        }
-                                        target = senderObject.RpcTarget.Not(list, RpcTargetUse.Temp);
-                                        list.Dispose();
-                                        break;
-                                }
-                                var sendMethod = senderObject.GetType().GetMethod(sendMethodName);
-                                sendMethod.Invoke(senderObject, new object[] { (RpcParams)target });
-
-                                VerifyRemoteReceived(objectOwner, sender, sendMethodName, s_ClientIds.Where(c => !recipient.Contains(c)).ToArray(), false);
-                                VerifyNotReceived(objectOwner, s_ClientIds.Where(c => recipient.Contains(c)).ToArray());
-
-                                // Pass some time to make sure that no other client ever receives this
-                                TimeTravel(1f, 30);
-                                VerifyNotReceived(objectOwner, s_ClientIds.Where(c => recipient.Contains(c)).ToArray());
-                                OnInlineTearDown();
-                            }
-                        }
+                        list.Add(id);
                     }
-                }
+                    target = senderObject.RpcTarget.Not(list, RpcTargetUse.Temp);
+                    list.Dispose();
+                    break;
             }
+            var sendMethod = senderObject.GetType().GetMethod(sendMethodName);
+            sendMethod.Invoke(senderObject, new object[] { (RpcParams)target });
+
+            VerifyRemoteReceived(objectOwner, sender, sendMethodName, s_ClientIds.Where(c => !recipient.Contains(c)).ToArray(), false);
+            VerifyNotReceived(objectOwner, s_ClientIds.Where(c => recipient.Contains(c)).ToArray());
+
+            // Pass some time to make sure that no other client ever receives this
+            TimeTravel(1f, 30);
+            VerifyNotReceived(objectOwner, s_ClientIds.Where(c => recipient.Contains(c)).ToArray());
         }
 
     }
@@ -1472,6 +1546,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
         }
     }
 
+    [TestFixture(HostOrServer.DAHost)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestDeferLocal : UniversalRpcTestsBase
@@ -1481,180 +1556,269 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
         }
 
-        private struct TestData
-        {
-            public SendTo SendTo;
-            public ulong ObjectOwner;
-            public ulong Sender;
-
-            public TestData(SendTo sendTo, ulong objectOwner, ulong sender)
-            {
-                SendTo = sendTo;
-                ObjectOwner = objectOwner;
-                Sender = sender;
-            }
-        }
-
+        [Test]
         // All the test cases that involve sends that will be delivered locally
-        private static TestData[] s_LocalDeliveryTestCases =
+        [TestCase(SendTo.Everyone, 0u, 0u)]
+        [TestCase(SendTo.Everyone, 0u, 1u)]
+        [TestCase(SendTo.Everyone, 0u, 2u)]
+        [TestCase(SendTo.Everyone, 1u, 0u)]
+        [TestCase(SendTo.Everyone, 1u, 1u)]
+        [TestCase(SendTo.Everyone, 1u, 2u)]
+        [TestCase(SendTo.Everyone, 2u, 0u)]
+        [TestCase(SendTo.Everyone, 2u, 1u)]
+        [TestCase(SendTo.Everyone, 2u, 2u)]
+        [TestCase(SendTo.Me, 0u, 0u)]
+        [TestCase(SendTo.Me, 0u, 1u)]
+        [TestCase(SendTo.Me, 0u, 2u)]
+        [TestCase(SendTo.Me, 1u, 0u)]
+        [TestCase(SendTo.Me, 1u, 1u)]
+        [TestCase(SendTo.Me, 1u, 2u)]
+        [TestCase(SendTo.Me, 2u, 0u)]
+        [TestCase(SendTo.Me, 2u, 1u)]
+        [TestCase(SendTo.Me, 2u, 2u)]
+        [TestCase(SendTo.Owner, 0u, 0u)]
+        [TestCase(SendTo.Owner, 1u, 1u)]
+        [TestCase(SendTo.Owner, 2u, 2u)]
+        [TestCase(SendTo.Server, 0u, 0u)]
+        [TestCase(SendTo.Server, 1u, 0u)]
+        [TestCase(SendTo.Server, 2u, 0u)]
+        [TestCase(SendTo.NotOwner, 0u, 1u)]
+        [TestCase(SendTo.NotOwner, 0u, 2u)]
+        [TestCase(SendTo.NotOwner, 1u, 0u)]
+        [TestCase(SendTo.NotOwner, 1u, 2u)]
+        [TestCase(SendTo.NotOwner, 2u, 0u)]
+        [TestCase(SendTo.NotOwner, 2u, 1u)]
+        [TestCase(SendTo.NotServer, 0u, 1u)]
+        [TestCase(SendTo.NotServer, 0u, 2u)]
+        [TestCase(SendTo.NotServer, 1u, 1u)]
+        [TestCase(SendTo.NotServer, 1u, 2u)]
+        [TestCase(SendTo.NotServer, 2u, 1u)]
+        [TestCase(SendTo.NotServer, 2u, 2u)]
+        [TestCase(SendTo.ClientsAndHost, 0u, 0u)]
+        [TestCase(SendTo.ClientsAndHost, 0u, 1u)]
+        [TestCase(SendTo.ClientsAndHost, 0u, 2u)]
+        [TestCase(SendTo.ClientsAndHost, 1u, 0u)]
+        [TestCase(SendTo.ClientsAndHost, 1u, 1u)]
+        [TestCase(SendTo.ClientsAndHost, 1u, 2u)]
+        [TestCase(SendTo.ClientsAndHost, 2u, 0u)]
+        [TestCase(SendTo.ClientsAndHost, 2u, 1u)]
+        [TestCase(SendTo.ClientsAndHost, 2u, 2u)]
+        [TestCase(SendTo.Authority, 0u, 0u)]
+        [TestCase(SendTo.Authority, 1u, 1u)]
+        [TestCase(SendTo.Authority, 2u, 2u)]
+        [TestCase(SendTo.NotAuthority, 0u, 1u)]
+        [TestCase(SendTo.NotAuthority, 0u, 2u)]
+        [TestCase(SendTo.NotAuthority, 1u, 0u)]
+        [TestCase(SendTo.NotAuthority, 1u, 2u)]
+        [TestCase(SendTo.NotAuthority, 2u, 0u)]
+        [TestCase(SendTo.NotAuthority, 2u, 1u)]
+        public void TestDeferLocal(
+            SendTo defaultSendTo,
+            ulong objectOwner,
+            ulong sender
+        )
         {
-            new TestData(SendTo.Everyone, 0u, 0u),
-            new TestData(SendTo.Everyone, 0u, 1u),
-            new TestData(SendTo.Everyone, 0u, 2u),
-            new TestData(SendTo.Everyone, 1u, 0u),
-            new TestData(SendTo.Everyone, 1u, 1u),
-            new TestData(SendTo.Everyone, 1u, 2u),
-            new TestData(SendTo.Everyone, 2u, 0u),
-            new TestData(SendTo.Everyone, 2u, 1u),
-            new TestData(SendTo.Everyone, 2u, 2u),
-            new TestData(SendTo.Me, 0u, 0u),
-            new TestData(SendTo.Me, 0u, 1u),
-            new TestData(SendTo.Me, 0u, 2u),
-            new TestData(SendTo.Me, 1u, 0u),
-            new TestData(SendTo.Me, 1u, 1u),
-            new TestData(SendTo.Me, 1u, 2u),
-            new TestData(SendTo.Me, 2u, 0u),
-            new TestData(SendTo.Me, 2u, 1u),
-            new TestData(SendTo.Me, 2u, 2u),
-            new TestData(SendTo.Owner, 0u, 0u),
-            new TestData(SendTo.Owner, 1u, 1u),
-            new TestData(SendTo.Owner, 2u, 2u),
-            new TestData(SendTo.Server, 0u, 0u),
-            new TestData(SendTo.Server, 1u, 0u),
-            new TestData(SendTo.Server, 2u, 0u),
-            new TestData(SendTo.NotOwner, 0u, 1u),
-            new TestData(SendTo.NotOwner, 0u, 2u),
-            new TestData(SendTo.NotOwner, 1u, 0u),
-            new TestData(SendTo.NotOwner, 1u, 2u),
-            new TestData(SendTo.NotOwner, 2u, 0u),
-            new TestData(SendTo.NotOwner, 2u, 1u),
-            new TestData(SendTo.NotServer, 0u, 1u),
-            new TestData(SendTo.NotServer, 0u, 2u),
-            new TestData(SendTo.NotServer, 1u, 1u),
-            new TestData(SendTo.NotServer, 1u, 2u),
-            new TestData(SendTo.NotServer, 2u, 1u),
-            new TestData(SendTo.NotServer, 2u, 2u),
-            new TestData(SendTo.ClientsAndHost, 0u, 0u),
-            new TestData(SendTo.ClientsAndHost, 0u, 1u),
-            new TestData(SendTo.ClientsAndHost, 0u, 2u),
-            new TestData(SendTo.ClientsAndHost, 1u, 0u),
-            new TestData(SendTo.ClientsAndHost, 1u, 1u),
-            new TestData(SendTo.ClientsAndHost, 1u, 2u),
-            new TestData(SendTo.ClientsAndHost, 2u, 0u),
-            new TestData(SendTo.ClientsAndHost, 2u, 1u),
-            new TestData(SendTo.ClientsAndHost, 2u, 2u),
-        };
-
-
-        [UnityTest]
-        public IEnumerator TestDeferLocal()
-        {
-            foreach (var testCase in s_LocalDeliveryTestCases)
+            if (defaultSendTo == SendTo.ClientsAndHost && sender == 0u && !m_ServerNetworkManager.IsHost)
             {
-                if (++YieldCheck % YieldCycleCount == 0)
-                {
-                    yield return null;
-                }
-                OnInlineSetup();
-                var defaultSendTo = testCase.SendTo;
-                var sender = testCase.Sender;
-                var objectOwner = testCase.ObjectOwner;
-
-                if (defaultSendTo == SendTo.ClientsAndHost && sender == 0u && !m_ServerNetworkManager.IsHost)
-                {
-                    // Not calling Assert.Ignore() because Unity will mark the whole block of tests as ignored
-                    // Just consider this case a success...
-                    yield break;
-                }
-
-                var sendMethodName = $"DefaultTo{defaultSendTo}DeferLocalRpc";
-                var verifyMethodName = $"VerifySentTo{defaultSendTo}";
-                var senderObject = GetPlayerObject(objectOwner, sender);
-                var sendMethod = senderObject.GetType().GetMethod(sendMethodName);
-                sendMethod.Invoke(senderObject, new object[] { new RpcParams() });
-
-                VerifyNotReceived(objectOwner, new[] { sender });
-                // Should be received on the next frame
-                SimulateOneFrame();
-                VerifyLocalReceived(objectOwner, sender, sendMethodName, false);
-
-                var verifyMethod = GetType().GetMethod(verifyMethodName);
-                verifyMethod.Invoke(this, new object[] { objectOwner, sender, sendMethodName });
-                OnInlineTearDown();
+                // Not calling Assert.Ignore() because Unity will mark the whole block of tests as ignored
+                // Just consider this case a success...
+                return;
             }
+
+            // Similar to above, since Server and NotServer are already tested we can consider this a success
+            if (!m_DistributedAuthority && defaultSendTo == SendTo.Authority || defaultSendTo == SendTo.NotAuthority)
+            {
+                return;
+            }
+
+            var sendMethodName = $"DefaultTo{defaultSendTo}DeferLocalRpc";
+            var verifyMethodName = $"VerifySentTo{defaultSendTo}";
+            var senderObject = GetPlayerObject(objectOwner, sender);
+            var sendMethod = senderObject.GetType().GetMethod(sendMethodName);
+            sendMethod.Invoke(senderObject, new object[] { new RpcParams() });
+
+            VerifyNotReceived(objectOwner, new[] { sender });
+            // Should be received on the next frame
+            SimulateOneFrame();
+            VerifyLocalReceived(objectOwner, sender, sendMethodName, false);
+
+            var verifyMethod = GetType().GetMethod(verifyMethodName);
+            verifyMethod.Invoke(this, new object[] { objectOwner, sender, sendMethodName });
         }
 
-        [UnityTest]
-        public IEnumerator TestDeferLocalOverrideToTrue()
+        [Test]
+        // All the test cases that involve sends that will be delivered locally
+        [TestCase(SendTo.Everyone, 0u, 0u)]
+        [TestCase(SendTo.Everyone, 0u, 1u)]
+        [TestCase(SendTo.Everyone, 0u, 2u)]
+        [TestCase(SendTo.Everyone, 1u, 0u)]
+        [TestCase(SendTo.Everyone, 1u, 1u)]
+        [TestCase(SendTo.Everyone, 1u, 2u)]
+        [TestCase(SendTo.Everyone, 2u, 0u)]
+        [TestCase(SendTo.Everyone, 2u, 1u)]
+        [TestCase(SendTo.Everyone, 2u, 2u)]
+        [TestCase(SendTo.Me, 0u, 0u)]
+        [TestCase(SendTo.Me, 0u, 1u)]
+        [TestCase(SendTo.Me, 0u, 2u)]
+        [TestCase(SendTo.Me, 1u, 0u)]
+        [TestCase(SendTo.Me, 1u, 1u)]
+        [TestCase(SendTo.Me, 1u, 2u)]
+        [TestCase(SendTo.Me, 2u, 0u)]
+        [TestCase(SendTo.Me, 2u, 1u)]
+        [TestCase(SendTo.Me, 2u, 2u)]
+        [TestCase(SendTo.Owner, 0u, 0u)]
+        [TestCase(SendTo.Owner, 1u, 1u)]
+        [TestCase(SendTo.Owner, 2u, 2u)]
+        [TestCase(SendTo.Server, 0u, 0u)]
+        [TestCase(SendTo.Server, 1u, 0u)]
+        [TestCase(SendTo.Server, 2u, 0u)]
+        [TestCase(SendTo.NotOwner, 0u, 1u)]
+        [TestCase(SendTo.NotOwner, 0u, 2u)]
+        [TestCase(SendTo.NotOwner, 1u, 0u)]
+        [TestCase(SendTo.NotOwner, 1u, 2u)]
+        [TestCase(SendTo.NotOwner, 2u, 0u)]
+        [TestCase(SendTo.NotOwner, 2u, 1u)]
+        [TestCase(SendTo.NotServer, 0u, 1u)]
+        [TestCase(SendTo.NotServer, 0u, 2u)]
+        [TestCase(SendTo.NotServer, 1u, 1u)]
+        [TestCase(SendTo.NotServer, 1u, 2u)]
+        [TestCase(SendTo.NotServer, 2u, 1u)]
+        [TestCase(SendTo.NotServer, 2u, 2u)]
+        [TestCase(SendTo.ClientsAndHost, 0u, 0u)]
+        [TestCase(SendTo.ClientsAndHost, 0u, 1u)]
+        [TestCase(SendTo.ClientsAndHost, 0u, 2u)]
+        [TestCase(SendTo.ClientsAndHost, 1u, 0u)]
+        [TestCase(SendTo.ClientsAndHost, 1u, 1u)]
+        [TestCase(SendTo.ClientsAndHost, 1u, 2u)]
+        [TestCase(SendTo.ClientsAndHost, 2u, 0u)]
+        [TestCase(SendTo.ClientsAndHost, 2u, 1u)]
+        [TestCase(SendTo.ClientsAndHost, 2u, 2u)]
+        [TestCase(SendTo.Authority, 0u, 0u)]
+        [TestCase(SendTo.Authority, 1u, 1u)]
+        [TestCase(SendTo.Authority, 2u, 2u)]
+        [TestCase(SendTo.NotAuthority, 0u, 1u)]
+        [TestCase(SendTo.NotAuthority, 0u, 2u)]
+        [TestCase(SendTo.NotAuthority, 1u, 0u)]
+        [TestCase(SendTo.NotAuthority, 1u, 2u)]
+        [TestCase(SendTo.NotAuthority, 2u, 0u)]
+        [TestCase(SendTo.NotAuthority, 2u, 1u)]
+        public void TestDeferLocalOverrideToTrue(
+            SendTo defaultSendTo,
+            ulong objectOwner,
+            ulong sender
+        )
         {
-            foreach (var testCase in s_LocalDeliveryTestCases)
+            if (defaultSendTo == SendTo.ClientsAndHost && sender == 0u && !m_ServerNetworkManager.IsHost)
             {
-                if (++YieldCheck % YieldCycleCount == 0)
-                {
-                    yield return null;
-                }
-                OnInlineSetup();
-                var defaultSendTo = testCase.SendTo;
-                var sender = testCase.Sender;
-                var objectOwner = testCase.ObjectOwner;
-
-                if (defaultSendTo == SendTo.ClientsAndHost && sender == 0u && !m_ServerNetworkManager.IsHost)
-                {
-                    // Not calling Assert.Ignore() because Unity will mark the whole block of tests as ignored
-                    // Just consider this case a success...
-                    yield break;
-                }
-
-                var sendMethodName = $"DefaultTo{defaultSendTo}WithRpcParamsRpc";
-                var verifyMethodName = $"VerifySentTo{defaultSendTo}";
-                var senderObject = GetPlayerObject(objectOwner, sender);
-                var sendMethod = senderObject.GetType().GetMethod(sendMethodName);
-                sendMethod.Invoke(senderObject, new object[] { (RpcParams)LocalDeferMode.Defer });
-
-                VerifyNotReceived(objectOwner, new[] { sender });
-                // Should be received on the next frame
-                SimulateOneFrame();
-                VerifyLocalReceived(objectOwner, sender, sendMethodName, false);
-
-                var verifyMethod = GetType().GetMethod(verifyMethodName);
-                verifyMethod.Invoke(this, new object[] { objectOwner, sender, sendMethodName });
-                OnInlineTearDown();
+                // Not calling Assert.Ignore() because Unity will mark the whole block of tests as ignored
+                // Just consider this case a success...
+                return;
             }
+            // Similar to above, since Server and NotServer are already tested we can consider this a success
+            if (!m_DistributedAuthority && defaultSendTo == SendTo.Authority || defaultSendTo == SendTo.NotAuthority)
+            {
+                return;
+            }
+
+            var sendMethodName = $"DefaultTo{defaultSendTo}WithRpcParamsRpc";
+            var verifyMethodName = $"VerifySentTo{defaultSendTo}";
+            var senderObject = GetPlayerObject(objectOwner, sender);
+            var sendMethod = senderObject.GetType().GetMethod(sendMethodName);
+            sendMethod.Invoke(senderObject, new object[] { (RpcParams)LocalDeferMode.Defer });
+
+            VerifyNotReceived(objectOwner, new[] { sender });
+            // Should be received on the next frame
+            SimulateOneFrame();
+            VerifyLocalReceived(objectOwner, sender, sendMethodName, false);
+
+            var verifyMethod = GetType().GetMethod(verifyMethodName);
+            verifyMethod.Invoke(this, new object[] { objectOwner, sender, sendMethodName });
         }
 
-        [UnityTest]
-        public IEnumerator TestDeferLocalOverrideToFalse()
+        [Test]
+        // All the test cases that involve sends that will be delivered locally
+        [TestCase(SendTo.Everyone, 0u, 0u)]
+        [TestCase(SendTo.Everyone, 0u, 1u)]
+        [TestCase(SendTo.Everyone, 0u, 2u)]
+        [TestCase(SendTo.Everyone, 1u, 0u)]
+        [TestCase(SendTo.Everyone, 1u, 1u)]
+        [TestCase(SendTo.Everyone, 1u, 2u)]
+        [TestCase(SendTo.Everyone, 2u, 0u)]
+        [TestCase(SendTo.Everyone, 2u, 1u)]
+        [TestCase(SendTo.Everyone, 2u, 2u)]
+        [TestCase(SendTo.Me, 0u, 0u)]
+        [TestCase(SendTo.Me, 0u, 1u)]
+        [TestCase(SendTo.Me, 0u, 2u)]
+        [TestCase(SendTo.Me, 1u, 0u)]
+        [TestCase(SendTo.Me, 1u, 1u)]
+        [TestCase(SendTo.Me, 1u, 2u)]
+        [TestCase(SendTo.Me, 2u, 0u)]
+        [TestCase(SendTo.Me, 2u, 1u)]
+        [TestCase(SendTo.Me, 2u, 2u)]
+        [TestCase(SendTo.Owner, 0u, 0u)]
+        [TestCase(SendTo.Owner, 1u, 1u)]
+        [TestCase(SendTo.Owner, 2u, 2u)]
+        [TestCase(SendTo.Server, 0u, 0u)]
+        [TestCase(SendTo.Server, 1u, 0u)]
+        [TestCase(SendTo.Server, 2u, 0u)]
+        [TestCase(SendTo.NotOwner, 0u, 1u)]
+        [TestCase(SendTo.NotOwner, 0u, 2u)]
+        [TestCase(SendTo.NotOwner, 1u, 0u)]
+        [TestCase(SendTo.NotOwner, 1u, 2u)]
+        [TestCase(SendTo.NotOwner, 2u, 0u)]
+        [TestCase(SendTo.NotOwner, 2u, 1u)]
+        [TestCase(SendTo.NotServer, 0u, 1u)]
+        [TestCase(SendTo.NotServer, 0u, 2u)]
+        [TestCase(SendTo.NotServer, 1u, 1u)]
+        [TestCase(SendTo.NotServer, 1u, 2u)]
+        [TestCase(SendTo.NotServer, 2u, 1u)]
+        [TestCase(SendTo.NotServer, 2u, 2u)]
+        [TestCase(SendTo.ClientsAndHost, 0u, 0u)]
+        [TestCase(SendTo.ClientsAndHost, 0u, 1u)]
+        [TestCase(SendTo.ClientsAndHost, 0u, 2u)]
+        [TestCase(SendTo.ClientsAndHost, 1u, 0u)]
+        [TestCase(SendTo.ClientsAndHost, 1u, 1u)]
+        [TestCase(SendTo.ClientsAndHost, 1u, 2u)]
+        [TestCase(SendTo.ClientsAndHost, 2u, 0u)]
+        [TestCase(SendTo.ClientsAndHost, 2u, 1u)]
+        [TestCase(SendTo.ClientsAndHost, 2u, 2u)]
+        [TestCase(SendTo.Authority, 0u, 0u)]
+        [TestCase(SendTo.Authority, 1u, 1u)]
+        [TestCase(SendTo.Authority, 2u, 2u)]
+        [TestCase(SendTo.NotAuthority, 0u, 1u)]
+        [TestCase(SendTo.NotAuthority, 0u, 2u)]
+        [TestCase(SendTo.NotAuthority, 1u, 0u)]
+        [TestCase(SendTo.NotAuthority, 1u, 2u)]
+        [TestCase(SendTo.NotAuthority, 2u, 0u)]
+        [TestCase(SendTo.NotAuthority, 2u, 1u)]
+        public void TestDeferLocalOverrideToFalse(
+            SendTo defaultSendTo,
+            ulong objectOwner,
+            ulong sender
+        )
         {
-            foreach (var testCase in s_LocalDeliveryTestCases)
+            if (defaultSendTo == SendTo.ClientsAndHost && sender == 0u && !m_ServerNetworkManager.IsHost)
             {
-                if (++YieldCheck % YieldCycleCount == 0)
-                {
-                    yield return null;
-                }
-                OnInlineSetup();
-                var defaultSendTo = testCase.SendTo;
-                var sender = testCase.Sender;
-                var objectOwner = testCase.ObjectOwner;
-
-                if (defaultSendTo == SendTo.ClientsAndHost && sender == 0u && !m_ServerNetworkManager.IsHost)
-                {
-                    // Not calling Assert.Ignore() because Unity will mark the whole block of tests as ignored
-                    // Just consider this case a success...
-                    yield break;
-                }
-
-                var sendMethodName = $"DefaultTo{defaultSendTo}DeferLocalRpc";
-                var verifyMethodName = $"VerifySentTo{defaultSendTo}";
-                var senderObject = GetPlayerObject(objectOwner, sender);
-                var sendMethod = senderObject.GetType().GetMethod(sendMethodName);
-                sendMethod.Invoke(senderObject, new object[] { (RpcParams)LocalDeferMode.SendImmediate });
-
-                VerifyLocalReceived(objectOwner, sender, sendMethodName, false);
-
-                var verifyMethod = GetType().GetMethod(verifyMethodName);
-                verifyMethod.Invoke(this, new object[] { objectOwner, sender, sendMethodName });
-                OnInlineTearDown();
+                // Not calling Assert.Ignore() because Unity will mark the whole block of tests as ignored
+                // Just consider this case a success...
+                return;
             }
+            // Similar to above, since Server and NotServer are already tested we can consider this a success
+            if (!m_DistributedAuthority && defaultSendTo == SendTo.Authority || defaultSendTo == SendTo.NotAuthority)
+            {
+                return;
+            }
+
+            var sendMethodName = $"DefaultTo{defaultSendTo}DeferLocalRpc";
+            var verifyMethodName = $"VerifySentTo{defaultSendTo}";
+            var senderObject = GetPlayerObject(objectOwner, sender);
+            var sendMethod = senderObject.GetType().GetMethod(sendMethodName);
+            sendMethod.Invoke(senderObject, new object[] { (RpcParams)LocalDeferMode.SendImmediate });
+
+            VerifyLocalReceived(objectOwner, sender, sendMethodName, false);
+
+            var verifyMethod = GetType().GetMethod(verifyMethodName);
+            verifyMethod.Invoke(this, new object[] { objectOwner, sender, sendMethodName });
         }
 
     }

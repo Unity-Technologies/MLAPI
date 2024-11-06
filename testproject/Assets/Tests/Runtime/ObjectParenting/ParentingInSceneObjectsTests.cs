@@ -4,11 +4,14 @@ using NUnit.Framework;
 using TestProject.ManualTests;
 using Unity.Netcode;
 using Unity.Netcode.TestHelpers.Runtime;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
 namespace TestProject.RuntimeTests
 {
+    [TestFixture(NetworkTopologyTypes.DistributedAuthority)]
+    [TestFixture(NetworkTopologyTypes.ClientServer)]
     public class ParentingInSceneObjectsTests : IntegrationTestWithApproximation
     {
         private const string k_BaseSceneToLoad = "UnitTestBaseScene";
@@ -20,6 +23,8 @@ namespace TestProject.RuntimeTests
         private StringBuilder m_ErrorValidationLog = new StringBuilder(0x2000);
 
         protected override int NumberOfClients => 2;
+
+        public ParentingInSceneObjectsTests(NetworkTopologyTypes networkTopologyType) : base(networkTopologyType) { }
 
         protected override void OnOneTimeSetup()
         {
@@ -56,6 +61,8 @@ namespace TestProject.RuntimeTests
 
         protected override IEnumerator OnTearDown()
         {
+            ParentingAutoSyncManager.Reset();
+
             if (m_BaseSceneLoaded.IsValid() && m_BaseSceneLoaded.isLoaded)
             {
                 SceneManager.UnloadSceneAsync(m_BaseSceneLoaded);
@@ -66,17 +73,20 @@ namespace TestProject.RuntimeTests
 
         private void GeneratePositionDoesNotMatch(InSceneParentChildHandler serverHandler, InSceneParentChildHandler clientHandler)
         {
-            m_ErrorValidationLog.AppendLine($"[Client-{clientHandler.NetworkManager.LocalClientId}] {nameof(NetworkObject)}-{clientHandler.NetworkObjectId}'s position {clientHandler.transform.position} does not equal the server-side position {serverHandler.transform.position}");
+            m_ErrorValidationLog.AppendLine($"[Client-{clientHandler.NetworkManager.LocalClientId}] {nameof(NetworkObject)}-{clientHandler.NetworkObjectId}'s " +
+                $"position {GetVector3Values(clientHandler.transform.position)} does not equal the server-side position {GetVector3Values(serverHandler.transform.position)}");
         }
 
         private void GenerateRotationDoesNotMatch(InSceneParentChildHandler serverHandler, InSceneParentChildHandler clientHandler)
         {
-            m_ErrorValidationLog.Append($"[Client-{clientHandler.NetworkManager.LocalClientId}] {nameof(NetworkObject)}-{clientHandler.NetworkObjectId}'s rotation {clientHandler.transform.eulerAngles} does not equal the server-side rotation {serverHandler.transform.eulerAngles}");
+            m_ErrorValidationLog.AppendLine($"[Client-{clientHandler.NetworkManager.LocalClientId}] {nameof(NetworkObject)}-{clientHandler.NetworkObjectId}'s " +
+                $"rotation {GetVector3Values(clientHandler.transform.eulerAngles)} does not equal the server-side rotation {GetVector3Values(serverHandler.transform.eulerAngles)}");
         }
 
         private void GenerateScaleDoesNotMatch(InSceneParentChildHandler serverHandler, InSceneParentChildHandler clientHandler)
         {
-            m_ErrorValidationLog.AppendLine($"[Client-{clientHandler.NetworkManager.LocalClientId}] {nameof(NetworkObject)}-{clientHandler.NetworkObjectId}'s scale {clientHandler.transform.localScale} does not equal the server-side scale {serverHandler.transform.localScale}");
+            m_ErrorValidationLog.AppendLine($"[Client-{clientHandler.NetworkManager.LocalClientId}] {nameof(NetworkObject)}-{clientHandler.NetworkObjectId}'s " +
+                $"scale {GetVector3Values(clientHandler.transform.localScale)} does not equal the server-side scale {GetVector3Values(serverHandler.transform.localScale)}");
         }
 
         private void GenerateParentIsNotCorrect(InSceneParentChildHandler handler, bool shouldHaveParent, bool isStillSpawnedCheck = false)
@@ -114,13 +124,13 @@ namespace TestProject.RuntimeTests
             }
         }
 
-        private bool ValidateClientAgainstServerTransformValues()
+        private bool ValidateClientsAgainstAuthorityTransformValues()
         {
             // We reset this each time because we are only interested in the last time it checked and failed
             m_ErrorValidationLog.Clear();
             var passed = true;
             var failingClient = (ulong)0;
-            foreach (var instance in InSceneParentChildHandler.ServerRelativeInstances)
+            foreach (var instance in InSceneParentChildHandler.AuthorityRelativeInstances)
             {
                 var serverInstanceTransform = instance.Value.transform;
                 foreach (var clientInstances in InSceneParentChildHandler.ClientRelativeInstances)
@@ -163,7 +173,7 @@ namespace TestProject.RuntimeTests
         private bool ValidateAllChildrenParentingStatus(bool checkForParent)
         {
             m_ErrorValidationLog.Clear();
-            foreach (var instance in InSceneParentChildHandler.ServerRelativeInstances)
+            foreach (var instance in InSceneParentChildHandler.AuthorityRelativeInstances)
             {
                 if (!instance.Value.IsRootParent)
                 {
@@ -238,22 +248,40 @@ namespace TestProject.RuntimeTests
             yield return WaitForConditionOrTimeOut(() => m_InitialClientsLoadedScene);
             AssertOnTimeout($"Timed out waiting for all clients to load scene {k_TestSceneToLoad}!");
 
+            var debugWait = new WaitForSeconds(2);
             // [Currently Connected Clients]
             // remove the parents, change all transform values, and re-parent
-            InSceneParentChildHandler.ServerRootParent.DeparentSetValuesAndReparent();
-            yield return WaitForConditionOrTimeOut(ValidateClientAgainstServerTransformValues);
-            AssertOnTimeout($"Timed out waiting for all clients transform values to match the server transform values!\n {m_ErrorValidationLog}");
+            InSceneParentChildHandler.AuthorityRootParent.DeparentSetValuesAndReparent();
+            yield return WaitForConditionOrTimeOut(ValidateClientsAgainstAuthorityTransformValues);
+
+
+            if (s_GlobalTimeoutHelper.TimedOut)
+            {
+                InSceneParentChildHandler.AuthorityRootParent.CheckChildren();
+                yield return debugWait;
+            }
+            AssertOnTimeout($"Timed out waiting for all clients transform values to match the authority transform values!\n {m_ErrorValidationLog}");
 
             // [Late Join Client #1]
             // Make sure the late joining client synchronizes properly
             yield return CreateAndStartNewClient();
-            yield return WaitForConditionOrTimeOut(ValidateClientAgainstServerTransformValues);
-            AssertOnTimeout($"[Late Join 1] Timed out waiting for the late joining client's transform values to match the server transform values!\n {m_ErrorValidationLog}");
+            yield return WaitForConditionOrTimeOut(ValidateClientsAgainstAuthorityTransformValues);
+            if (s_GlobalTimeoutHelper.TimedOut)
+            {
+                InSceneParentChildHandler.AuthorityRootParent.CheckChildren();
+                yield return debugWait;
+            }
+            AssertOnTimeout($"[Late Join 1] Timed out waiting for the late joining client's transform values to match the authority transform values!\n {m_ErrorValidationLog}");
 
             // Remove the parents from all of the children
-            InSceneParentChildHandler.ServerRootParent.DeparentAllChildren();
-            yield return WaitForConditionOrTimeOut(ValidateClientAgainstServerTransformValues);
-            AssertOnTimeout($"[Late Join 1] Timed out waiting for all clients transform values to match the server transform values!\n {m_ErrorValidationLog}");
+            InSceneParentChildHandler.AuthorityRootParent.DeparentAllChildren();
+            yield return WaitForConditionOrTimeOut(ValidateClientsAgainstAuthorityTransformValues);
+            if (s_GlobalTimeoutHelper.TimedOut)
+            {
+                InSceneParentChildHandler.AuthorityRootParent.CheckChildren();
+                yield return debugWait;
+            }
+            AssertOnTimeout($"[Late Join 1] Timed out waiting for all clients transform values to match the authority transform values!\n {m_ErrorValidationLog}");
 
             yield return WaitForConditionOrTimeOut(() => ValidateAllChildrenParentingStatus(false));
             AssertOnTimeout($"[Late Join 1] Timed out waiting for all children to be removed from their parent!\n {m_ErrorValidationLog}");
@@ -261,48 +289,78 @@ namespace TestProject.RuntimeTests
             // [Late Join Client #2]
             // Make sure the late joining client synchronizes properly with all children having their parent removed
             yield return CreateAndStartNewClient();
-            yield return WaitForConditionOrTimeOut(ValidateClientAgainstServerTransformValues);
-            AssertOnTimeout($"[Late Join 2] Timed out waiting for the late joining client's transform values to match the server transform values!\n {m_ErrorValidationLog}");
+            yield return WaitForConditionOrTimeOut(ValidateClientsAgainstAuthorityTransformValues);
+            if (s_GlobalTimeoutHelper.TimedOut)
+            {
+                InSceneParentChildHandler.AuthorityRootParent.CheckChildren();
+                yield return debugWait;
+            }
+            AssertOnTimeout($"[Late Join 2] Timed out waiting for the late joining client's transform values to match the authority transform values!\n {m_ErrorValidationLog}");
 
             // Just a sanity check that late joining client #2 has no child parented
             yield return WaitForConditionOrTimeOut(() => ValidateAllChildrenParentingStatus(false));
-            AssertOnTimeout($"[Late Join 2] Timed out waiting for late joined client's children objects to have no parent!\n {m_ErrorValidationLog}");
+            if (s_GlobalTimeoutHelper.TimedOut)
+            {
+                InSceneParentChildHandler.AuthorityRootParent.CheckChildren();
+                yield return debugWait;
+            }
+            AssertOnTimeout($"[Late Join 2] Timed out verifying late joined client's children objects to have no parent!\n {m_ErrorValidationLog}");
 
             // Finally, re-parent all of the children to make sure late joining client #2 synchronizes properly
-            InSceneParentChildHandler.ServerRootParent.ReParentAllChildren();
-            yield return WaitForConditionOrTimeOut(ValidateClientAgainstServerTransformValues);
-            AssertOnTimeout($"[Late Join 2] Timed out waiting for all clients transform values to match the server transform values!\n {m_ErrorValidationLog}");
+            InSceneParentChildHandler.AuthorityRootParent.ReParentAllChildren();
+            yield return WaitForConditionOrTimeOut(ValidateClientsAgainstAuthorityTransformValues);
+            if (s_GlobalTimeoutHelper.TimedOut)
+            {
+                InSceneParentChildHandler.AuthorityRootParent.CheckChildren();
+                yield return debugWait;
+            }
+            AssertOnTimeout($"[Late Join 2] Timed out waiting for all clients' transform values to match the authority transform values!\n {m_ErrorValidationLog}");
             yield return WaitForConditionOrTimeOut(() => ValidateAllChildrenParentingStatus(true));
-            AssertOnTimeout($"[Late Join 2] Timed out waiting for all children to be removed from their parent!\n {m_ErrorValidationLog}");
+            if (s_GlobalTimeoutHelper.TimedOut)
+            {
+                InSceneParentChildHandler.AuthorityRootParent.CheckChildren();
+                yield return debugWait;
+            }
+            AssertOnTimeout($"[Late Join 2] Timed out waiting for all clients' to re-parent all targeted child objects!\n {m_ErrorValidationLog}");
 
             // Now run through many iterations where we remove the parents, set the parents, and while
             // the parents are being set the InSceneParentChildHandler assigns new position, rotation, and scale values
             // in the OnNetworkObjectParentChanged overridden method on the server side only
             for (int i = 0; i < k_NumIterationsDeparentReparent; i++)
             {
-                InSceneParentChildHandler.ServerRootParent.DeparentSetValuesAndReparent();
+                InSceneParentChildHandler.AuthorityRootParent.DeparentSetValuesAndReparent();
 
-                yield return WaitForConditionOrTimeOut(ValidateClientAgainstServerTransformValues);
-                AssertOnTimeout($"[Final Pass] Timed out waiting for all clients transform values to match the server transform values!\n {m_ErrorValidationLog}");
+                yield return WaitForConditionOrTimeOut(ValidateClientsAgainstAuthorityTransformValues);
+                if (s_GlobalTimeoutHelper.TimedOut)
+                {
+                    InSceneParentChildHandler.AuthorityRootParent.CheckChildren();
+                    yield return debugWait;
+                }
+                AssertOnTimeout($"[Final Pass][Deparent-Reparent-{i}] Timed out waiting for all clients transform values to match the server transform values!\n {m_ErrorValidationLog}");
 
                 yield return WaitForConditionOrTimeOut(() => ValidateAllChildrenParentingStatus(true));
-                AssertOnTimeout($"[Final Pass] Timed out waiting for all children to be removed from their parent!\n {m_ErrorValidationLog}");
+                if (s_GlobalTimeoutHelper.TimedOut)
+                {
+                    InSceneParentChildHandler.AuthorityRootParent.CheckChildren();
+                    yield return debugWait;
+                }
+                AssertOnTimeout($"[Final Pass][Deparent-Reparent-{i}] Timed out waiting for all children to be removed from their parent!\n {m_ErrorValidationLog}");
             }
 
             // In the final pass, we remove the second generation nested child
-            var firstGenChild = InSceneParentChildHandler.ServerRootParent.transform.GetChild(0);
+            var firstGenChild = InSceneParentChildHandler.AuthorityRootParent.transform.GetChild(0);
             var secondGenChild = firstGenChild.GetChild(0);
             var secondGenChildNetworkObject = secondGenChild.GetComponent<NetworkObject>();
             Assert.True(secondGenChildNetworkObject.TrySetParent((NetworkObject)null, false), $"[Final Pass] Failed to remove the parent from the second generation child!");
 
             // Validate all transform values match
-            yield return WaitForConditionOrTimeOut(ValidateClientAgainstServerTransformValues);
+            yield return WaitForConditionOrTimeOut(ValidateClientsAgainstAuthorityTransformValues);
             AssertOnTimeout($"[Final Pass] Timed out waiting for all clients transform values to match the server transform values after the second generation child's parent was removed!\n {m_ErrorValidationLog}");
 
             // Now run through one last de-parent, re-parent, and set new values pass to make sure everything still synchronizes
-            InSceneParentChildHandler.ServerRootParent.DeparentSetValuesAndReparent();
+            InSceneParentChildHandler.AuthorityRootParent.DeparentSetValuesAndReparent();
 
-            yield return WaitForConditionOrTimeOut(ValidateClientAgainstServerTransformValues);
+            yield return WaitForConditionOrTimeOut(ValidateClientsAgainstAuthorityTransformValues);
             AssertOnTimeout($"[Final Pass - Last Test] Timed out waiting for all clients transform values to match the server transform values!\n {m_ErrorValidationLog}");
 
             yield return WaitForConditionOrTimeOut(() => ValidateAllChildrenParentingStatus(true));
@@ -316,11 +374,11 @@ namespace TestProject.RuntimeTests
         {
             m_ErrorValidationLog.Clear();
 
-            var childOfRoot_ServerSide = InSceneParentChildHandler.ServerRootParent.GetChild();
-            if (InSceneParentChildHandler.ServerRootParent.IsSpawned)
+            var childOfRoot_ServerSide = InSceneParentChildHandler.AuthorityRootParent.GetChild();
+            if (InSceneParentChildHandler.AuthorityRootParent.IsSpawned)
             {
                 m_ErrorValidationLog.Append("Server-Side root parent is still spawned!");
-                GenerateParentIsNotCorrect(childOfRoot_ServerSide, false, InSceneParentChildHandler.ServerRootParent.IsSpawned);
+                GenerateParentIsNotCorrect(childOfRoot_ServerSide, false, InSceneParentChildHandler.AuthorityRootParent.IsSpawned);
                 return false;
             }
 
@@ -370,12 +428,12 @@ namespace TestProject.RuntimeTests
 
             // [Currently Connected Clients]
             // remove the parents, change all transform values, and re-parent
-            InSceneParentChildHandler.ServerRootParent.DeparentSetValuesAndReparent();
-            yield return WaitForConditionOrTimeOut(ValidateClientAgainstServerTransformValues);
+            InSceneParentChildHandler.AuthorityRootParent.DeparentSetValuesAndReparent();
+            yield return WaitForConditionOrTimeOut(ValidateClientsAgainstAuthorityTransformValues);
             AssertOnTimeout($"Timed out waiting for all clients transform values to match the server transform values!\n {m_ErrorValidationLog}");
 
             // Now despawn the root parent
-            InSceneParentChildHandler.ServerRootParent.NetworkObject.Despawn(false);
+            InSceneParentChildHandler.AuthorityRootParent.NetworkObject.Despawn(false);
 
             // Verify all clients despawned the parent object and the child of the parent has root as its parent
             yield return WaitForConditionOrTimeOut(ValidateRootParentDespawnedAndChildAtRoot);
@@ -424,6 +482,12 @@ namespace TestProject.RuntimeTests
         /// </summary>
         private bool AllClientInstancesMatchServerInstance()
         {
+            m_ErrorValidationLog.Clear();
+            if (ParentingAutoSyncManager.ServerInstance == null)
+            {
+                m_ErrorValidationLog.AppendLine("ServerInstance is null");
+                return false;
+            }
             for (int i = 0; i < ParentingAutoSyncManager.ServerInstance.NetworkObjectAutoSyncOnTransforms.Count; i++)
             {
                 var serverTransformToTest = ParentingAutoSyncManager.ServerInstance.NetworkObjectAutoSyncOnTransforms[i];
@@ -433,16 +497,19 @@ namespace TestProject.RuntimeTests
                     var clientTransformToTest = clientRelativeAutoSyncManager.NetworkObjectAutoSyncOnTransforms[i];
                     if (!Approximately(clientTransformToTest.position, serverTransformToTest.position))
                     {
+                        m_ErrorValidationLog.AppendLine($"[Client-{clientRelativeAutoSyncManager.NetworkManager.LocalClientId}][AutoSync On] {nameof(NetworkObject)}-{clientRelativeAutoSyncManager.NetworkObjectId}'s position {clientRelativeAutoSyncManager.transform.position} does not equal the server-side position {serverTransformToTest.transform.position}");
                         return false;
                     }
 
                     if (!Approximately(clientTransformToTest.rotation, serverTransformToTest.rotation))
                     {
+                        m_ErrorValidationLog.AppendLine($"[Client-{clientRelativeAutoSyncManager.NetworkManager.LocalClientId}][AutoSync On] {nameof(NetworkObject)}-{clientRelativeAutoSyncManager.NetworkObjectId}'s rotation {clientRelativeAutoSyncManager.transform.eulerAngles} does not equal the server-side position {serverTransformToTest.transform.eulerAngles}");
                         return false;
                     }
 
                     if (!Approximately(clientTransformToTest.localScale, serverTransformToTest.localScale))
                     {
+                        m_ErrorValidationLog.AppendLine($"[Client-{clientRelativeAutoSyncManager.NetworkManager.LocalClientId}][AutoSync On] {nameof(NetworkObject)}-{clientRelativeAutoSyncManager.NetworkObjectId}'s scale {clientRelativeAutoSyncManager.transform.localScale} does not equal the server-side position {serverTransformToTest.transform.localScale}");
                         return false;
                     }
                 }
@@ -457,16 +524,19 @@ namespace TestProject.RuntimeTests
                     var clientTransformToTest = clientRelativeAutoSyncManager.NetworkObjectAutoSyncOffTransforms[i];
                     if (!Approximately(clientTransformToTest.position, serverTransformToTest.position))
                     {
+                        m_ErrorValidationLog.AppendLine($"[Client-{clientRelativeAutoSyncManager.NetworkManager.LocalClientId}][AutoSync Off] {nameof(NetworkObject)}-{clientRelativeAutoSyncManager.NetworkObjectId}'s position {clientRelativeAutoSyncManager.transform.position} does not equal the server-side position {serverTransformToTest.transform.position}");
                         return false;
                     }
 
                     if (!Approximately(clientTransformToTest.rotation, serverTransformToTest.rotation))
                     {
+                        m_ErrorValidationLog.AppendLine($"[Client-{clientRelativeAutoSyncManager.NetworkManager.LocalClientId}][AutoSync Off] {nameof(NetworkObject)}-{clientRelativeAutoSyncManager.NetworkObjectId}'s rotation {clientRelativeAutoSyncManager.transform.eulerAngles} does not equal the server-side position {serverTransformToTest.transform.eulerAngles}");
                         return false;
                     }
 
                     if (!Approximately(clientTransformToTest.localScale, serverTransformToTest.localScale))
                     {
+                        m_ErrorValidationLog.AppendLine($"[Client-{clientRelativeAutoSyncManager.NetworkManager.LocalClientId}][AutoSync Off] {nameof(NetworkObject)}-{clientRelativeAutoSyncManager.NetworkObjectId}'s scale {clientRelativeAutoSyncManager.transform.localScale} does not equal the server-side position {serverTransformToTest.transform.localScale}");
                         return false;
                     }
                 }
@@ -481,16 +551,19 @@ namespace TestProject.RuntimeTests
                     var clientTransformToTest = clientRelativeAutoSyncManager.GameObjectAutoSyncOnTransforms[i];
                     if (!Approximately(clientTransformToTest.position, serverTransformToTest.position))
                     {
+                        m_ErrorValidationLog.AppendLine($"[Client-{clientRelativeAutoSyncManager.NetworkManager.LocalClientId}][GO-AutoSync On] {nameof(NetworkObject)}-{clientRelativeAutoSyncManager.NetworkObjectId}'s position {clientRelativeAutoSyncManager.transform.position} does not equal the server-side position {serverTransformToTest.transform.position}");
                         return false;
                     }
 
                     if (!Approximately(clientTransformToTest.rotation, serverTransformToTest.rotation))
                     {
+                        m_ErrorValidationLog.AppendLine($"[Client-{clientRelativeAutoSyncManager.NetworkManager.LocalClientId}][GO-AutoSync On] {nameof(NetworkObject)}-{clientRelativeAutoSyncManager.NetworkObjectId}'s rotation {clientRelativeAutoSyncManager.transform.eulerAngles} does not equal the server-side position {serverTransformToTest.transform.eulerAngles}");
                         return false;
                     }
 
                     if (!Approximately(clientTransformToTest.localScale, serverTransformToTest.localScale))
                     {
+                        m_ErrorValidationLog.AppendLine($"[Client-{clientRelativeAutoSyncManager.NetworkManager.LocalClientId}][GO-AutoSync On] {nameof(NetworkObject)}-{clientRelativeAutoSyncManager.NetworkObjectId}'s scale {clientRelativeAutoSyncManager.transform.localScale} does not equal the server-side position {serverTransformToTest.transform.localScale}");
                         return false;
                     }
                 }
@@ -505,16 +578,19 @@ namespace TestProject.RuntimeTests
                     var clientTransformToTest = clientRelativeAutoSyncManager.GameObjectAutoSyncOffTransforms[i];
                     if (!Approximately(clientTransformToTest.position, serverTransformToTest.position))
                     {
+                        m_ErrorValidationLog.AppendLine($"[Client-{clientRelativeAutoSyncManager.NetworkManager.LocalClientId}][GO-AutoSync Off] {nameof(NetworkObject)}-{clientRelativeAutoSyncManager.NetworkObjectId}'s position {clientRelativeAutoSyncManager.transform.position} does not equal the server-side position {serverTransformToTest.transform.position}");
                         return false;
                     }
 
                     if (!Approximately(clientTransformToTest.rotation, serverTransformToTest.rotation))
                     {
+                        m_ErrorValidationLog.AppendLine($"[Client-{clientRelativeAutoSyncManager.NetworkManager.LocalClientId}][GO-AutoSync Off] {nameof(NetworkObject)}-{clientRelativeAutoSyncManager.NetworkObjectId}'s rotation {clientRelativeAutoSyncManager.transform.eulerAngles} does not equal the server-side position {serverTransformToTest.transform.eulerAngles}");
                         return false;
                     }
 
                     if (!Approximately(clientTransformToTest.localScale, serverTransformToTest.localScale))
                     {
+                        m_ErrorValidationLog.AppendLine($"[Client-{clientRelativeAutoSyncManager.NetworkManager.LocalClientId}][GO-AutoSync Off] {nameof(NetworkObject)}-{clientRelativeAutoSyncManager.NetworkObjectId}'s scale {clientRelativeAutoSyncManager.transform.localScale} does not equal the server-side position {serverTransformToTest.transform.localScale}");
                         return false;
                     }
                 }
@@ -541,7 +617,7 @@ namespace TestProject.RuntimeTests
             AssertOnTimeout($"Timed out waiting for all clients to load scene {k_TestSceneToLoad}!");
 
             yield return WaitForConditionOrTimeOut(AllClientInstancesMatchServerInstance);
-            AssertOnTimeout($"Timed out waiting for all client transforms to match the server-side values in test scene {k_TestSceneToLoad}!");
+            AssertOnTimeout($"Timed out waiting for all client transforms to match the server-side values in test scene {k_TestSceneToLoad}!\n {m_ErrorValidationLog.ToString()}");
         }
     }
 }

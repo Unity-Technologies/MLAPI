@@ -301,9 +301,8 @@ namespace Unity.Netcode.Editor
 
                 expanded = false;
             }
-
-            serializedObject.ApplyModifiedProperties();
             EditorGUI.EndChangeCheck();
+            serializedObject.ApplyModifiedProperties();
         }
 
         /// <summary>

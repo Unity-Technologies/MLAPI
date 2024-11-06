@@ -6,6 +6,8 @@ namespace Unity.Netcode
     {
         public int Version => 0;
 
+        private const string k_Name = "DestroyObjectMessage";
+
         public ulong NetworkObjectId;
 
         private byte m_BitField;
@@ -31,6 +33,12 @@ namespace Unity.Netcode
         {
             get => ByteUtility.GetBit(m_BitField, 2);
             set => ByteUtility.SetBit(ref m_BitField, 2, value);
+        }
+
+        public bool AuthorityApplied
+        {
+            get => ByteUtility.GetBit(m_BitField, 3);
+            set => ByteUtility.SetBit(ref m_BitField, 3, value);
         }
 
         // These additional properties are used to synchronize clients with the current position,
@@ -83,9 +91,10 @@ namespace Unity.Netcode
             reader.ReadValueSafe(out Rotation);
             reader.ReadValueSafe(out Scale);
 
-            if (!networkManager.SpawnManager.SpawnedObjects.ContainsKey(NetworkObjectId))
+            // If the target NetworkObject does not exist =or= the target latest parent does not exist then defer the message
+            if (!networkManager.SpawnManager.SpawnedObjects.ContainsKey(NetworkObjectId) || (LatestParent.HasValue && !networkManager.SpawnManager.SpawnedObjects.ContainsKey(LatestParent.Value)))
             {
-                networkManager.DeferredMessageManager.DeferMessage(IDeferredNetworkMessageManager.TriggerType.OnSpawn, NetworkObjectId, reader, ref context);
+                networkManager.DeferredMessageManager.DeferMessage(IDeferredNetworkMessageManager.TriggerType.OnSpawn, NetworkObjectId, reader, ref context, k_Name);
                 return false;
             }
             return true;
@@ -95,22 +104,62 @@ namespace Unity.Netcode
         {
             var networkManager = (NetworkManager)context.SystemOwner;
             var networkObject = networkManager.SpawnManager.SpawnedObjects[NetworkObjectId];
+
+            // For either DA or Client-Server modes, parenting is only valid if the parent was owned by a different authority (i.e. AuthorityApplied) or the sender is from the owner (DA mode)
+            // or the server (client-server mode).
+            networkObject.AuthorityAppliedParenting = AuthorityApplied || context.SenderId == networkObject.OwnerClientId || context.SenderId == NetworkManager.ServerClientId;
+            if (!networkObject.AuthorityAppliedParenting && networkManager.LogLevel <= LogLevel.Normal)
+            {
+                NetworkLog.LogWarningServer($"Client-{context.SenderId} sent a ParentSyncMessage but is not the authority of {networkObject.gameObject.name}'s {nameof(NetworkObject)} component!");
+                // DANGO-TODO: Still determining if we should not apply this change (I am leaning towards not allowing it).
+            }
+
             networkObject.SetNetworkParenting(LatestParent, WorldPositionStays);
             networkObject.ApplyNetworkParenting(RemoveParent);
 
-            // We set all of the transform values after parenting as they are
-            // the values of the server-side post-parenting transform values
-            if (!WorldPositionStays)
+            // This check is primarily for client-server network topologies when the motion model is owner authoritative:
+            // When SyncOwnerTransformWhenParented is enabled, then always apply the transform values.
+            // When SyncOwnerTransformWhenParented is disabled, then only synchronize the transform on non-owner instances.
+            if (networkObject.SyncOwnerTransformWhenParented || (!networkObject.SyncOwnerTransformWhenParented && !networkObject.IsOwner))
             {
-                networkObject.transform.localPosition = Position;
-                networkObject.transform.localRotation = Rotation;
+                // We set all of the transform values after parenting as they are
+                // the values of the server-side post-parenting transform values
+                if (!WorldPositionStays)
+                {
+                    networkObject.transform.localPosition = Position;
+                    networkObject.transform.localRotation = Rotation;
+                }
+                else
+                {
+                    networkObject.transform.position = Position;
+                    networkObject.transform.rotation = Rotation;
+                }
+                networkObject.transform.localScale = Scale;
             }
-            else
+
+            // If in distributed authority mode and we are running a DAHost and this is the DAHost, then forward the parent changed message to any remaining clients
+            if ((networkManager.DistributedAuthorityMode && !networkManager.CMBServiceConnection && networkManager.DAHost) || (networkObject.AllowOwnerToParent && context.SenderId == networkObject.OwnerClientId && networkManager.IsServer))
             {
-                networkObject.transform.position = Position;
-                networkObject.transform.rotation = Rotation;
+                var size = 0;
+                var message = this;
+
+                foreach (var client in networkManager.ConnectedClients)
+                {
+                    if (client.Value.ClientId == networkObject.OwnerClientId || client.Value.ClientId == networkManager.LocalClientId)
+                    {
+                        continue;
+                    }
+                    if (networkObject.IsNetworkVisibleTo(client.Value.ClientId))
+                    {
+                        size = networkManager.ConnectionManager.SendMessage(ref message, NetworkDelivery.ReliableSequenced, client.Value.ClientId);
+                        networkManager.NetworkMetrics.TrackOwnershipChangeSent(client.Key, networkObject, size);
+                    }
+                    else
+                    {
+                        Debug.Log($"[DAHost][ParentingProxy] Client-{client.Value.ClientId} has no visibility to {networkObject.name}!");
+                    }
+                }
             }
-            networkObject.transform.localScale = Scale;
         }
     }
 }

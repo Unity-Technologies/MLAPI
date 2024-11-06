@@ -3,7 +3,7 @@ using NUnit.Framework;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class DisconnectOnSendTests
+    internal class DisconnectOnSendTests
     {
         private struct TestMessage : INetworkMessage, INetworkSerializeByMemcpy
         {

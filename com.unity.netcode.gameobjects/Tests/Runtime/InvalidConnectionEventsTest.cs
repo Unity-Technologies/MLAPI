@@ -12,7 +12,7 @@ using Debug = UnityEngine.Debug;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class InvalidConnectionEventsTest : NetcodeIntegrationTest
+    internal class InvalidConnectionEventsTest : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 1;
 

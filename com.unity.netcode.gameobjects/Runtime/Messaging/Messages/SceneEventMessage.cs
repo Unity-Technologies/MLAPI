@@ -1,3 +1,4 @@
+
 namespace Unity.Netcode
 {
     // Todo: Would be lovely to get this one nicely formatted with all the data it sends in the struct
@@ -7,6 +8,7 @@ namespace Unity.Netcode
         public int Version => 0;
 
         public SceneEventData EventData;
+
 
         private FastBufferReader m_ReceivedData;
 
@@ -23,7 +25,8 @@ namespace Unity.Netcode
 
         public void Handle(ref NetworkContext context)
         {
-            ((NetworkManager)context.SystemOwner).SceneManager.HandleSceneEvent(context.SenderId, m_ReceivedData);
+            var networkManager = (NetworkManager)context.SystemOwner;
+            networkManager.SceneManager.HandleSceneEvent(context.SenderId, m_ReceivedData);
         }
     }
 }

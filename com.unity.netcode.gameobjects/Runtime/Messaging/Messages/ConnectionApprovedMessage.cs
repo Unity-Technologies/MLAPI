@@ -3,13 +3,43 @@ using Unity.Collections;
 
 namespace Unity.Netcode
 {
+    internal struct ServiceConfig : INetworkSerializable
+    {
+        public uint Version;
+        public bool IsRestoredSession;
+        public ulong CurrentSessionOwner;
+
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            if (serializer.IsWriter)
+            {
+                BytePacker.WriteValueBitPacked(serializer.GetFastBufferWriter(), Version);
+                serializer.SerializeValue(ref IsRestoredSession);
+                BytePacker.WriteValueBitPacked(serializer.GetFastBufferWriter(), CurrentSessionOwner);
+            }
+            else
+            {
+                ByteUnpacker.ReadValueBitPacked(serializer.GetFastBufferReader(), out Version);
+                serializer.SerializeValue(ref IsRestoredSession);
+                ByteUnpacker.ReadValueBitPacked(serializer.GetFastBufferReader(), out CurrentSessionOwner);
+            }
+        }
+    }
+
     internal struct ConnectionApprovedMessage : INetworkMessage
     {
+        private const int k_AddCMBServiceConfig = 2;
         private const int k_VersionAddClientIds = 1;
-        public int Version => k_VersionAddClientIds;
+        public int Version => k_AddCMBServiceConfig;
 
         public ulong OwnerClientId;
         public int NetworkTick;
+        // The cloud state service should set this if we are restoring a session
+        public ServiceConfig ServiceConfig;
+        public bool IsRestoredSession;
+        public ulong CurrentSessionOwner;
+        // Not serialized
+        public bool IsDistributedAuthority;
 
         // Not serialized, held as references to serialize NetworkVariable data
         public HashSet<NetworkObject> SpawnedObjectsList;
@@ -19,6 +49,32 @@ namespace Unity.Netcode
         public NativeArray<MessageVersionData> MessageVersions;
 
         public NativeArray<ulong> ConnectedClientIds;
+
+        private int m_ReceiveMessageVersion;
+
+        private ulong GetSessionOwner()
+        {
+            if (m_ReceiveMessageVersion >= k_AddCMBServiceConfig)
+            {
+                return ServiceConfig.CurrentSessionOwner;
+            }
+            else
+            {
+                return CurrentSessionOwner;
+            }
+        }
+
+        private bool GetIsSessionRestor()
+        {
+            if (m_ReceiveMessageVersion >= k_AddCMBServiceConfig)
+            {
+                return ServiceConfig.IsRestoredSession;
+            }
+            else
+            {
+                return IsRestoredSession;
+            }
+        }
 
         public void Serialize(FastBufferWriter writer, int targetVersion)
         {
@@ -38,6 +94,20 @@ namespace Unity.Netcode
 
             BytePacker.WriteValueBitPacked(writer, OwnerClientId);
             BytePacker.WriteValueBitPacked(writer, NetworkTick);
+            if (IsDistributedAuthority)
+            {
+                if (targetVersion >= k_AddCMBServiceConfig)
+                {
+                    ServiceConfig.IsRestoredSession = false;
+                    ServiceConfig.CurrentSessionOwner = CurrentSessionOwner;
+                    writer.WriteNetworkSerializable(ServiceConfig);
+                }
+                else
+                {
+                    writer.WriteValueSafe(IsRestoredSession);
+                    BytePacker.WriteValueBitPacked(writer, CurrentSessionOwner);
+                }
+            }
 
             if (targetVersion >= k_VersionAddClientIds)
             {
@@ -59,7 +129,8 @@ namespace Unity.Netcode
                     if (sobj.SpawnWithObservers && (sobj.CheckObjectVisibility == null || sobj.CheckObjectVisibility(OwnerClientId)))
                     {
                         sobj.Observers.Add(OwnerClientId);
-                        var sceneObject = sobj.GetMessageSceneObject(OwnerClientId);
+                        // In distributed authority mode, we send the currently known observers of each NetworkObject to the client being synchronized.
+                        var sceneObject = sobj.GetMessageSceneObject(OwnerClientId, IsDistributedAuthority);
                         sceneObject.Serialize(writer);
                         ++sceneObjectCount;
                     }
@@ -111,9 +182,21 @@ namespace Unity.Netcode
             // ============================================================
             // END FORBIDDEN SEGMENT
             // ============================================================
-
+            m_ReceiveMessageVersion = receivedMessageVersion;
             ByteUnpacker.ReadValueBitPacked(reader, out OwnerClientId);
             ByteUnpacker.ReadValueBitPacked(reader, out NetworkTick);
+            if (networkManager.DistributedAuthorityMode)
+            {
+                if (receivedMessageVersion >= k_AddCMBServiceConfig)
+                {
+                    reader.ReadNetworkSerializable(out ServiceConfig);
+                }
+                else
+                {
+                    reader.ReadValueSafe(out IsRestoredSession);
+                    ByteUnpacker.ReadValueBitPacked(reader, out CurrentSessionOwner);
+                }
+            }
 
             if (receivedMessageVersion >= k_VersionAddClientIds)
             {
@@ -131,9 +214,22 @@ namespace Unity.Netcode
         public void Handle(ref NetworkContext context)
         {
             var networkManager = (NetworkManager)context.SystemOwner;
+            if (NetworkLog.CurrentLogLevel <= LogLevel.Developer)
+            {
+                NetworkLog.LogInfo($"[Client-{OwnerClientId}] Connection approved! Synchronizing...");
+            }
             networkManager.LocalClientId = OwnerClientId;
             networkManager.MessageManager.SetLocalClientId(networkManager.LocalClientId);
             networkManager.NetworkMetrics.SetConnectionId(networkManager.LocalClientId);
+
+            if (networkManager.DistributedAuthorityMode)
+            {
+                networkManager.SetSessionOwner(GetSessionOwner());
+                if (networkManager.LocalClient.IsSessionOwner && networkManager.NetworkConfig.EnableSceneManagement)
+                {
+                    networkManager.SceneManager.InitializeScenesLoaded();
+                }
+            }
 
             var time = new NetworkTime(networkManager.NetworkTickSystem.TickRate, NetworkTick);
             networkManager.NetworkTimeSystem.Reset(time.Time, 0.15f); // Start with a constant RTT of 150 until we receive values from the transport.
@@ -148,13 +244,26 @@ namespace Unity.Netcode
             networkManager.ConnectionManager.ConnectedClientIds.Clear();
             foreach (var clientId in ConnectedClientIds)
             {
-                networkManager.ConnectionManager.ConnectedClientIds.Add(clientId);
+                if (!networkManager.ConnectionManager.ConnectedClientIds.Contains(clientId))
+                {
+                    networkManager.ConnectionManager.AddClient(clientId);
+                }
             }
 
             // Only if scene management is disabled do we handle NetworkObject synchronization at this point
             if (!networkManager.NetworkConfig.EnableSceneManagement)
             {
-                networkManager.SpawnManager.DestroySceneObjects();
+                // DANGO-TODO: This is a temporary fix for no DA CMB scene event handling.
+                // We will either use this same concept or provide some way for the CMB state plugin to handle it.
+                if (networkManager.DistributedAuthorityMode && networkManager.LocalClient.IsSessionOwner)
+                {
+                    networkManager.SpawnManager.ServerSpawnSceneObjectsOnStartSweep();
+                }
+                else
+                {
+                    networkManager.SpawnManager.DestroySceneObjects();
+                }
+
                 m_ReceivedSceneObjectData.ReadValueSafe(out uint sceneObjectCount);
 
                 // Deserializing NetworkVariable data is deferred from Receive() to Handle to avoid needing
@@ -168,16 +277,58 @@ namespace Unity.Netcode
 
                 // Mark the client being connected
                 networkManager.IsConnectedClient = true;
+
+                if (networkManager.AutoSpawnPlayerPrefabClientSide)
+                {
+                    networkManager.ConnectionManager.CreateAndSpawnPlayer(OwnerClientId);
+                }
+
+                if (NetworkLog.CurrentLogLevel <= LogLevel.Developer)
+                {
+                    NetworkLog.LogInfo($"[Client-{OwnerClientId}][Scene Management Disabled] Synchronization complete!");
+                }
                 // When scene management is disabled we notify after everything is synchronized
                 networkManager.ConnectionManager.InvokeOnClientConnectedCallback(context.SenderId);
 
                 // For convenience, notify all NetworkBehaviours that synchronization is complete.
-                foreach (var networkObject in networkManager.SpawnManager.SpawnedObjectsList)
+                networkManager.SpawnManager.NotifyNetworkObjectsSynchronized();
+            }
+            else
+            {
+                if (networkManager.DistributedAuthorityMode && networkManager.CMBServiceConnection && networkManager.LocalClient.IsSessionOwner && networkManager.NetworkConfig.EnableSceneManagement)
                 {
-                    networkObject.InternalNetworkSessionSynchronized();
+                    // Mark the client being connected
+                    networkManager.IsConnectedClient = true;
+
+                    networkManager.SceneManager.IsRestoringSession = GetIsSessionRestor();
+
+                    if (!networkManager.SceneManager.IsRestoringSession)
+                    {
+                        // Synchronize the service with the initial session owner's loaded scenes and spawned objects
+                        networkManager.SceneManager.SynchronizeNetworkObjects(NetworkManager.ServerClientId);
+
+                        // Spawn any in-scene placed NetworkObjects
+                        networkManager.SpawnManager.ServerSpawnSceneObjectsOnStartSweep();
+
+                        // Spawn the local player of the session owner
+                        if (networkManager.AutoSpawnPlayerPrefabClientSide)
+                        {
+                            networkManager.ConnectionManager.CreateAndSpawnPlayer(OwnerClientId);
+                        }
+
+                        // Synchronize the service with the initial session owner's loaded scenes and spawned objects
+                        networkManager.SceneManager.SynchronizeNetworkObjects(NetworkManager.ServerClientId);
+
+                        // With scene management enabled and since the session owner doesn't send a Synchronize scene event synchronize itself,
+                        // we need to notify the session owner that everything should be synchronized/spawned at this time.
+                        networkManager.SpawnManager.NotifyNetworkObjectsSynchronized();
+
+                        // When scene management is enabled and since the session owner is synchronizing the service (i.e. acting like  host),
+                        // we need to locallyh invoke the OnClientConnected callback at this point in time.
+                        networkManager.ConnectionManager.InvokeOnClientConnectedCallback(OwnerClientId);
+                    }
                 }
             }
-
             ConnectedClientIds.Dispose();
         }
     }

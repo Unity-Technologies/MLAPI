@@ -14,7 +14,7 @@ namespace Unity.Netcode.RuntimeTests
     /// Destroying a newly spawned NetworkObject instance works
     /// Removing a INetworkPrefabInstanceHandler is removed and can be verified (very last check)
     /// </summary>
-    public class NetworkPrefabHandlerTests
+    internal class NetworkPrefabHandlerTests
     {
 
         private const string k_TestPrefabObjectName = "NetworkPrefabTestObject";
@@ -203,7 +203,7 @@ namespace Unity.Netcode.RuntimeTests
     /// <summary>
     /// The Prefab instance handler to use for this test
     /// </summary>
-    public class NetworkPrefaInstanceHandler : INetworkPrefabInstanceHandler
+    internal class NetworkPrefaInstanceHandler : INetworkPrefabInstanceHandler
     {
         private NetworkObject m_NetworkObject;
 

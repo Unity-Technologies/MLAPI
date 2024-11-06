@@ -7,32 +7,37 @@ namespace TestProject.ManualTests
     {
         public override void OnNetworkSpawn()
         {
-            if (IsServer && NetworkManager.IsServer)
+            if (IsServer && IsOwner)
             {
-                // Server subscribes to the NetworkSceneManager.OnSceneEvent event
-                NetworkManager.SceneManager.OnSceneEvent += SceneManager_OnSceneEvent;
-
+                // Client-Server mode, the server handles parenting the players
+                if (!NetworkManager.DistributedAuthorityMode)
+                {
+                    NetworkManager.OnClientConnectedCallback += NetworkManager_OnClientConnectedCallback;
+                }
                 // Server player is parented under this NetworkObject
                 SetPlayerParent(NetworkManager.LocalClientId);
             }
         }
 
+        private void NetworkManager_OnClientConnectedCallback(ulong clientId)
+        {
+            if (clientId != NetworkManager.LocalClientId)
+            {
+                // Set the newly joined and synchronized client-player as a child of this in-scene placed NetworkObject
+                SetPlayerParent(clientId);
+            }
+        }
+
         private void SetPlayerParent(ulong clientId)
         {
-            if (IsSpawned && IsServer)
+            if (IsSpawned)
             {
-                // As long as the client (player) is in the connected clients list
-                if (NetworkManager.ConnectedClients.ContainsKey(clientId))
+                var playerObject = NetworkManager.SpawnManager.GetPlayerNetworkObject(clientId);
+                if (playerObject.gameObject.scene != gameObject.scene)
                 {
-                    var playerObject = NetworkManager.ConnectedClients[clientId].PlayerObject;
-                    if (playerObject.gameObject.scene != gameObject.scene)
-                    {
-                        SceneManager.MoveGameObjectToScene(playerObject.gameObject, gameObject.scene);
-                    }
-                    // Set the player as a child of this in-scene placed NetworkObject
-                    // We parent in local space by setting the WorldPositionStays value to false
-                    NetworkManager.ConnectedClients[clientId].PlayerObject.TrySetParent(NetworkObject, false);
+                    SceneManager.MoveGameObjectToScene(playerObject.gameObject, gameObject.scene);
                 }
+                playerObject.TrySetParent(NetworkObject, false);
             }
         }
 

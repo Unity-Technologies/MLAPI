@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class ServerNetworkTimeSystemTests
+    internal class ServerNetworkTimeSystemTests
     {
 
         /// <summary>

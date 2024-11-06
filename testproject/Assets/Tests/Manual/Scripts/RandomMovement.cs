@@ -16,7 +16,7 @@ namespace TestProject.ManualTests
         private NetworkTransform m_NetworkTransform;
         private ClientNetworkTransform m_ClientNetworkTransform;
 
-        public bool HasAuthority()
+        public bool IsAuthority()
         {
             if (m_NetworkTransform != null)
             {
@@ -38,7 +38,7 @@ namespace TestProject.ManualTests
             m_NetworkTransform = GetComponent<NetworkTransform>();
             if (NetworkObject != null && m_Rigidbody != null)
             {
-                if (HasAuthority())
+                if (IsAuthority())
                 {
                     ChangeDirection(true, true);
                 }
@@ -61,7 +61,7 @@ namespace TestProject.ManualTests
             {
                 return;
             }
-            if (HasAuthority())
+            if (IsAuthority())
             {
                 if (m_Rigidbody == null)
                 {
@@ -81,7 +81,7 @@ namespace TestProject.ManualTests
 
         private void OnCollisionStay(Collision collision)
         {
-            if (HasAuthority())
+            if (IsAuthority())
             {
                 if (collision.gameObject.CompareTag("Floor") || collision.gameObject.CompareTag("GenericObject"))
                 {

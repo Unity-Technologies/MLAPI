@@ -20,7 +20,7 @@ namespace Unity.Netcode
 
         public void Handle(ref NetworkContext context)
         {
-            ((NetworkManager)context.SystemOwner).CustomMessagingManager.InvokeUnnamedMessage(context.SenderId, m_ReceivedData, context.SerializedHeaderSize);
+            ((NetworkManager)context.SystemOwner).CustomMessagingManager?.InvokeUnnamedMessage(context.SenderId, m_ReceivedData, context.SerializedHeaderSize);
         }
     }
 }

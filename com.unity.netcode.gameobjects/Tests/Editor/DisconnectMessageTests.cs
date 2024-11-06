@@ -3,7 +3,7 @@ using Unity.Collections;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class DisconnectMessageTests
+    internal class DisconnectMessageTests
     {
         [Test]
         public void EmptyDisconnectReason()

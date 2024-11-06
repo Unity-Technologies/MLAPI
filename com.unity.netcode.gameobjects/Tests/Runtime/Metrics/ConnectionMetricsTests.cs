@@ -14,7 +14,7 @@ namespace Unity.Netcode.RuntimeTests.Metrics
     [TestFixture(ClientCount.TwoClients, HostOrServer.Host)]
     [TestFixture(ClientCount.OneClient, HostOrServer.Server)]
     [TestFixture(ClientCount.TwoClients, HostOrServer.Server)]
-    public class ConnectionMetricsTests : NetcodeIntegrationTest
+    internal class ConnectionMetricsTests : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => m_ClientCount;
 

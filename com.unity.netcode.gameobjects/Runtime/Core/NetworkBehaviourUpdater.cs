@@ -19,10 +19,15 @@ namespace Unity.Netcode
 
         internal void AddForUpdate(NetworkObject networkObject)
         {
+            // Since this is a HashSet, we don't need to worry about duplicate entries
             m_PendingDirtyNetworkObjects.Add(networkObject);
         }
 
-        internal void NetworkBehaviourUpdate()
+        /// <summary>
+        /// Sends NetworkVariable deltas
+        /// </summary>
+        /// <param name="forceSend">internal only, when changing ownership we want to send this before the change in ownership message</param>
+        internal void NetworkBehaviourUpdate(bool forceSend = false)
         {
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
             m_NetworkBehaviourUpdate.Begin();
@@ -48,13 +53,12 @@ namespace Unity.Netcode
                         for (int i = 0; i < m_ConnectionManager.ConnectedClientsList.Count; i++)
                         {
                             var client = m_ConnectionManager.ConnectedClientsList[i];
-
-                            if (dirtyObj.IsNetworkVisibleTo(client.ClientId))
+                            if (m_NetworkManager.DistributedAuthorityMode || dirtyObj.IsNetworkVisibleTo(client.ClientId))
                             {
                                 // Sync just the variables for just the objects this client sees
                                 for (int k = 0; k < dirtyObj.ChildNetworkBehaviours.Count; k++)
                                 {
-                                    dirtyObj.ChildNetworkBehaviours[k].VariableUpdate(client.ClientId);
+                                    dirtyObj.ChildNetworkBehaviours[k].NetworkVariableUpdate(client.ClientId, forceSend);
                                 }
                             }
                         }
@@ -73,7 +77,7 @@ namespace Unity.Netcode
                             }
                             for (int k = 0; k < sobj.ChildNetworkBehaviours.Count; k++)
                             {
-                                sobj.ChildNetworkBehaviours[k].VariableUpdate(NetworkManager.ServerClientId);
+                                sobj.ChildNetworkBehaviours[k].NetworkVariableUpdate(NetworkManager.ServerClientId, forceSend);
                             }
                         }
                     }
@@ -86,19 +90,26 @@ namespace Unity.Netcode
                         var behaviour = dirtyObj.ChildNetworkBehaviours[k];
                         for (int i = 0; i < behaviour.NetworkVariableFields.Count; i++)
                         {
+                            // Set to true for NetworkVariable to ignore duplication of the
+                            // "internal original value" for collections support.
+                            behaviour.NetworkVariableFields[i].NetworkUpdaterCheck = true;
                             if (behaviour.NetworkVariableFields[i].IsDirty() &&
                                 !behaviour.NetworkVariableIndexesToResetSet.Contains(i))
                             {
                                 behaviour.NetworkVariableIndexesToResetSet.Add(i);
                                 behaviour.NetworkVariableIndexesToReset.Add(i);
                             }
+                            // Reset back to false when done
+                            behaviour.NetworkVariableFields[i].NetworkUpdaterCheck = false;
                         }
                     }
                 }
                 // Now, reset all the no-longer-dirty variables
                 foreach (var dirtyobj in m_DirtyNetworkObjects)
                 {
-                    dirtyobj.PostNetworkVariableWrite();
+                    dirtyobj.PostNetworkVariableWrite(forceSend);
+                    // Once done processing, we set the previous owner id to the current owner id
+                    dirtyobj.PreviousOwnerId = dirtyobj.OwnerClientId;
                 }
                 m_DirtyNetworkObjects.Clear();
             }

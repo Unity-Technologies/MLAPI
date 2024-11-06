@@ -7,7 +7,7 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class UNetTransportTests
+    internal class UNetTransportTests
     {
         [Test]
         public void StartServerReturnsFalseOnFailure()

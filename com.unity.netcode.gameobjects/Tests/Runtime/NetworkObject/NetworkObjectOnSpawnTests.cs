@@ -7,7 +7,10 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class NetworkObjectOnSpawnTests : NetcodeIntegrationTest
+
+    [TestFixture(NetworkTopologyTypes.DistributedAuthority)]
+    [TestFixture(NetworkTopologyTypes.ClientServer)]
+    internal class NetworkObjectOnSpawnTests : NetcodeIntegrationTest
     {
         private GameObject m_TestNetworkObjectPrefab;
         private GameObject m_TestNetworkObjectInstance;
@@ -27,23 +30,39 @@ namespace Unity.Netcode.RuntimeTests
         private const string k_WithObserversError = "Not all clients spawned the";
         private const string k_WithoutObserversError = "A client spawned the";
 
+        public NetworkObjectOnSpawnTests(NetworkTopologyTypes networkTopologyType) : base(networkTopologyType) { }
+
         protected override void OnServerAndClientsCreated()
         {
             m_ObserverPrefab = CreateNetworkObjectPrefab(k_ObserverTestObjName);
             base.OnServerAndClientsCreated();
         }
 
-
         private bool CheckClientsSideObserverTestObj()
         {
             foreach (var client in m_ClientNetworkManagers)
             {
-                if (!s_GlobalNetworkObjects.ContainsKey(client.LocalClientId))
+                if (m_ObserverTestType == ObserverTestTypes.WithObservers)
                 {
-                    // When no observers there shouldn't be any client spawned NetworkObjects
-                    // (players are held in a different list)
-                    return !(m_ObserverTestType == ObserverTestTypes.WithObservers);
+                    // When validating this portion of the test and spawning with observers is true, there
+                    // should be spawned objects on the clients.
+                    if (!s_GlobalNetworkObjects.ContainsKey(client.LocalClientId))
+                    {
+                        return false;
+                    }
                 }
+                else
+                {
+                    // When validating this portion of the test and spawning with observers is false, there
+                    // should be no spawned objects on the clients.
+                    if (s_GlobalNetworkObjects.ContainsKey(client.LocalClientId))
+                    {
+                        return false;
+                    }
+                    // We don't need to check anything else for spawn without observers
+                    continue;
+                }
+
                 var clientObjects = s_GlobalNetworkObjects[client.LocalClientId];
                 // Make sure they did spawn the object
                 if (m_ObserverTestType == ObserverTestTypes.WithObservers)
@@ -83,10 +102,16 @@ namespace Unity.Netcode.RuntimeTests
         /// </summary>
         /// <param name="observerTestTypes">whether to spawn with or without observers</param>
         [UnityTest]
-        public IEnumerator ObserverSpawnTests([Values] ObserverTestTypes observerTestTypes, [Values] bool sceneManagement)
+        public IEnumerator ObserverSpawnTests([Values] ObserverTestTypes observerTestTypes, [Values] SceneManagementState sceneManagement)
         {
-            if (!sceneManagement)
+            if (sceneManagement == SceneManagementState.SceneManagementDisabled)
             {
+                // When scene management is disabled, we need this wait period for all clients to be up to date with
+                // all other clients before beginning the process of stopping all clients.
+                if (m_DistributedAuthority)
+                {
+                    yield return new WaitForSeconds(0.5f);
+                }
                 // Disable prefabs to prevent them from being destroyed
                 foreach (var networkPrefab in m_ServerNetworkManager.NetworkConfig.Prefabs.Prefabs)
                 {
@@ -156,8 +181,10 @@ namespace Unity.Netcode.RuntimeTests
                 m_ObserverTestType = ObserverTestTypes.WithoutObservers;
                 // Just give a little time to make sure nothing spawned
                 yield return s_DefaultWaitForTick;
-                yield return WaitForConditionOrTimeOut(CheckClientsSideObserverTestObj);
-                AssertOnTimeout($"{(withoutObservers ? k_WithoutObserversError : k_WithObserversError)} {k_ObserverTestObjName} object!");
+
+                // This just requires a targeted check to assure the newly joined client did not spawn the NetworkObject with SpawnWithObservers set to false
+                var lateJoinClientId = m_ClientNetworkManagers[m_ClientNetworkManagers.Length - 1].LocalClientId;
+                Assert.False(s_GlobalNetworkObjects.ContainsKey(lateJoinClientId), $"[Client-{lateJoinClientId}] Spawned {instance.name} when it shouldn't have!");
 
                 // Now validate that we can make the NetworkObject visible to the newly joined client
                 m_ObserverTestNetworkObject.NetworkShow(m_ClientNetworkManagers[NumberOfClients].LocalClientId);

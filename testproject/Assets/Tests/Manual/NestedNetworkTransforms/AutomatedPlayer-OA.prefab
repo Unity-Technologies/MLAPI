@@ -51,6 +51,9 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -96,6 +99,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d8ad30fca3f9a240bdce16f0166033b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  AuthorityMode: 1
   UseUnreliableDeltas: 0
   SyncPositionX: 1
   SyncPositionY: 1
@@ -115,7 +119,6 @@ MonoBehaviour:
   InLocalSpace: 1
   Interpolate: 1
   SlerpPosition: 1
-  IsServerAuthority: 1
   DebugTransform: 0
   LastUpdatedPosition: {x: 0, y: 0, z: 0}
   LastUpdatedScale: {x: 0, y: 0, z: 0}
@@ -295,6 +298,9 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -340,6 +346,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d8ad30fca3f9a240bdce16f0166033b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  AuthorityMode: 1
   UseUnreliableDeltas: 0
   SyncPositionX: 1
   SyncPositionY: 1
@@ -359,7 +366,6 @@ MonoBehaviour:
   InLocalSpace: 1
   Interpolate: 1
   SlerpPosition: 1
-  IsServerAuthority: 1
   DebugTransform: 0
   LastUpdatedPosition: {x: 0, y: 0, z: 0}
   LastUpdatedScale: {x: 0, y: 0, z: 0}
@@ -388,7 +394,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 947981134, guid: 96e0a72e30d0c46c8a5c9a750e8f5807, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 503295152
+      value: 2714446911
       objectReference: {fileID: 0}
     - target: {fileID: 3809075828520557319, guid: 96e0a72e30d0c46c8a5c9a750e8f5807,
         type: 3}
@@ -557,6 +563,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dfb1af1a9249278438d2daa2877ee2ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  AuthorityMode: 1
   UseUnreliableDeltas: 1
   SyncPositionX: 1
   SyncPositionY: 1
@@ -576,7 +583,6 @@ MonoBehaviour:
   InLocalSpace: 0
   Interpolate: 1
   SlerpPosition: 0
-  IsServerAuthority: 1
   DebugTransform: 0
   LastUpdatedPosition: {x: 0, y: 0, z: 0}
   LastUpdatedScale: {x: 0, y: 0, z: 0}

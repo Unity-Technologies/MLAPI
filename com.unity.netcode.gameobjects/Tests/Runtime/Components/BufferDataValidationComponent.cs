@@ -9,7 +9,7 @@ namespace Unity.Netcode.RuntimeTests
     /// - Sending and Receiving a continually growing buffer up to (MaximumBufferSize)
     /// - Default maximum buffer size is 1MB
     /// </summary>
-    public class BufferDataValidationComponent : NetworkBehaviour
+    internal class BufferDataValidationComponent : NetworkBehaviour
     {
         /// <summary>
         /// Allows the external RPCQueueTest to begin testing or stop it

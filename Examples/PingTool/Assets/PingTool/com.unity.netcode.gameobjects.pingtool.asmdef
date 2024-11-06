@@ -1,0 +1,26 @@
+{
+    "name": "com.unity.netcode.gameobjects.pingtool",
+    "rootNamespace": "",
+    "references": [
+        "GUID:1491147abca9d7d4bb7105af628b223e",
+        "GUID:b1cd7326e664a434ab35daa802773c7f",
+        "GUID:2c360f3794ebc41388fc11424ddbfdd0",
+        "GUID:524f3e206aa8d41e7bc8bb9d5696afed",
+        "GUID:a92477ff3d03a41319d732687b2254aa"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.multiplayer.tools",
+            "expression": "",
+            "define": "MULTIPLAYER_TOOLS"
+        }
+    ],
+    "noEngineReferences": false
+}

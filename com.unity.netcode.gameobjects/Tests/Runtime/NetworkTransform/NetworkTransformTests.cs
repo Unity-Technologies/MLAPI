@@ -9,25 +9,37 @@ namespace Unity.Netcode.RuntimeTests
     /// server and host operating modes and will test both authoritative
     /// models for each operating mode.
     /// </summary>
+    [TestFixture(HostOrServer.DAHost, Authority.OwnerAuthority, RotationCompression.None, Rotation.Euler, Precision.Full)]
+#if !MULTIPLAYER_TOOLS
+    [TestFixture(HostOrServer.DAHost, Authority.OwnerAuthority, RotationCompression.None, Rotation.Euler, Precision.Half)]
+    [TestFixture(HostOrServer.DAHost, Authority.OwnerAuthority, RotationCompression.None, Rotation.Quaternion, Precision.Full)]
+    [TestFixture(HostOrServer.DAHost, Authority.OwnerAuthority, RotationCompression.None, Rotation.Quaternion, Precision.Half)]
+    [TestFixture(HostOrServer.DAHost, Authority.OwnerAuthority, RotationCompression.QuaternionCompress, Rotation.Quaternion, Precision.Full)]
+    [TestFixture(HostOrServer.DAHost, Authority.OwnerAuthority, RotationCompression.QuaternionCompress, Rotation.Quaternion, Precision.Half)]
+#endif
     [TestFixture(HostOrServer.Host, Authority.ServerAuthority, RotationCompression.None, Rotation.Euler, Precision.Full)]
+#if !MULTIPLAYER_TOOLS
     [TestFixture(HostOrServer.Host, Authority.ServerAuthority, RotationCompression.None, Rotation.Euler, Precision.Half)]
     [TestFixture(HostOrServer.Host, Authority.ServerAuthority, RotationCompression.None, Rotation.Quaternion, Precision.Full)]
     [TestFixture(HostOrServer.Host, Authority.ServerAuthority, RotationCompression.None, Rotation.Quaternion, Precision.Half)]
     [TestFixture(HostOrServer.Host, Authority.ServerAuthority, RotationCompression.QuaternionCompress, Rotation.Quaternion, Precision.Full)]
     [TestFixture(HostOrServer.Host, Authority.ServerAuthority, RotationCompression.QuaternionCompress, Rotation.Quaternion, Precision.Half)]
+#endif
     [TestFixture(HostOrServer.Host, Authority.OwnerAuthority, RotationCompression.None, Rotation.Euler, Precision.Full)]
+#if !MULTIPLAYER_TOOLS
     [TestFixture(HostOrServer.Host, Authority.OwnerAuthority, RotationCompression.None, Rotation.Euler, Precision.Half)]
     [TestFixture(HostOrServer.Host, Authority.OwnerAuthority, RotationCompression.None, Rotation.Quaternion, Precision.Full)]
     [TestFixture(HostOrServer.Host, Authority.OwnerAuthority, RotationCompression.None, Rotation.Quaternion, Precision.Half)]
     [TestFixture(HostOrServer.Host, Authority.OwnerAuthority, RotationCompression.QuaternionCompress, Rotation.Quaternion, Precision.Full)]
     [TestFixture(HostOrServer.Host, Authority.OwnerAuthority, RotationCompression.QuaternionCompress, Rotation.Quaternion, Precision.Half)]
-    public class NetworkTransformTests : NetworkTransformBase
+#endif
+    internal class NetworkTransformTests : NetworkTransformBase
     {
         protected const int k_TickRate = 60;
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="testWithHost">Determines if we are running as a server or host</param>
+        /// <param name="hostOrServer">Determines if we are running as a server or host</param>
         /// <param name="authority">Determines if we are using server or owner authority</param>
         public NetworkTransformTests(HostOrServer testWithHost, Authority authority, RotationCompression rotationCompression, Rotation rotation, Precision precision) :
             base(testWithHost, authority, rotationCompression, rotation, precision)
@@ -87,6 +99,226 @@ namespace Unity.Netcode.RuntimeTests
                 Assert.True(success, m_InfoMessage.ToString());
             }
         }
+
+#if !MULTIPLAYER_TOOLS
+
+        private void UpdateTransformLocal(Components.NetworkTransform networkTransformTestComponent)
+        {
+            networkTransformTestComponent.transform.localPosition += GetRandomVector3(0.5f, 2.0f);
+            var rotation = networkTransformTestComponent.transform.localRotation;
+            var eulerRotation = rotation.eulerAngles;
+            eulerRotation += GetRandomVector3(0.5f, 5.0f);
+            rotation.eulerAngles = eulerRotation;
+            networkTransformTestComponent.transform.localRotation = rotation;
+        }
+
+        private void UpdateTransformWorld(Components.NetworkTransform networkTransformTestComponent)
+        {
+            networkTransformTestComponent.transform.position += GetRandomVector3(0.5f, 2.0f);
+            var rotation = networkTransformTestComponent.transform.rotation;
+            var eulerRotation = rotation.eulerAngles;
+            eulerRotation += GetRandomVector3(0.5f, 5.0f);
+            rotation.eulerAngles = eulerRotation;
+            networkTransformTestComponent.transform.rotation = rotation;
+        }
+
+        /// <summary>
+        /// This test validates the SwitchTransformSpaceWhenParented setting under all network topologies        
+        /// </summary>
+        [Test]
+        public void SwitchTransformSpaceWhenParentedTest([Values(0.5f, 1.0f, 5.0f)] float scale)
+        {
+            m_UseParentingThreshold = true;
+            // Get the NetworkManager that will have authority in order to spawn with the correct authority
+            var isServerAuthority = m_Authority == Authority.ServerAuthority;
+            var authorityNetworkManager = m_ServerNetworkManager;
+            if (!isServerAuthority)
+            {
+                authorityNetworkManager = m_ClientNetworkManagers[0];
+            }
+
+            var childAuthorityNetworkManager = m_ClientNetworkManagers[0];
+            if (!isServerAuthority)
+            {
+                childAuthorityNetworkManager = m_ServerNetworkManager;
+            }
+
+            // Spawn a parent and children
+            ChildObjectComponent.HasSubChild = true;
+            // Modify our prefabs for this specific test
+            m_ParentObject.GetComponent<NetworkTransformTestComponent>().TickSyncChildren = true;
+            m_ChildObject.GetComponent<ChildObjectComponent>().SwitchTransformSpaceWhenParented = true;
+            m_ChildObject.GetComponent<ChildObjectComponent>().TickSyncChildren = true;
+            m_SubChildObject.GetComponent<ChildObjectComponent>().SwitchTransformSpaceWhenParented = true;
+            m_SubChildObject.GetComponent<ChildObjectComponent>().TickSyncChildren = true;
+            m_ChildObject.AllowOwnerToParent = true;
+            m_SubChildObject.AllowOwnerToParent = true;
+
+
+            var authoritySideParent = SpawnObject(m_ParentObject.gameObject, authorityNetworkManager).GetComponent<NetworkObject>();
+            var authoritySideChild = SpawnObject(m_ChildObject.gameObject, childAuthorityNetworkManager).GetComponent<NetworkObject>();
+            var authoritySideSubChild = SpawnObject(m_SubChildObject.gameObject, childAuthorityNetworkManager).GetComponent<NetworkObject>();
+
+            // Assure all of the child object instances are spawned before proceeding to parenting
+            var success = WaitForConditionOrTimeOutWithTimeTravel(AllChildObjectInstancesAreSpawned);
+            Assert.True(success, "Timed out waiting for all child instances to be spawned!");
+
+            // Get the owner instance if in client-server mode with owner authority
+            if (m_Authority == Authority.OwnerAuthority && !m_DistributedAuthority)
+            {
+                authoritySideParent = s_GlobalNetworkObjects[authoritySideParent.OwnerClientId][authoritySideParent.NetworkObjectId];
+                authoritySideChild = s_GlobalNetworkObjects[authoritySideChild.OwnerClientId][authoritySideChild.NetworkObjectId];
+                authoritySideSubChild = s_GlobalNetworkObjects[authoritySideSubChild.OwnerClientId][authoritySideSubChild.NetworkObjectId];
+            }
+
+            // Get the authority parent and child instances
+            m_AuthorityParentObject = NetworkTransformTestComponent.AuthorityInstance.NetworkObject;
+            m_AuthorityChildObject = ChildObjectComponent.AuthorityInstance.NetworkObject;
+            m_AuthoritySubChildObject = ChildObjectComponent.AuthoritySubInstance.NetworkObject;
+
+            // The child NetworkTransform will use world space when world position stays and
+            // local space when world position does not stay when parenting.
+            ChildObjectComponent.AuthorityInstance.UseHalfFloatPrecision = m_Precision == Precision.Half;
+            ChildObjectComponent.AuthorityInstance.UseQuaternionSynchronization = m_Rotation == Rotation.Quaternion;
+            ChildObjectComponent.AuthorityInstance.UseQuaternionCompression = m_RotationCompression == RotationCompression.QuaternionCompress;
+
+            ChildObjectComponent.AuthoritySubInstance.UseHalfFloatPrecision = m_Precision == Precision.Half;
+            ChildObjectComponent.AuthoritySubInstance.UseQuaternionSynchronization = m_Rotation == Rotation.Quaternion;
+            ChildObjectComponent.AuthoritySubInstance.UseQuaternionCompression = m_RotationCompression == RotationCompression.QuaternionCompress;
+
+            // Set whether we are interpolating or not
+            m_AuthorityParentNetworkTransform = m_AuthorityParentObject.GetComponent<NetworkTransformTestComponent>();
+            m_AuthorityParentNetworkTransform.Interpolate = true;
+            m_AuthorityChildNetworkTransform = m_AuthorityChildObject.GetComponent<ChildObjectComponent>();
+            m_AuthorityChildNetworkTransform.Interpolate = true;
+            m_AuthoritySubChildNetworkTransform = m_AuthoritySubChildObject.GetComponent<ChildObjectComponent>();
+            m_AuthoritySubChildNetworkTransform.Interpolate = true;
+
+            // Apply a scale to the parent object to make sure the scale on the child is properly updated on
+            // non-authority instances.
+            var halfScale = scale * 0.5f;
+            m_AuthorityParentObject.transform.localScale = GetRandomVector3(scale - halfScale, scale + halfScale);
+            m_AuthorityChildObject.transform.localScale = GetRandomVector3(scale - halfScale, scale + halfScale);
+            m_AuthoritySubChildObject.transform.localScale = GetRandomVector3(scale - halfScale, scale + halfScale);
+
+            // Allow one tick for authority to update these changes
+            TimeTravelAdvanceTick();
+            success = WaitForConditionOrTimeOutWithTimeTravel(PositionRotationScaleMatches);
+
+            Assert.True(success, "All transform values did not match prior to parenting!");
+
+            success = WaitForConditionOrTimeOutWithTimeTravel(PositionRotationScaleMatches);
+
+            Assert.True(success, "All transform values did not match prior to parenting!");
+
+            // Move things around while parenting and removing the parent
+            // Not the absolute "perfect" test, but it validates the clients all synchronize
+            // parenting and transform values.
+            for (int i = 0; i < 30; i++)
+            {
+                // Provide two network ticks for interpolation to finalize
+                TimeTravelAdvanceTick();
+                TimeTravelAdvanceTick();
+
+                // This validates each child instance has preserved their local space values
+                AllChildrenLocalTransformValuesMatch(false, ChildrenTransformCheckType.Connected_Clients);
+
+                // This validates each sub-child instance has preserved their local space values
+                AllChildrenLocalTransformValuesMatch(true, ChildrenTransformCheckType.Connected_Clients);
+                // Parent while in motion
+                if (i == 5)
+                {
+                    // Parent the child under the parent with the current world position stays setting
+                    Assert.True(authoritySideChild.TrySetParent(authoritySideParent.transform), $"[Child][Client-{authoritySideChild.NetworkManagerOwner.LocalClientId}] Failed to set child's parent!");
+
+                    // This waits for all child instances to be parented
+                    success = WaitForConditionOrTimeOutWithTimeTravel(AllFirstLevelChildObjectInstancesHaveChild, 300);
+                    Assert.True(success, "Timed out waiting for all instances to have parented a child!");
+                }
+
+                if (i == 10)
+                {
+                    // Parent the sub-child under the child with the current world position stays setting
+                    Assert.True(authoritySideSubChild.TrySetParent(authoritySideChild.transform), $"[Sub-Child][Client-{authoritySideSubChild.NetworkManagerOwner.LocalClientId}] Failed to set sub-child's parent!");
+
+                    // This waits for all child instances to be parented
+                    success = WaitForConditionOrTimeOutWithTimeTravel(AllChildObjectInstancesHaveChild, 300);
+                    Assert.True(success, "Timed out waiting for all instances to have parented a child!");
+                }
+
+                if (i == 15)
+                {
+                    // Verify that a late joining client will synchronize to the parented NetworkObjects properly
+                    CreateAndStartNewClientWithTimeTravel();
+
+                    // Assure all of the child object instances are spawned (basically for the newly connected client)
+                    success = WaitForConditionOrTimeOutWithTimeTravel(AllChildObjectInstancesAreSpawned, 300);
+                    Assert.True(success, "Timed out waiting for all child instances to be spawned!");
+
+                    // This waits for all child instances to be parented
+                    success = WaitForConditionOrTimeOutWithTimeTravel(AllChildObjectInstancesHaveChild, 300);
+                    Assert.True(success, "Timed out waiting for all instances to have parented a child!");
+
+                    // This validates each child instance has preserved their local space values
+                    AllChildrenLocalTransformValuesMatch(false, ChildrenTransformCheckType.Late_Join_Client);
+
+                    // This validates each sub-child instance has preserved their local space values
+                    AllChildrenLocalTransformValuesMatch(true, ChildrenTransformCheckType.Late_Join_Client);
+                }
+
+                if (i == 20)
+                {
+                    // Remove the parent
+                    Assert.True(authoritySideSubChild.TryRemoveParent(), $"[Sub-Child][Client-{authoritySideSubChild.NetworkManagerOwner.LocalClientId}] Failed to set sub-child's parent!");
+
+                    // This waits for all child instances to have the parent removed
+                    success = WaitForConditionOrTimeOutWithTimeTravel(AllSubChildObjectInstancesHaveNoParent, 300);
+                    Assert.True(success, "Timed out waiting for all instances remove the parent!");
+                }
+
+                if (i == 25)
+                {
+                    // Parent the child under the parent with the current world position stays setting
+                    Assert.True(authoritySideChild.TryRemoveParent(), $"[Child][Client-{authoritySideChild.NetworkManagerOwner.LocalClientId}] Failed to remove parent!");
+
+                    // This waits for all child instances to be parented
+                    success = WaitForConditionOrTimeOutWithTimeTravel(AllFirstLevelChildObjectInstancesHaveNoParent, 300);
+                    Assert.True(success, "Timed out waiting for all instances remove the parent!");
+                }
+                UpdateTransformWorld(m_AuthorityParentNetworkTransform);
+                if (m_AuthorityChildNetworkTransform.InLocalSpace)
+                {
+                    UpdateTransformLocal(m_AuthorityChildNetworkTransform);
+                }
+                else
+                {
+                    UpdateTransformWorld(m_AuthorityChildNetworkTransform);
+                }
+
+                if (m_AuthoritySubChildNetworkTransform.InLocalSpace)
+                {
+                    UpdateTransformLocal(m_AuthoritySubChildNetworkTransform);
+                }
+                else
+                {
+                    UpdateTransformWorld(m_AuthoritySubChildNetworkTransform);
+                }
+            }
+
+            success = WaitForConditionOrTimeOutWithTimeTravel(PositionRotationScaleMatches, 300);
+
+            Assert.True(success, "All transform values did not match prior to parenting!");
+
+            // Revert the modifications made for this specific test
+            m_ParentObject.GetComponent<NetworkTransformTestComponent>().TickSyncChildren = false;
+            m_ChildObject.GetComponent<ChildObjectComponent>().SwitchTransformSpaceWhenParented = false;
+            m_ChildObject.GetComponent<ChildObjectComponent>().TickSyncChildren = false;
+            m_ChildObject.AllowOwnerToParent = false;
+            m_SubChildObject.AllowOwnerToParent = false;
+            m_SubChildObject.GetComponent<ChildObjectComponent>().SwitchTransformSpaceWhenParented = false;
+            m_SubChildObject.GetComponent<ChildObjectComponent>().TickSyncChildren = false;
+        }
+
 
         /// <summary>
         /// Validates that transform values remain the same when a NetworkTransform is
@@ -150,6 +382,10 @@ namespace Unity.Netcode.RuntimeTests
 
             // Allow one tick for authority to update these changes
             TimeTravelAdvanceTick();
+            success = WaitForConditionOrTimeOutWithTimeTravel(PositionRotationScaleMatches);
+
+            Assert.True(success, "All transform values did not match prior to parenting!");
+
             success = WaitForConditionOrTimeOutWithTimeTravel(PositionRotationScaleMatches);
 
             Assert.True(success, "All transform values did not match prior to parenting!");
@@ -294,7 +530,7 @@ namespace Unity.Netcode.RuntimeTests
                 Assert.True(WaitForConditionOrTimeOutWithTimeTravel(() => m_AuthoritativeTransform.StatePushed && m_NonAuthoritativeTransform.StateUpdated), $"[Non-Interpolate {i}] Timed out waiting for state to be pushed ({m_AuthoritativeTransform.StatePushed}) or state to be updated ({m_NonAuthoritativeTransform.StateUpdated})!");
 
                 // For 3 axis, we will skip validating that the non-authority interpolates to its target point at least once.
-                // This will validate that non-authoritative updates are maintaining their target state axis values if only 2 
+                // This will validate that non-authoritative updates are maintaining their target state axis values if only 2
                 // of the axis are being updated to assure interpolation maintains the targeted axial value per axis.
                 // For 2 and 1 axis tests we always validate per delta update
                 if (m_AxisExcluded || axisCount < 3)
@@ -369,6 +605,7 @@ namespace Unity.Netcode.RuntimeTests
                 }
             }
         }
+#endif
 
         /// <summary>
         /// Tests changing all axial values one at a time.
@@ -392,6 +629,7 @@ namespace Unity.Netcode.RuntimeTests
             Assert.AreEqual(Vector3.zero, m_NonAuthoritativeTransform.transform.position, "server side pos should be zero at first"); // sanity check
 
             TimeTravelAdvanceTick();
+            TimeTravelToNextTick();
 
             m_AuthoritativeTransform.StatePushed = false;
             var nextPosition = GetRandomVector3(2f, 30f);

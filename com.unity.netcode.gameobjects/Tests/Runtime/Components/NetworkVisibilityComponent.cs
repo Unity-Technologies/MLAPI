@@ -1,6 +1,6 @@
 namespace Unity.Netcode.RuntimeTests
 {
-    public class NetworkVisibilityComponent : NetworkBehaviour
+    internal class NetworkVisibilityComponent : NetworkBehaviour
     {
         public void Hide()
         {

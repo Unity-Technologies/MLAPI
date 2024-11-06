@@ -7,7 +7,7 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class ClientApprovalDenied : NetcodeIntegrationTest
+    internal class ClientApprovalDenied : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 2;
         private bool m_ApproveConnection = true;

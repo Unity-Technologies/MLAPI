@@ -17,6 +17,11 @@ namespace Unity.Netcode
 
         internal override void Send(NetworkBehaviour behaviour, ref RpcMessage message, NetworkDelivery delivery, RpcParams rpcParams)
         {
+            // If there are no targets then don't attempt to send anything.
+            if (TargetClientIds.Length == 0 && Ids.Count == 0)
+            {
+                return;
+            }
             var proxyMessage = new ProxyMessage { Delivery = delivery, TargetClientIds = TargetClientIds.AsArray(), WrappedMessage = message };
 #if DEVELOPMENT_BUILD || UNITY_EDITOR || UNITY_MP_TOOLS_NET_STATS_MONITOR_ENABLED_IN_RELEASE
             var size =

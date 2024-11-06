@@ -12,7 +12,7 @@ using UnityEngine.TestTools;
 
 namespace TestProject.RuntimeTests
 {
-
+    // DAMODE-TODO: When scene management is working in distributed authority mode we need to update this test
     [TestFixture(SceneManagementTypes.SceneManagementEnabled)]
     [TestFixture(SceneManagementTypes.SceneManagementDisabled)]
     public class PrefabExtendedTests : NetcodeIntegrationTest
@@ -212,13 +212,6 @@ namespace TestProject.RuntimeTests
             var firstError = $"[Netcode] Failed to create object locally. [globalObjectIdHash={gloabalObjectId}]. NetworkPrefab could not be found. Is the prefab registered with NetworkManager?";
             var secondError = $"[Netcode] Failed to spawn NetworkObject for Hash {gloabalObjectId}.";
             m_InstantiateAndSpawnType = instantiateAndSpawnType;
-            if (!m_SceneManagementEnabled)
-            {
-                // When scene management is disabled, in-scene defined NetworkObjects are not synchronized.
-                // Expect 2 error messages about not being able to find the in-scene defined NetworkObject in the PrefabTestScene.
-                LogAssert.Expect(LogType.Error, firstError);
-                LogAssert.Expect(LogType.Error, secondError);
-            }
 
             // We have to spawn the first client manually in order to account for the errors when scene management is disabled.
             // Spawn the client prior to dynamically spawning our prefab instances. Two of the in-scene placed NetworkObjects
@@ -278,20 +271,11 @@ namespace TestProject.RuntimeTests
 
             // Validate that the client synchronized with the in-scene placed and dynamically spawned NetworkObjects
             yield return WaitForConditionOrTimeOut(ValidateAllClientsSpawnedObjects);
-            AssertOnTimeout($"[First Stage] Validating spawned objects faild with the following error: {m_ErrorLog}");
+            AssertOnTimeout($"[First Stage][{instantiateAndSpawnType}] Validating spawned objects faild with the following error: {m_ErrorLog}");
 
-            // Finally, let's test a late joining client and make sure it synchronizes with the in-scene placed and
-            // dynamically spawned NetworkObjects
-            if (!m_SceneManagementEnabled)
-            {
-                // When scene management is disabled, in-scene defined NetworkObjects are not synchronized.
-                // Expect 2 error messages about not being able to find the in-scene defined NetworkObject in the PrefabTestScene.
-                LogAssert.Expect(LogType.Error, firstError);
-                LogAssert.Expect(LogType.Error, secondError);
-            }
             yield return CreateAndStartNewClient();
             yield return WaitForConditionOrTimeOut(ValidateAllClientsSpawnedObjects);
-            AssertOnTimeout($"[Second Stage] Validating spawned objects faild with the following error: {m_ErrorLog}");
+            AssertOnTimeout($"[Second Stage][{instantiateAndSpawnType}] Validating spawned objects faild with the following error: {m_ErrorLog}");
 
             if (instantiateAndSpawnType != InstantiateAndSpawnMethods.Manual)
             {
@@ -376,6 +360,4 @@ namespace TestProject.RuntimeTests
         }
 
     }
-
-
 }

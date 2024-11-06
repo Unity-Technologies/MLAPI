@@ -4,7 +4,7 @@ using Unity.Netcode.TestHelpers.Runtime;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public sealed class NetworkVariableNameTests
+    internal sealed class NetworkVariableNameTests
     {
         private NetworkVariableNameComponent m_NetworkVariableNameComponent;
 

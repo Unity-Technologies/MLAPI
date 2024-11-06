@@ -118,9 +118,9 @@ namespace Unity.Netcode
         /// </summary>
         /// <param name="ticks">The number of ticks ago we're querying the time</param>
         /// <returns></returns>
-        public NetworkTime TimeTicksAgo(int ticks)
+        public NetworkTime TimeTicksAgo(int ticks, float offset = 0.0f)
         {
-            return this - new NetworkTime(TickRate, ticks);
+            return this - new NetworkTime(TickRate, ticks, offset);
         }
 
         private void UpdateCache()

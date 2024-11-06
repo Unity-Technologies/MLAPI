@@ -15,11 +15,12 @@ namespace Unity.Netcode.RuntimeTests
     /// - Deserializing NetworkObjectReference to NetworkObject
     /// - Implicit operators of NetworkObjectReference
     /// </summary>
-    public class NetworkObjectReferenceTests : IDisposable
+    internal class NetworkObjectReferenceTests : IDisposable
     {
         private class TestNetworkBehaviour : NetworkBehaviour
         {
             public static bool ReceivedRPC;
+
             public NetworkVariable<NetworkObjectReference> TestVariable = new NetworkVariable<NetworkObjectReference>();
 
             public NetworkObject RpcReceivedNetworkObject;
@@ -378,7 +379,7 @@ namespace Unity.Netcode.RuntimeTests
     /// Helper method for tests to create and destroy Unity Objects.
     /// </summary>
     /// <typeparam name="T">The type of Object this context incorporates.</typeparam>
-    public class UnityObjectContext<T> : UnityObjectContext where T : Object
+    internal class UnityObjectContext<T> : UnityObjectContext where T : Object
     {
         private T m_Object;
 
@@ -391,7 +392,7 @@ namespace Unity.Netcode.RuntimeTests
         public T Object => m_Object;
     }
 
-    public class UnityObjectContext : IDisposable
+    internal class UnityObjectContext : IDisposable
     {
         private Object m_Root;
 

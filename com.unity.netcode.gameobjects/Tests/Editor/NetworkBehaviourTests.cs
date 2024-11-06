@@ -4,7 +4,7 @@ using Object = UnityEngine.Object;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class NetworkBehaviourTests
+    internal class NetworkBehaviourTests
     {
         [Test]
         public void HasNetworkObjectTest()
@@ -66,12 +66,12 @@ namespace Unity.Netcode.EditorTests
 
         // Note: in order to repro https://github.com/Unity-Technologies/com.unity.netcode.gameobjects/issues/1078
         // this child class must be defined before its parent to assure it is processed first by ILPP
-        public class DerivedNetworkBehaviour : EmptyNetworkBehaviour
+        internal class DerivedNetworkBehaviour : EmptyNetworkBehaviour
         {
 
         }
 
-        public class EmptyNetworkBehaviour : NetworkBehaviour
+        internal class EmptyNetworkBehaviour : NetworkBehaviour
         {
 
         }

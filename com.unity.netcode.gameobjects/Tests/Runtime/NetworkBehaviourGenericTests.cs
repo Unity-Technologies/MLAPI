@@ -10,7 +10,7 @@ namespace Unity.Netcode.RuntimeTests
     /// <summary>
     /// This class is for testing general fixes or functionality of NetworkBehaviours
     /// </summary>
-    public class NetworkBehaviourGenericTests : NetcodeIntegrationTest
+    internal class NetworkBehaviourGenericTests : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 0;
 
@@ -21,7 +21,7 @@ namespace Unity.Netcode.RuntimeTests
             return m_AllowServerToStart;
         }
 
-        public class SimpleNetworkBehaviour : NetworkBehaviour
+        internal class SimpleNetworkBehaviour : NetworkBehaviour
         {
             public bool OnNetworkDespawnCalled;
 

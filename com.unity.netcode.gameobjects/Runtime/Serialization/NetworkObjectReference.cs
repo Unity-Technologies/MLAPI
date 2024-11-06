@@ -25,6 +25,7 @@ namespace Unity.Netcode
         /// Creates a new instance of the <see cref="NetworkObjectReference"/> struct.
         /// </summary>
         /// <param name="networkObject">The <see cref="NetworkObject"/> to reference.</param>
+        /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>
         public NetworkObjectReference(NetworkObject networkObject)
         {
@@ -46,6 +47,7 @@ namespace Unity.Netcode
         /// Creates a new instance of the <see cref="NetworkObjectReference"/> struct.
         /// </summary>
         /// <param name="gameObject">The GameObject from which the <see cref="NetworkObject"/> component will be referenced.</param>
+        /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>
         public NetworkObjectReference(GameObject gameObject)
         {
@@ -60,6 +62,7 @@ namespace Unity.Netcode
             {
                 throw new ArgumentException($"Cannot create {nameof(NetworkObjectReference)} from {nameof(GameObject)} without a {nameof(NetworkObject)} component.");
             }
+
             if (networkObject.IsSpawned == false)
             {
                 throw new ArgumentException($"{nameof(NetworkObjectReference)} can only be created from spawned {nameof(NetworkObject)}s.");

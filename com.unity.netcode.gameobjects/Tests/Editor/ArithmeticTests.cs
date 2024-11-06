@@ -2,7 +2,7 @@ using NUnit.Framework;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class ArithmeticTests
+    internal class ArithmeticTests
     {
         [Test]
         public void TestCeil()

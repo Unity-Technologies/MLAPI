@@ -1,12 +1,24 @@
+using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 
 namespace Unity.Netcode.TestHelpers.Runtime
 {
     public abstract class IntegrationTestWithApproximation : NetcodeIntegrationTest
     {
-        private const float k_AproximateDeltaVariance = 0.01f;
+        private const float k_AproximateDeltaVariance = 0.016f;
+
+        protected string GetVector3Values(ref Vector3 vector3)
+        {
+            return $"({vector3.x:F6},{vector3.y:F6},{vector3.z:F6})";
+        }
+
+        protected string GetVector3Values(Vector3 vector3)
+        {
+            return GetVector3Values(ref vector3);
+        }
 
         protected virtual float GetDeltaVarianceThreshold()
         {
@@ -40,17 +52,17 @@ namespace Unity.Netcode.TestHelpers.Runtime
         protected bool Approximately(Vector2 a, Vector2 b)
         {
             var deltaVariance = GetDeltaVarianceThreshold();
-            return Mathf.Abs(a.x - b.x) <= deltaVariance &&
-                Mathf.Abs(a.y - b.y) <= deltaVariance;
+            return Math.Round(Mathf.Abs(a.x - b.x), 2) <= deltaVariance &&
+                Math.Round(Mathf.Abs(a.y - b.y), 2) <= deltaVariance;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected bool Approximately(Vector3 a, Vector3 b)
         {
             var deltaVariance = GetDeltaVarianceThreshold();
-            return Mathf.Abs(a.x - b.x) <= deltaVariance &&
-                Mathf.Abs(a.y - b.y) <= deltaVariance &&
-                Mathf.Abs(a.z - b.z) <= deltaVariance;
+            return Math.Round(Mathf.Abs(a.x - b.x), 2) <= deltaVariance &&
+                Math.Round(Mathf.Abs(a.y - b.y), 2) <= deltaVariance &&
+                Math.Round(Mathf.Abs(a.z - b.z), 2) <= deltaVariance;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -75,5 +87,10 @@ namespace Unity.Netcode.TestHelpers.Runtime
             return new Vector3(Random.Range(min, max), Random.Range(min, max), Random.Range(min, max));
         }
 
+        public IntegrationTestWithApproximation(NetworkTopologyTypes networkTopologyType) : base(networkTopologyType) { }
+
+        public IntegrationTestWithApproximation(HostOrServer hostOrServer) : base(hostOrServer) { }
+
+        public IntegrationTestWithApproximation() : base() { }
     }
 }

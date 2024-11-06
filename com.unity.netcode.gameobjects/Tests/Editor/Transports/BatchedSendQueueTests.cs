@@ -2,11 +2,13 @@ using System;
 using NUnit.Framework;
 using Unity.Collections;
 using Unity.Netcode.Transports.UTP;
+#if !UTP_TRANSPORT_2_0_ABOVE
 using Unity.Networking.Transport;
+#endif
 
 namespace Unity.Netcode.EditorTests
 {
-    public class BatchedSendQueueTests
+    internal class BatchedSendQueueTests
     {
         private const int k_TestQueueCapacity = 16 * 1024;
         private const int k_TestMessageSize = 1020;

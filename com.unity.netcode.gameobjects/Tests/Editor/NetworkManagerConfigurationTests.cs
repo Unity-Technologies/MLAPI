@@ -9,8 +9,20 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class NetworkManagerConfigurationTests
+    internal class NetworkManagerConfigurationTests
     {
+        [SetUp]
+        public void OnSetup()
+        {
+            ILPPMessageProvider.IntegrationTestNoMessages = true;
+        }
+
+        [TearDown]
+        public void OnTearDown()
+        {
+            ILPPMessageProvider.IntegrationTestNoMessages = false;
+        }
+
         /// <summary>
         /// Does a simple check to make sure the nested network manager will
         /// notify the user when in the editor.  This is just a unit test to

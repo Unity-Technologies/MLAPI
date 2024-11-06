@@ -26,13 +26,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 772585991204072682}
+  serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 4, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 296612175404815447}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!23 &6327137497379236391
 MeshRenderer:
@@ -51,6 +51,9 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -96,6 +99,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d8ad30fca3f9a240bdce16f0166033b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  AuthorityMode: 0
+  TickSyncChildren: 0
+  UseUnreliableDeltas: 0
   SyncPositionX: 1
   SyncPositionY: 1
   SyncPositionZ: 1
@@ -105,23 +111,27 @@ MonoBehaviour:
   SyncScaleX: 1
   SyncScaleY: 1
   SyncScaleZ: 1
-  SlerpPosition: 1
-  UseQuaternionSynchronization: 1
-  UseQuaternionCompression: 1
-  UseHalfFloatPrecision: 1
   PositionThreshold: 0.001
   RotAngleThreshold: 0.01
   ScaleThreshold: 0.01
+  UseQuaternionSynchronization: 1
+  UseQuaternionCompression: 1
+  UseHalfFloatPrecision: 1
   InLocalSpace: 1
   Interpolate: 1
+  SlerpPosition: 1
+  IsServerAuthority: 1
   DebugTransform: 0
-  IsServerAuthoritative: 1
   LastUpdatedPosition: {x: 0, y: 0, z: 0}
   LastUpdatedScale: {x: 0, y: 0, z: 0}
   LastUpdatedRotation: {x: 0, y: 0, z: 0, w: 0}
+  PushedPosition: {x: 0, y: 0, z: 0}
+  PushedScale: {x: 0, y: 0, z: 0}
+  PushedRotation: {x: 0, y: 0, z: 0, w: 0}
   PreviousUpdatedPosition: {x: 0, y: 0, z: 0}
   PreviousUpdatedScale: {x: 0, y: 0, z: 0}
   PreviousUpdatedRotation: {x: 0, y: 0, z: 0, w: 0}
+  m_StatesToLog: 80
   RotationSpeed: 7.4
   RotateBasedOnDirection: 0
 --- !u!1 &2771624607751045562
@@ -147,6 +157,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2771624607751045562}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -154,7 +165,6 @@ Transform:
   m_Children:
   - {fileID: 4974009855568796650}
   m_Father: {fileID: 296612175404815447}
-  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4147667212972069939
 GameObject:
@@ -180,13 +190,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4147667212972069939}
+  serializedVersion: 2
   m_LocalRotation: {x: 0.17364816, y: -0, z: -0, w: 0.9848078}
   m_LocalPosition: {x: 0, y: 8, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 296612175404815447}
-  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 20, y: 0, z: 0}
 --- !u!20 &8372809022110481992
 Camera:
@@ -202,9 +212,17 @@ Camera:
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
+  m_Iso: 200
+  m_ShutterSpeed: 0.005
+  m_Aperture: 16
+  m_FocusDistance: 10
+  m_FocalLength: 50
+  m_BladeCount: 5
+  m_Curvature: {x: 2, y: 11}
+  m_BarrelClipping: 0.25
+  m_Anamorphism: 0
   m_SensorSize: {x: 36, y: 24}
   m_LensShift: {x: 0, y: 0}
-  m_FocalLength: 50
   m_NormalizedViewPortRect:
     serializedVersion: 2
     x: 0
@@ -257,13 +275,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6292214655028195304}
+  serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -4, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5485086383386216104}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!23 &3062926429781172158
 MeshRenderer:
@@ -282,6 +300,9 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -327,6 +348,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d8ad30fca3f9a240bdce16f0166033b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  AuthorityMode: 0
+  TickSyncChildren: 0
+  UseUnreliableDeltas: 0
   SyncPositionX: 1
   SyncPositionY: 1
   SyncPositionZ: 1
@@ -336,23 +360,27 @@ MonoBehaviour:
   SyncScaleX: 1
   SyncScaleY: 1
   SyncScaleZ: 1
-  SlerpPosition: 1
-  UseQuaternionSynchronization: 1
-  UseQuaternionCompression: 1
-  UseHalfFloatPrecision: 1
   PositionThreshold: 0.001
   RotAngleThreshold: 0.01
   ScaleThreshold: 0.01
+  UseQuaternionSynchronization: 1
+  UseQuaternionCompression: 1
+  UseHalfFloatPrecision: 1
   InLocalSpace: 1
   Interpolate: 1
+  SlerpPosition: 1
+  IsServerAuthority: 1
   DebugTransform: 0
-  IsServerAuthoritative: 1
   LastUpdatedPosition: {x: 0, y: 0, z: 0}
   LastUpdatedScale: {x: 0, y: 0, z: 0}
   LastUpdatedRotation: {x: 0, y: 0, z: 0, w: 0}
+  PushedPosition: {x: 0, y: 0, z: 0}
+  PushedScale: {x: 0, y: 0, z: 0}
+  PushedRotation: {x: 0, y: 0, z: 0, w: 0}
   PreviousUpdatedPosition: {x: 0, y: 0, z: 0}
   PreviousUpdatedScale: {x: 0, y: 0, z: 0}
   PreviousUpdatedRotation: {x: 0, y: 0, z: 0, w: 0}
+  m_StatesToLog: 80
   RotationSpeed: 7.4
   RotateBasedOnDirection: 0
 --- !u!1001 &8977898853425847701
@@ -360,6 +388,7 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: -745482209883575862, guid: 96e0a72e30d0c46c8a5c9a750e8f5807,
@@ -369,7 +398,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 947981134, guid: 96e0a72e30d0c46c8a5c9a750e8f5807, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 951099334
+      value: 2547197533
       objectReference: {fileID: 0}
     - target: {fileID: 3809075828520557319, guid: 96e0a72e30d0c46c8a5c9a750e8f5807,
         type: 3}
@@ -469,6 +498,33 @@ PrefabInstance:
     - {fileID: 8685790303553767877, guid: 96e0a72e30d0c46c8a5c9a750e8f5807, type: 3}
     - {fileID: -745482209883575862, guid: 96e0a72e30d0c46c8a5c9a750e8f5807, type: 3}
     - {fileID: 3809075828520557319, guid: 96e0a72e30d0c46c8a5c9a750e8f5807, type: 3}
+    m_RemovedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 8685790303553767874, guid: 96e0a72e30d0c46c8a5c9a750e8f5807,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1522619104359096714}
+    - targetCorrespondingSourceObject: {fileID: 8685790303553767874, guid: 96e0a72e30d0c46c8a5c9a750e8f5807,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5485086383386216104}
+    - targetCorrespondingSourceObject: {fileID: 8685790303553767874, guid: 96e0a72e30d0c46c8a5c9a750e8f5807,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7199215624742357828}
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8685790303553767886, guid: 96e0a72e30d0c46c8a5c9a750e8f5807,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4389916208190318681}
+    - targetCorrespondingSourceObject: {fileID: 8685790303553767886, guid: 96e0a72e30d0c46c8a5c9a750e8f5807,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5376990732947334198}
+    - targetCorrespondingSourceObject: {fileID: 8685790303553767886, guid: 96e0a72e30d0c46c8a5c9a750e8f5807,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7431853297519116304}
   m_SourcePrefab: {fileID: 100100000, guid: 96e0a72e30d0c46c8a5c9a750e8f5807, type: 3}
 --- !u!4 &296612175404815447 stripped
 Transform:
@@ -511,6 +567,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dfb1af1a9249278438d2daa2877ee2ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  AuthorityMode: 0
+  TickSyncChildren: 1
+  UseUnreliableDeltas: 0
   SyncPositionX: 1
   SyncPositionY: 1
   SyncPositionZ: 1
@@ -520,23 +579,27 @@ MonoBehaviour:
   SyncScaleX: 1
   SyncScaleY: 1
   SyncScaleZ: 1
-  SlerpPosition: 0
-  UseQuaternionSynchronization: 1
-  UseQuaternionCompression: 0
-  UseHalfFloatPrecision: 1
   PositionThreshold: 0.001
   RotAngleThreshold: 0.001
   ScaleThreshold: 0.001
+  UseQuaternionSynchronization: 1
+  UseQuaternionCompression: 0
+  UseHalfFloatPrecision: 1
   InLocalSpace: 0
   Interpolate: 1
+  SlerpPosition: 0
+  IsServerAuthority: 1
   DebugTransform: 0
-  IsServerAuthoritative: 1
   LastUpdatedPosition: {x: 0, y: 0, z: 0}
   LastUpdatedScale: {x: 0, y: 0, z: 0}
   LastUpdatedRotation: {x: 0, y: 0, z: 0, w: 0}
+  PushedPosition: {x: 0, y: 0, z: 0}
+  PushedScale: {x: 0, y: 0, z: 0}
+  PushedRotation: {x: 0, y: 0, z: 0, w: 0}
   PreviousUpdatedPosition: {x: 0, y: 0, z: 0}
   PreviousUpdatedScale: {x: 0, y: 0, z: 0}
   PreviousUpdatedRotation: {x: 0, y: 0, z: 0, w: 0}
+  m_StatesToLog: 80
 --- !u!114 &7431853297519116304
 MonoBehaviour:
   m_ObjectHideFlags: 0

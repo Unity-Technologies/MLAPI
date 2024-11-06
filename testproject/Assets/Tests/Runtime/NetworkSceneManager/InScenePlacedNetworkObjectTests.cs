@@ -13,6 +13,8 @@ using UnityEngine.TestTools;
 
 namespace TestProject.RuntimeTests
 {
+    [TestFixture(NetworkTopologyTypes.DistributedAuthority)]
+    [TestFixture(NetworkTopologyTypes.ClientServer)]
     public class InScenePlacedNetworkObjectTests : IntegrationTestWithApproximation
     {
         protected override int NumberOfClients => 2;
@@ -23,6 +25,8 @@ namespace TestProject.RuntimeTests
         private Scene m_ServerSideSceneLoaded;
         private bool m_CanStartServerAndClients;
         private string m_SceneLoading = k_SceneToLoad;
+
+        public InScenePlacedNetworkObjectTests(NetworkTopologyTypes networkTopologyType) : base(networkTopologyType) { }
 
         protected override IEnumerator OnSetup()
         {
@@ -508,7 +512,7 @@ namespace TestProject.RuntimeTests
             // Now make sure the server and newly joined client transform values match.
             RotationsMatch(serverInSceneObjectInstance.transform, lateJoinClientInSceneObjectInstance.transform, transformSpace == TransformSpace.Local);
             PositionsMatch(serverInSceneObjectInstance.transform, lateJoinClientInSceneObjectInstance.transform, transformSpace == TransformSpace.Local);
-            // When tesing local space we also do a sanity check and validate the world space values too.
+            // When testing local space we also do a sanity check and validate the world space values too.
             if (transformSpace == TransformSpace.Local)
             {
                 RotationsMatch(serverInSceneObjectInstance.transform, lateJoinClientInSceneObjectInstance.transform);
@@ -620,6 +624,5 @@ namespace TestProject.RuntimeTests
             var insceneObject = GameObject.Find("InSceneObject");
             Assert.IsNotNull(insceneObject, $"Could not find the in-scene placed {nameof(NetworkObject)}: InSceneObject!");
         }
-
     }
 }

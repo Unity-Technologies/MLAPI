@@ -13,16 +13,22 @@ namespace Unity.Netcode.RuntimeTests
     /// - Server destroy spawned => Object gets destroyed and despawned/destroyed on all clients. Server does not run <see cref="NetworkPrefaInstanceHandler.HandleNetworkPrefabDestroy"/>. Client runs it.
     /// - Client destroy spawned => throw exception.
     /// </summary>
-    public class NetworkObjectDestroyTests : NetcodeIntegrationTest
+
+
+    [TestFixture(NetworkTopologyTypes.DistributedAuthority)]
+    [TestFixture(NetworkTopologyTypes.ClientServer)]
+    internal class NetworkObjectDestroyTests : NetcodeIntegrationTest
     {
-        protected override int NumberOfClients => 1;
+        protected override int NumberOfClients => 2;
+
+        public NetworkObjectDestroyTests(NetworkTopologyTypes networkTopologyType) : base(networkTopologyType) { }
 
         /// <summary>
         /// Tests that a server can destroy a NetworkObject and that it gets despawned correctly.
         /// </summary>
         /// <returns></returns>
         [UnityTest]
-        public IEnumerator TestNetworkObjectServerDestroy()
+        public IEnumerator TestNetworkObjectAuthorityDestroy()
         {
             // This is the *SERVER VERSION* of the *CLIENT PLAYER*
             var serverClientPlayerResult = new NetcodeIntegrationTestHelpers.ResultWrapper<NetworkObject>();
@@ -35,15 +41,25 @@ namespace Unity.Netcode.RuntimeTests
             Assert.IsNotNull(serverClientPlayerResult.Result.gameObject);
             Assert.IsNotNull(clientClientPlayerResult.Result.gameObject);
 
-            // destroy the server player
-            Object.Destroy(serverClientPlayerResult.Result.gameObject);
+            var targetNetworkManager = m_ClientNetworkManagers[0];
+            if (m_DistributedAuthority)
+            {
+                targetNetworkManager = m_ClientNetworkManagers[1];
+                // destroy the authoritative player (distributed authority)
+                Object.Destroy(clientClientPlayerResult.Result.gameObject);
+            }
+            else
+            {
+                // destroy the authoritative player (client-server)
+                Object.Destroy(serverClientPlayerResult.Result.gameObject);
+            }
 
-            yield return NetcodeIntegrationTestHelpers.WaitForMessageOfTypeHandled<DestroyObjectMessage>(m_ClientNetworkManagers[0]);
+            yield return NetcodeIntegrationTestHelpers.WaitForMessageOfTypeHandled<DestroyObjectMessage>(targetNetworkManager);
 
             Assert.IsTrue(serverClientPlayerResult.Result == null); // Assert.IsNull doesn't work here
             Assert.IsTrue(clientClientPlayerResult.Result == null);
 
-            // create an unspawned networkobject and destroy it
+            // validate that any unspawned networkobject can be destroyed
             var go = new GameObject();
             go.AddComponent<NetworkObject>();
             Object.Destroy(go);
@@ -74,16 +90,42 @@ namespace Unity.Netcode.RuntimeTests
             //destroying a NetworkObject while shutting down is allowed
             if (isShuttingDown)
             {
-                m_ClientNetworkManagers[0].Shutdown();
+                if (m_DistributedAuthority)
+                {
+                    // Shutdown the 2nd client
+                    m_ClientNetworkManagers[1].Shutdown();
+                }
+                else
+                {
+                    // Shutdown the
+                    m_ClientNetworkManagers[0].Shutdown();
+                }
             }
             else
             {
                 LogAssert.ignoreFailingMessages = true;
                 NetworkLog.NetworkManagerOverride = m_ClientNetworkManagers[0];
             }
+
             m_ClientPlayerName = clientPlayer.gameObject.name;
             m_ClientNetworkObjectId = clientPlayer.NetworkObjectId;
-            Object.DestroyImmediate(clientPlayer.gameObject);
+            if (m_DistributedAuthority)
+            {
+                m_ClientPlayerName = m_PlayerNetworkObjects[m_ClientNetworkManagers[1].LocalClientId][m_ClientNetworkManagers[0].LocalClientId].gameObject.name;
+                m_ClientNetworkObjectId = m_PlayerNetworkObjects[m_ClientNetworkManagers[1].LocalClientId][m_ClientNetworkManagers[0].LocalClientId].NetworkObjectId;
+
+                if (!isShuttingDown)
+                {
+                    NetworkLog.NetworkManagerOverride = m_ClientNetworkManagers[1];
+                }
+                // the 2nd client attempts to destroy the 1st client's player object (if shutting down then "ok" if not then not "ok")
+                Object.DestroyImmediate(m_PlayerNetworkObjects[m_ClientNetworkManagers[1].LocalClientId][m_ClientNetworkManagers[0].LocalClientId].gameObject);
+            }
+            else
+            {
+                // the 1st client attempts to destroy its own player object (if shutting down then "ok" if not then not "ok")
+                Object.DestroyImmediate(m_ClientNetworkManagers[0].LocalClient.PlayerObject.gameObject);
+            }
 
             // destroying a NetworkObject while a session is active is not allowed
             if (!isShuttingDown)
@@ -95,16 +137,25 @@ namespace Unity.Netcode.RuntimeTests
 
         private bool HaveLogsBeenReceived()
         {
-            if (!NetcodeLogAssert.HasLogBeenReceived(LogType.Error, $"[Netcode] [Invalid Destroy][{m_ClientPlayerName}][NetworkObjectId:{m_ClientNetworkObjectId}] Destroy a spawned {nameof(NetworkObject)} on a non-host client is not valid. Call Destroy or Despawn on the server/host instead."))
+            if (m_DistributedAuthority)
             {
-                return false;
+                if (!NetcodeLogAssert.HasLogBeenReceived(LogType.Error, $"[Netcode] [Invalid Destroy][{m_ClientPlayerName}][NetworkObjectId:{m_ClientNetworkObjectId}] Destroy a spawned {nameof(NetworkObject)} on a non-owner client is not valid during a distributed authority session. Call Destroy or Despawn on the client-owner instead."))
+                {
+                    return false;
+                }
             }
-
-            if (!NetcodeLogAssert.HasLogBeenReceived(LogType.Error, $"[Netcode-Server Sender={m_ClientNetworkManagers[0].LocalClientId}] [Invalid Destroy][{m_ClientPlayerName}][NetworkObjectId:{m_ClientNetworkObjectId}] Destroy a spawned {nameof(NetworkObject)} on a non-host client is not valid. Call Destroy or Despawn on the server/host instead."))
+            else
             {
-                return false;
-            }
+                if (!NetcodeLogAssert.HasLogBeenReceived(LogType.Error, $"[Netcode] [Invalid Destroy][{m_ClientPlayerName}][NetworkObjectId:{m_ClientNetworkObjectId}] Destroy a spawned {nameof(NetworkObject)} on a non-host client is not valid. Call Destroy or Despawn on the server/host instead."))
+                {
+                    return false;
+                }
 
+                if (!NetcodeLogAssert.HasLogBeenReceived(LogType.Error, $"[Netcode-Server Sender={m_ClientNetworkManagers[0].LocalClientId}] [Invalid Destroy][{m_ClientPlayerName}][NetworkObjectId:{m_ClientNetworkObjectId}] Destroy a spawned {nameof(NetworkObject)} on a non-host client is not valid. Call Destroy or Despawn on the server/host instead."))
+                {
+                    return false;
+                }
+            }
             return true;
         }
 

@@ -37,7 +37,7 @@ namespace TestProject.ManualTests
 
         protected override void OnNetworkSessionSynchronized()
         {
-            if (!IsServer)
+            if (!HasAuthority)
             {
                 OtherObject.Value.TryGet(out ClientSideReferencedBehaviour, NetworkManager);
                 OtherValueObtained = ClientSideReferencedBehaviour.ValueToCheck;
@@ -51,7 +51,7 @@ namespace TestProject.ManualTests
         /// </summary>
         protected override void OnInSceneObjectsSpawned()
         {
-            if (IsServer)
+            if (HasAuthority)
             {
                 OtherObject.Value = new NetworkBehaviourReference(ObjectForServerToReference);
             }

@@ -7,6 +7,9 @@ namespace Unity.Netcode.TestHelpers.Runtime
         public float UnscaledDeltaTime => (float)s_DoubleDelta;
         public float DeltaTime => (float)s_DoubleDelta;
 
+        // DANGO-EXP TODO: Figure out how we want to handle time travel with fixed delta time.
+        public float FixedDeltaTime => (float)s_DoubleDelta;
+
         public static float StaticRealTimeSinceStartup => (float)s_DoubleRealTime;
         public static float StaticUnscaledTime => (float)s_DoubleRealTime;
         public static float StaticUnscaledDeltaTime => (float)s_DoubleDelta;

@@ -10,7 +10,7 @@ namespace Unity.Netcode.RuntimeTests
     /// <summary>
     /// Runtime tests to test the network time system with the Unity player loop.
     /// </summary>
-    public class NetworkTimeSystemTests
+    internal class NetworkTimeSystemTests
     {
         private MonoBehaviourTest<PlayerLoopFixedTimeTestComponent> m_PlayerLoopFixedTimeTestComponent; // cache for teardown
         private MonoBehaviourTest<PlayerLoopTimeTestComponent> m_PlayerLoopTimeTestComponent; // cache for teardown
@@ -117,7 +117,7 @@ namespace Unity.Netcode.RuntimeTests
         }
     }
 
-    public class PlayerLoopFixedTimeTestComponent : MonoBehaviour, IMonoBehaviourTest
+    internal class PlayerLoopFixedTimeTestComponent : MonoBehaviour, IMonoBehaviourTest
     {
         public const int Passes = 100;
 
@@ -184,7 +184,7 @@ namespace Unity.Netcode.RuntimeTests
         public bool IsTestFinished => m_UpdatePasses >= Passes;
     }
 
-    public class PlayerLoopTimeTestComponent : MonoBehaviour, IMonoBehaviourTest
+    internal class PlayerLoopTimeTestComponent : MonoBehaviour, IMonoBehaviourTest
     {
         public const int Passes = 100;
 

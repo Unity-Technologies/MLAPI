@@ -8,7 +8,7 @@ using Random = System.Random;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class BytePackerTests
+    internal class BytePackerTests
     {
         private enum ByteEnum : byte
         {

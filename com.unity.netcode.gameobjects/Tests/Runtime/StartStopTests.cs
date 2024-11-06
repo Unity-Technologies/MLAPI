@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class StartStopTests
+    internal class StartStopTests
     {
         private NetworkManager m_NetworkManager;
 

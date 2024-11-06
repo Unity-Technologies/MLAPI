@@ -34,6 +34,9 @@ namespace Unity.Netcode
     internal class NetworkMessageManager : IDisposable
     {
         public bool StopProcessing = false;
+        private static Type s_ConnectionApprovedType = typeof(ConnectionApprovedMessage);
+        private static Type s_ConnectionRequestType = typeof(ConnectionRequestMessage);
+        private static Type s_DisconnectReasonType = typeof(DisconnectReasonMessage);
 
         private struct ReceiveQueueItem
         {
@@ -120,53 +123,46 @@ namespace Unity.Netcode
             public VersionGetter GetVersion;
         }
 
-        internal List<MessageWithHandler> PrioritizeMessageOrder(List<MessageWithHandler> allowedTypes)
-        {
-            var prioritizedTypes = new List<MessageWithHandler>();
-
-            // First pass puts the priority message in the first indices
-            // Those are the messages that must be delivered in order to allow re-ordering the others later
-            foreach (var t in allowedTypes)
-            {
-                if (t.MessageType.FullName == typeof(ConnectionRequestMessage).FullName ||
-                    t.MessageType.FullName == typeof(ConnectionApprovedMessage).FullName)
-                {
-                    prioritizedTypes.Add(t);
-                }
-            }
-
-            foreach (var t in allowedTypes)
-            {
-                if (t.MessageType.FullName != typeof(ConnectionRequestMessage).FullName &&
-                    t.MessageType.FullName != typeof(ConnectionApprovedMessage).FullName)
-                {
-                    prioritizedTypes.Add(t);
-                }
-            }
-
-            return prioritizedTypes;
-        }
-
         public NetworkMessageManager(INetworkMessageSender sender, object owner, INetworkMessageProvider provider = null)
         {
             try
             {
                 m_Sender = sender;
                 m_Owner = owner;
-
                 if (provider == null)
                 {
                     provider = new ILPPMessageProvider();
                 }
 
+                // Get the presorted message types returned by the provider
                 var allowedTypes = provider.GetMessages();
 
-                allowedTypes.Sort((a, b) => string.CompareOrdinal(a.MessageType.FullName, b.MessageType.FullName));
-                allowedTypes = PrioritizeMessageOrder(allowedTypes);
                 foreach (var type in allowedTypes)
                 {
                     RegisterMessageType(type);
                 }
+
+#if UNITY_EDITOR
+                if (EnableMessageOrderConsoleLog)
+                {
+                    // DANGO-TODO: Remove this when we have some form of message type indices stability in place
+                    // For now, just log the messages and their assigned types for reference purposes.
+                    var networkManager = m_Owner as NetworkManager;
+                    if (networkManager != null)
+                    {
+                        if (networkManager.DistributedAuthorityMode)
+                        {
+                            var messageListing = new StringBuilder();
+                            messageListing.AppendLine("NGO Message Index to Type Listing:");
+                            foreach (var message in m_MessageTypes)
+                            {
+                                messageListing.AppendLine($"[{message.Value}][{message.Key.Name}]");
+                            }
+                            Debug.Log(messageListing);
+                        }
+                    }
+                }
+#endif
             }
             catch (Exception)
             {
@@ -174,6 +170,8 @@ namespace Unity.Netcode
                 throw;
             }
         }
+
+        internal static bool EnableMessageOrderConsoleLog = false;
 
         public void Dispose()
         {
@@ -529,6 +527,7 @@ namespace Unity.Netcode
             return new T().Version;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal int GetMessageVersion(Type type, ulong clientId, bool forReceive = false)
         {
             if (!m_PerClientMessageVersions.TryGetValue(clientId, out var versionMap))
@@ -556,16 +555,20 @@ namespace Unity.Netcode
             return messageVersion;
         }
 
+
+
         public static void ReceiveMessage<T>(FastBufferReader reader, ref NetworkContext context, NetworkMessageManager manager) where T : INetworkMessage, new()
         {
+            var messageType = typeof(T);
             var message = new T();
             var messageVersion = 0;
+
             // Special cases because these are the messages that carry the version info - thus the version info isn't
             // populated yet when we get these. The first part of these messages always has to be the version data
             // and can't change.
-            if (typeof(T) != typeof(ConnectionRequestMessage) && typeof(T) != typeof(ConnectionApprovedMessage) && typeof(T) != typeof(DisconnectReasonMessage) && context.SenderId != manager.m_LocalClientId)
+            if (messageType != s_ConnectionRequestType && messageType != s_ConnectionApprovedType && messageType != s_DisconnectReasonType && context.SenderId != manager.m_LocalClientId)
             {
-                messageVersion = manager.GetMessageVersion(typeof(T), context.SenderId, true);
+                messageVersion = manager.GetMessageVersion(messageType, context.SenderId, true);
                 if (messageVersion < 0)
                 {
                     return;
@@ -617,7 +620,7 @@ namespace Unity.Netcode
                 var messageVersion = 0;
                 // Special case because this is the message that carries the version info - thus the version info isn't populated yet when we get this.
                 // The first part of this message always has to be the version data and can't change.
-                if (typeof(TMessageType) != typeof(ConnectionRequestMessage))
+                if (typeof(TMessageType) != s_ConnectionRequestType)
                 {
                     messageVersion = GetMessageVersion(typeof(TMessageType), clientIds[i]);
                     if (messageVersion < 0)
@@ -671,7 +674,7 @@ namespace Unity.Netcode
 
                 // Special case because this is the message that carries the version info - thus the version info isn't populated yet when we get this.
                 // The first part of this message always has to be the version data and can't change.
-                if (typeof(TMessageType) != typeof(ConnectionRequestMessage))
+                if (typeof(TMessageType) != s_ConnectionRequestType)
                 {
                     var messageVersion = GetMessageVersion(typeof(TMessageType), clientIds[i]);
                     if (messageVersion < 0)
@@ -755,7 +758,7 @@ namespace Unity.Netcode
             // Special case because this is the message that carries the version info - thus the version info isn't
             // populated yet when we get this. The first part of this message always has to be the version data
             // and can't change.
-            if (typeof(TMessageType) != typeof(ConnectionRequestMessage))
+            if (typeof(TMessageType) != s_ConnectionRequestType)
             {
                 messageVersion = GetMessageVersion(typeof(TMessageType), clientId);
                 if (messageVersion < 0)
@@ -827,7 +830,11 @@ namespace Unity.Netcode
         internal unsafe int SendMessage<T>(ref T message, NetworkDelivery delivery, in NativeList<ulong> clientIds)
             where T : INetworkMessage
         {
+#if UTP_TRANSPORT_2_0_ABOVE
+            return SendMessage(ref message, delivery, new PointerListWrapper<ulong>(clientIds.GetUnsafePtr(), clientIds.Length));
+#else
             return SendMessage(ref message, delivery, new PointerListWrapper<ulong>((ulong*)clientIds.GetUnsafePtr(), clientIds.Length));
+#endif
         }
 
         internal unsafe void ProcessSendQueues()

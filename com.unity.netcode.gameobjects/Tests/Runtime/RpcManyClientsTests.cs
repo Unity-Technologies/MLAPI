@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class RpcManyClientsObject : NetworkBehaviour
+    internal class RpcManyClientsObject : NetworkBehaviour
     {
         public int Count = 0;
         public List<ulong> ReceivedFrom = new List<ulong>();
@@ -43,7 +43,7 @@ namespace Unity.Netcode.RuntimeTests
         }
     }
 
-    public class RpcManyClientsTests : NetcodeIntegrationTest
+    internal class RpcManyClientsTests : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 10;
 

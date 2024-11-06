@@ -7,7 +7,7 @@ using Random = System.Random;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class FastBufferReaderTests : BaseFastBufferReaderWriterTest
+    internal class FastBufferReaderTests : BaseFastBufferReaderWriterTest
     {
         private void WriteCheckBytes(FastBufferWriter writer, int writeSize, string failMessage = "")
         {

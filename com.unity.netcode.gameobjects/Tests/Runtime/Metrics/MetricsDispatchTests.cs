@@ -8,7 +8,7 @@ using Unity.Netcode.TestHelpers.Runtime;
 
 namespace Unity.Netcode.RuntimeTests.Metrics
 {
-    public class MetricsDispatchTests
+    internal class MetricsDispatchTests
     {
         private int m_NbDispatches;
 

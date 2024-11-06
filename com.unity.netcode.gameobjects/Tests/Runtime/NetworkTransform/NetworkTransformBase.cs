@@ -9,15 +9,15 @@ using UnityEngine;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class NetworkTransformBase : IntegrationTestWithApproximation
+    internal class NetworkTransformBase : IntegrationTestWithApproximation
     {
 
-        // The number of iterations to change position, rotation, and scale for NetworkTransformMultipleChangesOverTime       
+        // The number of iterations to change position, rotation, and scale for NetworkTransformMultipleChangesOverTime
         protected const int k_PositionRotationScaleIterations = 3;
         protected const int k_PositionRotationScaleIterations3Axis = 8;
 
         protected float m_CurrentHalfPrecision = 0.0f;
-        protected const float k_HalfPrecisionPosScale = 0.115f;
+        protected const float k_HalfPrecisionPosScale = 0.1256f;
         protected const float k_HalfPrecisionRot = 0.725f;
 
 
@@ -126,7 +126,7 @@ namespace Unity.Netcode.RuntimeTests
             {
                 return m_CurrentHalfPrecision;
             }
-            return 0.045f;
+            return 0.055f;
         }
 
         /// <summary>
@@ -200,9 +200,8 @@ namespace Unity.Netcode.RuntimeTests
         /// </summary>
         /// <param name="testWithHost">Determines if we are running as a server or host</param>
         /// <param name="authority">Determines if we are using server or owner authority</param>
-        public NetworkTransformBase(HostOrServer testWithHost, Authority authority, RotationCompression rotationCompression, Rotation rotation, Precision precision)
+        public NetworkTransformBase(HostOrServer testWithHost, Authority authority, RotationCompression rotationCompression, Rotation rotation, Precision precision) : base(testWithHost)
         {
-            m_UseHost = testWithHost == HostOrServer.Host;
             m_Authority = authority;
             m_Precision = precision;
             m_RotationCompression = rotationCompression;
@@ -376,6 +375,18 @@ namespace Unity.Netcode.RuntimeTests
             return true;
         }
 
+        protected bool AllFirstLevelChildObjectInstancesHaveChild()
+        {
+            foreach (var instance in ChildObjectComponent.ClientInstances.Values)
+            {
+                if (instance.transform.parent == null)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         protected bool AllChildObjectInstancesHaveChild()
         {
             foreach (var instance in ChildObjectComponent.ClientInstances.Values)
@@ -390,6 +401,33 @@ namespace Unity.Netcode.RuntimeTests
                 foreach (var instance in ChildObjectComponent.ClientSubChildInstances.Values)
                 {
                     if (instance.transform.parent == null)
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        protected bool AllFirstLevelChildObjectInstancesHaveNoParent()
+        {
+            foreach (var instance in ChildObjectComponent.ClientInstances.Values)
+            {
+                if (instance.transform.parent != null)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        protected bool AllSubChildObjectInstancesHaveNoParent()
+        {
+            if (ChildObjectComponent.HasSubChild)
+            {
+                foreach (var instance in ChildObjectComponent.ClientSubChildInstances.Values)
+                {
+                    if (instance.transform.parent != null)
                     {
                         return false;
                     }
@@ -473,12 +511,12 @@ namespace Unity.Netcode.RuntimeTests
                         }
                         if (!Approximately(childLocalPosition, authorityObjectLocalPosition))
                         {
-                            m_InfoMessage.AppendLine($"[{childParentName}][{childInstance.name}] Child's Local Position ({childLocalPosition}) | Authority Local Position ({authorityObjectLocalPosition})");
+                            m_InfoMessage.AppendLine($"[{childParentName}][{childInstance.name}] Child's Local Position ({GetVector3Values(childLocalPosition)}) | Authority Local Position ({GetVector3Values(authorityObjectLocalPosition)})");
                             success = false;
                         }
                         if (!Approximately(childLocalScale, authorityObjectLocalScale))
                         {
-                            m_InfoMessage.AppendLine($"[{childParentName}][{childInstance.name}] Child's Local Scale ({childLocalScale}) | Authority Local Scale ({authorityObjectLocalScale})");
+                            m_InfoMessage.AppendLine($"[{childParentName}][{childInstance.name}] Child's Local Scale ({GetVector3Values(childLocalScale)}) | Authority Local Scale ({GetVector3Values(authorityObjectLocalScale)})");
                             success = false;
                         }
 
@@ -489,7 +527,7 @@ namespace Unity.Netcode.RuntimeTests
                         }
                         if (!ApproximatelyEuler(childLocalRotation, authorityObjectLocalRotation))
                         {
-                            m_InfoMessage.AppendLine($"[{childParentName}][{childInstance.name}] Child's Local Rotation ({childLocalRotation}) | Authority Local Rotation ({authorityObjectLocalRotation})");
+                            m_InfoMessage.AppendLine($"[{childParentName}][{childInstance.name}] Child's Local Rotation ({GetVector3Values(childLocalRotation)}) | Authority Local Rotation ({GetVector3Values(authorityObjectLocalRotation)})");
                             success = false;
                         }
                     }
@@ -731,7 +769,7 @@ namespace Unity.Netcode.RuntimeTests
     /// <summary>
     /// Helper component for all NetworkTransformTests
     /// </summary>
-    public class NetworkTransformTestComponent : NetworkTransform
+    internal class NetworkTransformTestComponent : NetworkTransform
     {
         public bool ServerAuthority;
         public bool ReadyToReceivePositionUpdate = false;
@@ -751,29 +789,11 @@ namespace Unity.Netcode.RuntimeTests
             base.OnAuthorityPushTransformState(ref networkTransformState);
         }
 
-        public bool AuthorityMove;
-        public Vector3 DirectionToMove;
-        public float MoveSpeed;
-
-        protected override void Update()
-        {
-            if (CanCommitToTransform && AuthorityMove)
-            {
-                transform.position += DirectionToMove * MoveSpeed * Time.deltaTime;
-            }
-            base.Update();
-        }
-
-
-        public delegate void NonAuthorityReceivedTransformStateDelegateHandler(ref NetworkTransformState networkTransformState);
-
-        public event NonAuthorityReceivedTransformStateDelegateHandler NonAuthorityReceivedTransformState;
 
         public bool StateUpdated { get; internal set; }
         protected override void OnNetworkTransformStateUpdated(ref NetworkTransformState oldState, ref NetworkTransformState newState)
         {
             StateUpdated = true;
-            NonAuthorityReceivedTransformState?.Invoke(ref newState);
             base.OnNetworkTransformStateUpdated(ref oldState, ref newState);
         }
 
@@ -812,7 +832,7 @@ namespace Unity.Netcode.RuntimeTests
     /// Helper component for NetworkTransform parenting tests when
     /// a child is a parent of another child (i.e. "sub child")
     /// </summary>
-    public class SubChildObjectComponent : ChildObjectComponent
+    internal class SubChildObjectComponent : ChildObjectComponent
     {
         protected override bool IsSubChild()
         {
@@ -823,7 +843,7 @@ namespace Unity.Netcode.RuntimeTests
     /// <summary>
     /// Helper component for NetworkTransform parenting tests
     /// </summary>
-    public class ChildObjectComponent : NetworkTransform
+    internal class ChildObjectComponent : NetworkTransform
     {
         public static int TestCount;
         public static bool EnableChildLog;

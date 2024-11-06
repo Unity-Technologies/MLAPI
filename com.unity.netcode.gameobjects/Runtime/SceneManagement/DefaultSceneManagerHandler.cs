@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
+using TrollKing.Core;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.AsyncOperations;
+using UnityEngine.ResourceManagement.ResourceProviders;
 using UnityEngine.SceneManagement;
 
 
@@ -11,6 +15,8 @@ namespace Unity.Netcode
     /// </summary>
     internal class DefaultSceneManagerHandler : ISceneManagerHandler
     {
+        private static NetworkLogScope s_Log = new NetworkLogScope(nameof(DefaultSceneManagerHandler));
+
         private Scene m_InvalidScene = new Scene();
 
         internal struct SceneEntry
@@ -18,21 +24,59 @@ namespace Unity.Netcode
             public bool IsAssigned;
             public Scene Scene;
         }
+        public bool IsIntegrationTest() { return false; }
 
         internal Dictionary<string, Dictionary<int, SceneEntry>> SceneNameToSceneHandles = new Dictionary<string, Dictionary<int, SceneEntry>>();
 
-        public AsyncOperation LoadSceneAsync(string sceneName, LoadSceneMode loadSceneMode, SceneEventProgress sceneEventProgress)
+        public AsyncOperationHandle<SceneInstance> LoadSceneAsync(string sceneName, LoadSceneMode loadSceneMode, SceneEventProgress sceneEventProgress)
         {
-            var operation = SceneManager.LoadSceneAsync(sceneName, loadSceneMode);
-            sceneEventProgress.SetAsyncOperation(operation);
+            s_Log.Info(() => $"Loading scene '{sceneName}'...");
+            AsyncOperationHandle<SceneInstance> operation = default;
+            if (loadSceneMode == LoadSceneMode.Single)
+            {
+                operation = Addressables.LoadSceneAsync(sceneName, LoadSceneMode.Additive, false);
+                // Handle the async load
+                operation.Completed += handle =>
+                {
+                    var sceneInstance = handle.Result;
+                    var current = SceneManager.GetActiveScene();
+                    var async = sceneInstance.ActivateAsync();
+                    async.completed += asyncOperation =>
+                    {
+                        var scene = sceneInstance.Scene;
+                        SceneManager.SetActiveScene(scene);
+                        SceneManager.UnloadSceneAsync(current);
+                    };
+
+                };
+                sceneEventProgress.SetAsyncOperation(operation);
+            }
+            else
+            {
+                operation = Addressables.LoadSceneAsync(sceneName, loadSceneMode);
+                sceneEventProgress.SetAsyncOperation(operation);
+            }
+
             return operation;
         }
 
-        public AsyncOperation UnloadSceneAsync(Scene scene, SceneEventProgress sceneEventProgress)
+        public AsyncOperationHandle<SceneInstance> UnloadSceneAsync(NetworkSceneManager.SceneData scene, SceneEventProgress sceneEventProgress)
         {
-            var operation = SceneManager.UnloadSceneAsync(scene);
-            sceneEventProgress.SetAsyncOperation(operation);
-            return operation;
+            if (scene.SceneInstance.HasValue)
+            {
+                var operation = Addressables.UnloadSceneAsync(scene.SceneInstance.Value);
+                sceneEventProgress.SetAsyncOperation(operation);
+                return operation;
+            }
+            else
+            {
+                s_Log.Error(() => $"Unloaded a scene that wasn't loaded with addressables '{scene.SceneInstance}'");
+                var unloadOp = SceneManager.UnloadSceneAsync(scene.SceneReference);
+                AsyncOperationHandle<SceneInstance> operation = default;
+                sceneEventProgress.SetAsyncOperation(operation);
+                return operation;
+            }
+
         }
 
         /// <summary>
@@ -167,8 +211,9 @@ namespace Unity.Netcode
         /// same application instance is still running, the same scenes are still loaded on the client, and
         /// upon reconnecting the client doesn't have to unload the scenes and then reload them)
         /// </summary>
-        public void PopulateLoadedScenes(ref Dictionary<int, Scene> scenesLoaded, NetworkManager networkManager)
+        public void PopulateLoadedScenes(ref Dictionary<int, NetworkSceneManager.SceneData> scenesLoaded, NetworkManager networkManager)
         {
+            Debug.LogError($"PopulateLoadedScenes START");
             SceneNameToSceneHandles.Clear();
             var sceneCount = SceneManager.sceneCount;
             for (int i = 0; i < sceneCount; i++)
@@ -189,7 +234,7 @@ namespace Unity.Netcode
                     SceneNameToSceneHandles[scene.name].Add(scene.handle, sceneEntry);
                     if (!scenesLoaded.ContainsKey(scene.handle))
                     {
-                        scenesLoaded.Add(scene.handle, scene);
+                        scenesLoaded.Add(scene.handle, new NetworkSceneManager.SceneData(null, scene));
                     }
                 }
                 else
@@ -197,6 +242,7 @@ namespace Unity.Netcode
                     throw new Exception($"[Duplicate Handle] Scene {scene.name} already has scene handle {scene.handle} registered!");
                 }
             }
+            Debug.LogError($"PopulateLoadedScenes END");
         }
 
         private List<Scene> m_ScenesToUnload = new List<Scene>();
@@ -332,8 +378,9 @@ namespace Unity.Netcode
         public void SetClientSynchronizationMode(ref NetworkManager networkManager, LoadSceneMode mode)
         {
             var sceneManager = networkManager.SceneManager;
-            // Don't let client's set this value
-            if (!networkManager.IsServer)
+            // In client-server, we don't let client's set this value.
+            // In distributed authority, since session owner can be promoted clients can set this value
+            if (!networkManager.DistributedAuthorityMode && !networkManager.IsServer)
             {
                 if (NetworkLog.CurrentLogLevel <= LogLevel.Normal)
                 {
@@ -342,7 +389,7 @@ namespace Unity.Netcode
                 return;
             }
             else // Warn users if they are changing this after there are clients already connected and synchronized
-            if (networkManager.ConnectedClientsIds.Count > (networkManager.IsHost ? 1 : 0) && sceneManager.ClientSynchronizationMode != mode)
+            if (!networkManager.DistributedAuthorityMode && networkManager.ConnectedClientsIds.Count > (networkManager.IsHost ? 1 : 0) && sceneManager.ClientSynchronizationMode != mode)
             {
                 if (NetworkLog.CurrentLogLevel <= LogLevel.Normal)
                 {
@@ -371,7 +418,7 @@ namespace Unity.Netcode
                     // If the scene is not already in the ScenesLoaded list, then add it
                     if (!sceneManager.ScenesLoaded.ContainsKey(scene.handle))
                     {
-                        sceneManager.ScenesLoaded.Add(scene.handle, scene);
+                        sceneManager.ScenesLoaded.Add(scene.handle, new NetworkSceneManager.SceneData(null, scene));
                     }
                 }
             }

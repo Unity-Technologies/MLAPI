@@ -2,7 +2,7 @@ namespace Unity.Netcode
 {
     internal class ServerRpcTarget : BaseRpcTarget
     {
-        private BaseRpcTarget m_UnderlyingTarget;
+        protected BaseRpcTarget m_UnderlyingTarget;
 
         public override void Dispose()
         {
@@ -15,6 +15,12 @@ namespace Unity.Netcode
 
         internal override void Send(NetworkBehaviour behaviour, ref RpcMessage message, NetworkDelivery delivery, RpcParams rpcParams)
         {
+            if (behaviour.NetworkManager.DistributedAuthorityMode && behaviour.NetworkManager.CMBServiceConnection)
+            {
+                UnityEngine.Debug.LogWarning("[Invalid Target] There is no server to send to when in Distributed Authority mode!");
+                return;
+            }
+
             if (m_UnderlyingTarget == null)
             {
                 if (behaviour.NetworkManager.IsServer)

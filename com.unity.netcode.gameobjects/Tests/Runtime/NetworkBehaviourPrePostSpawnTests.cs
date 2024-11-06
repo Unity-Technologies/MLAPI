@@ -6,13 +6,17 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class NetworkBehaviourPrePostSpawnTests : NetcodeIntegrationTest
+    [TestFixture(HostOrServer.Host)]
+    [TestFixture(HostOrServer.DAHost)]
+    internal class NetworkBehaviourPrePostSpawnTests : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 0;
 
         private bool m_AllowServerToStart;
 
         private GameObject m_PrePostSpawnObject;
+
+        public NetworkBehaviourPrePostSpawnTests(HostOrServer hostOrServer) : base(hostOrServer) { }
 
         protected override void OnServerAndClientsCreated()
         {
@@ -23,7 +27,7 @@ namespace Unity.Netcode.RuntimeTests
             base.OnServerAndClientsCreated();
         }
 
-        public class NetworkBehaviourPreSpawn : NetworkBehaviour
+        internal class NetworkBehaviourPreSpawn : NetworkBehaviour
         {
             public static int ValueToSet;
             public bool OnNetworkPreSpawnCalled;
@@ -36,6 +40,7 @@ namespace Unity.Netcode.RuntimeTests
                 OnNetworkPreSpawnCalled = true;
                 // If we are the server, then set the randomly generated value (1-200).
                 // Otherwise, just set the value to 0.
+                // TODO: Make adjustments when integrated CMB service testing is added
                 var val = networkManager.IsServer ? ValueToSet : 0;
                 // Instantiate the NetworkVariable as everyone read & owner write while also setting the value
                 TestNetworkVariable = new NetworkVariable<int>(val, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
@@ -50,7 +55,7 @@ namespace Unity.Netcode.RuntimeTests
             }
         }
 
-        public class NetworkBehaviourPostSpawn : NetworkBehaviour
+        internal class NetworkBehaviourPostSpawn : NetworkBehaviour
         {
             public bool OnNetworkPostSpawnCalled;
 
@@ -109,28 +114,29 @@ namespace Unity.Netcode.RuntimeTests
             yield return CreateAndStartNewClient();
 
             // Spawn the object with the newly joined client as the owner
-            var serverInstance = SpawnObject(m_PrePostSpawnObject, m_ClientNetworkManagers[0]);
-            var serverNetworkObject = serverInstance.GetComponent<NetworkObject>();
-            var serverPreSpawn = serverInstance.GetComponent<NetworkBehaviourPreSpawn>();
-            var serverPostSpawn = serverInstance.GetComponent<NetworkBehaviourPostSpawn>();
+            var networkManager = m_DistributedAuthority ? m_ServerNetworkManager : m_ClientNetworkManagers[0];
+            var authorityInstance = SpawnObject(m_PrePostSpawnObject, networkManager);
+            var authorityNetworkObject = authorityInstance.GetComponent<NetworkObject>();
+            var authorityPreSpawn = authorityInstance.GetComponent<NetworkBehaviourPreSpawn>();
+            var authorityPostSpawn = authorityInstance.GetComponent<NetworkBehaviourPostSpawn>();
 
             yield return WaitForConditionOrTimeOut(() => s_GlobalNetworkObjects.ContainsKey(m_ClientNetworkManagers[0].LocalClientId)
-            && s_GlobalNetworkObjects[m_ClientNetworkManagers[0].LocalClientId].ContainsKey(serverNetworkObject.NetworkObjectId));
-            AssertOnTimeout($"Client-{m_ClientNetworkManagers[0].LocalClientId} failed to spawn {nameof(NetworkObject)} id-{serverNetworkObject.NetworkObjectId}!");
+            && s_GlobalNetworkObjects[m_ClientNetworkManagers[0].LocalClientId].ContainsKey(authorityNetworkObject.NetworkObjectId));
+            AssertOnTimeout($"Client-{m_ClientNetworkManagers[0].LocalClientId} failed to spawn {nameof(NetworkObject)} id-{authorityNetworkObject.NetworkObjectId}!");
 
-            var clientNetworkObject = s_GlobalNetworkObjects[m_ClientNetworkManagers[0].LocalClientId][serverNetworkObject.NetworkObjectId];
+            var clientNetworkObject = s_GlobalNetworkObjects[m_ClientNetworkManagers[0].LocalClientId][authorityNetworkObject.NetworkObjectId];
             var clientPreSpawn = clientNetworkObject.GetComponent<NetworkBehaviourPreSpawn>();
             var clientPostSpawn = clientNetworkObject.GetComponent<NetworkBehaviourPostSpawn>();
 
-            Assert.IsTrue(serverPreSpawn.OnNetworkPreSpawnCalled, $"[Server-side] OnNetworkPreSpawn not invoked!");
+            Assert.IsTrue(authorityPreSpawn.OnNetworkPreSpawnCalled, $"[Authority-side] OnNetworkPreSpawn not invoked!");
             Assert.IsTrue(clientPreSpawn.OnNetworkPreSpawnCalled, $"[Client-side] OnNetworkPreSpawn not invoked!");
-            Assert.IsTrue(serverPostSpawn.OnNetworkPostSpawnCalled, $"[Server-side] OnNetworkPostSpawn not invoked!");
+            Assert.IsTrue(authorityPostSpawn.OnNetworkPostSpawnCalled, $"[Authority-side] OnNetworkPostSpawn not invoked!");
             Assert.IsTrue(clientPostSpawn.OnNetworkPostSpawnCalled, $"[Client-side] OnNetworkPostSpawn not invoked!");
 
-            Assert.IsTrue(serverPreSpawn.NetworkVarValueMatches, $"[Server-side][PreSpawn] Value {NetworkBehaviourPreSpawn.ValueToSet} does not match {serverPreSpawn.TestNetworkVariable.Value}!");
+            Assert.IsTrue(authorityPreSpawn.NetworkVarValueMatches, $"[Authority-side][PreSpawn] Value {NetworkBehaviourPreSpawn.ValueToSet} does not match {authorityPreSpawn.TestNetworkVariable.Value}!");
             Assert.IsTrue(clientPreSpawn.NetworkVarValueMatches, $"[Client-side][PreSpawn] Value {NetworkBehaviourPreSpawn.ValueToSet} does not match {clientPreSpawn.TestNetworkVariable.Value}!");
 
-            Assert.IsTrue(serverPostSpawn.ValueSet == NetworkBehaviourPreSpawn.ValueToSet, $"[Server-side][PostSpawn] Value {NetworkBehaviourPreSpawn.ValueToSet} does not match {serverPostSpawn.ValueSet}!");
+            Assert.IsTrue(authorityPostSpawn.ValueSet == NetworkBehaviourPreSpawn.ValueToSet, $"[Authority-side][PostSpawn] Value {NetworkBehaviourPreSpawn.ValueToSet} does not match {authorityPostSpawn.ValueSet}!");
             Assert.IsTrue(clientPostSpawn.ValueSet == NetworkBehaviourPreSpawn.ValueToSet, $"[Client-side][PostSpawn] Value {NetworkBehaviourPreSpawn.ValueToSet} does not match {clientPostSpawn.ValueSet}!");
         }
     }

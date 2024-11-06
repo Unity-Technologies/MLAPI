@@ -4,7 +4,7 @@ using Unity.Collections;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class BitReaderTests
+    internal class BitReaderTests
     {
         [Test]
         public void TestReadingOneBit()

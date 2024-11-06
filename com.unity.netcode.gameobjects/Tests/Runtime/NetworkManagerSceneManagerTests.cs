@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class NetworkManagerSceneManagerTests
+    internal class NetworkManagerSceneManagerTests
     {
         [Test]
         public void SceneManagerAssigned()

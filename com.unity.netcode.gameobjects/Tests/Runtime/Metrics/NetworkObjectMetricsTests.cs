@@ -73,20 +73,18 @@ namespace Unity.Netcode.RuntimeTests.Metrics
         [UnityTest]
         public IEnumerator TrackNetworkObjectDestroySentMetric()
         {
-            var networkObject = SpawnNetworkObject();
-
-            yield return s_DefaultWaitForTick;
-
             var waitForMetricEvent = new WaitForEventMetricValues<ObjectDestroyedEvent>(ServerMetrics.Dispatcher, NetworkMetricTypes.ObjectDestroyedSent);
+            var networkObject = SpawnNetworkObject();
             var objectName = networkObject.name;
 
             Server.SpawnManager.OnDespawnObject(networkObject, true);
 
-            yield return s_DefaultWaitForTick;
+            // Wait for the metric to be received
             yield return waitForMetricEvent.WaitForMetricsReceived();
-
             var objectDestroyedSentMetricValues = waitForMetricEvent.AssertMetricValuesHaveBeenFound();
-            Assert.AreEqual(2, objectDestroyedSentMetricValues.Count);
+
+            // The server should have sent 1 destroy message to the 1 client connected
+            Assert.AreEqual(1, objectDestroyedSentMetricValues.Count);
 
             var objectDestroyed = objectDestroyedSentMetricValues.Last();
             Assert.AreEqual(Client.LocalClientId, objectDestroyed.Connection.Id);
@@ -242,20 +240,47 @@ namespace Unity.Netcode.RuntimeTests.Metrics
         [UnityTest]
         public IEnumerator TrackNetworkObjectCountAfterDespawnOnClient()
         {
-            var objectList = Server.SpawnManager.SpawnedObjectsList;
-            for (int i = objectList.Count - 1; i >= 0; --i)
+            var initialSpawnCount = Server.SpawnManager.SpawnedObjectsList.Count;
+            var spawnedObjects = new List<GameObject>();
+            //By default, we have 2 network objects and will have spawned 4 so we want to wait for metrics to tell us we have 6 spawned objects
+            var waitForGaugeValues = new WaitForGaugeMetricValues(ClientMetrics.Dispatcher, NetworkMetricTypes.NetworkObjects, metric => (int)metric == 6);
+
+            for (int i = 0; i < 4; i++)
             {
-                objectList.ElementAt(i).Despawn();
+                spawnedObjects.Add(SpawnObject(m_NewNetworkPrefab, Server));
             }
 
-            //By default, we have 2 network objects
-            //There's a slight delay between the spawn on the server and the spawn on the client
-            //We want to have metrics when the value is different than the 2 default one to confirm the client has the new value
-            var waitForGaugeValues = new WaitForGaugeMetricValues(ClientMetrics.Dispatcher, NetworkMetricTypes.NetworkObjects, metric => (int)metric != 2);
-
             yield return waitForGaugeValues.WaitForMetricsReceived();
-
             var value = waitForGaugeValues.AssertMetricValueHaveBeenFound();
+            Assert.AreEqual(6, value);
+
+            // Create a new gauge that waits for the initial spawned client count
+            waitForGaugeValues = new WaitForGaugeMetricValues(ClientMetrics.Dispatcher, NetworkMetricTypes.NetworkObjects, metric => (int)metric != 6);
+
+            // Now despawn the 4 spawned objects
+            foreach (var spawnedObject in spawnedObjects)
+            {
+                spawnedObject.GetComponent<NetworkObject>().Despawn();
+            }
+            spawnedObjects.Clear();
+            yield return waitForGaugeValues.WaitForMetricsReceived();
+            value = waitForGaugeValues.AssertMetricValueHaveBeenFound();
+
+            // Validate the value is equals to the spawned objects prior to spawning the network prefab instances
+            Assert.AreEqual(initialSpawnCount, value);
+
+            // Create a new gauge that waits for the initial spawned client count
+            waitForGaugeValues = new WaitForGaugeMetricValues(ClientMetrics.Dispatcher, NetworkMetricTypes.NetworkObjects, metric => (int)metric == 0);
+
+            // Now assure despawning players are being tracked too
+            var spawnedPlayers = Server.SpawnManager.SpawnedObjectsList.ToList();
+            foreach (var spawnedObject in spawnedPlayers)
+            {
+                spawnedObject.Despawn();
+            }
+            yield return waitForGaugeValues.WaitForMetricsReceived();
+            value = waitForGaugeValues.AssertMetricValueHaveBeenFound();
+            // Nothing should be spawned on the client at this point
             Assert.AreEqual(0, value);
         }
 #endif

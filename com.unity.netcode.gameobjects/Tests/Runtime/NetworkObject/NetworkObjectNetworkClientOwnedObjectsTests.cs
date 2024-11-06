@@ -7,7 +7,7 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class NetworkObjectNetworkClientOwnedObjectsTests : NetcodeIntegrationTest
+    internal class NetworkObjectNetworkClientOwnedObjectsTests : NetcodeIntegrationTest
     {
         private class DummyNetworkBehaviour : NetworkBehaviour
         {

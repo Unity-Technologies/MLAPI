@@ -6,7 +6,7 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class NetworkManagerTransportTests
+    internal class NetworkManagerTransportTests
     {
         [Test]
         public void ClientDoesNotStartWhenTransportFails()
@@ -106,7 +106,7 @@ namespace Unity.Netcode.RuntimeTests
         /// <summary>
         /// Does nothing but simulate a transport that can fail at startup and/or when polling events.
         /// </summary>
-        public class FailedTransport : TestingNetworkTransport
+        internal class FailedTransport : TestingNetworkTransport
         {
             public bool FailOnStart = false;
             public bool FailOnNextPoll = false;

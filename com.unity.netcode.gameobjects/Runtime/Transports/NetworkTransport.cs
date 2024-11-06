@@ -106,6 +106,22 @@ namespace Unity.Netcode
         /// </summary>
         /// /// <param name="networkManager">optionally pass in NetworkManager</param>
         public abstract void Initialize(NetworkManager networkManager = null);
+
+        protected virtual NetworkTopologyTypes OnCurrentTopology()
+        {
+            return NetworkTopologyTypes.ClientServer;
+        }
+
+        internal NetworkTopologyTypes CurrentTopology()
+        {
+            return OnCurrentTopology();
+        }
+    }
+
+    public enum NetworkTopologyTypes
+    {
+        ClientServer,
+        DistributedAuthority
     }
 
 #if UNITY_INCLUDE_TESTS

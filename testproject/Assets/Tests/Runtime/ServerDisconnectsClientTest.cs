@@ -8,9 +8,15 @@ using UnityEngine.TestTools;
 
 namespace TestProject.RuntimeTests
 {
+
+    [TestFixture(NetworkTopologyTypes.DistributedAuthority)]
+    [TestFixture(NetworkTopologyTypes.ClientServer)]
     public class ServerDisconnectsClientTest : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 1;
+
+        public ServerDisconnectsClientTest(NetworkTopologyTypes networkTopologyType) : base(networkTopologyType) { }
+
         protected override void OnCreatePlayerPrefab()
         {
             m_PlayerPrefab.AddComponent<ClientSendRpcUponDisconnect>();

@@ -1,0 +1,163 @@
+
+:root {
+    --border-width: 1px;
+    --border-color: #585858;
+    --left-padding-width: 6px;
+    --legend-dimension: 6px;
+    --axis-label-spacing: 0px;
+}
+
+.rnsm-monitor {
+    background-color: #000000;
+    opacity: 0.75;
+    max-width: 250px;
+    position: absolute;
+}
+
+.rnsm-monitor * {
+    color: #D2D2D2;
+}
+
+.rnsm-title {
+    -unity-font-style: bold;
+    font-size: 14px;
+    padding-left: var(--left-padding-width);
+}
+
+.rnsm-display-element {
+    border-top-width: var(--border-width);
+    border-top-color: var(--border-color);
+    padding-left: var(--left-padding-width);
+}
+
+.rnsm-display-element-label {
+    -unity-text-align: middle-left;
+    font-size: 12px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+}
+
+.rnsm-counter {
+    flex-direction: row;
+}
+
+.rnsm-counter-value {
+    flex-grow: 1;
+    -unity-text-align: middle-right;
+    font-size: 11px;
+}
+
+/* Highlight anomalous counter values */
+.rnsm-counter-out-of-bounds * {
+    color: red;
+}
+
+.rnsm-graph {
+    flex-direction: column;
+    flex-grow: 1;
+    padding-bottom: 3px;
+    padding-top: 5px;
+}
+
+.rnsm-graph .rnsm-display-element-label-empty {
+    display: none;
+}
+
+.rnsm-graph-and-y-axis {
+    flex-direction: row;
+}
+
+.rnsm-graph-contents {
+    flex-grow: 1;
+    border-color: var(--border-color);
+    border-width: var(--border-width);
+    padding-top: 0px;
+    padding-bottom: 1px;
+    min-height: 64px;
+    /* Setting both the min and the max provides stronger guarantees on the width */
+    /* than just setting `width`. This is important for graphs, as frequent small */
+    /* changes in the size of the graph can result in frequent reallocations of */
+    /* the graphs buffers (the size of which depends on the size of the graph) */
+    min-width: 196px;
+    max-width: 196px;
+}
+
+.rnsm-graph-axis Label {
+    font-size: 10px;
+    padding-top: var(--axis-label-spacing);
+    padding-bottom: var(--axis-label-spacing);
+}
+
+.rnsm-graph-x-axis {
+    flex-direction: row;
+}
+
+.rnsm-graph-x-axis Label {
+    margin: var(--axis-label-spacing);
+    padding: var(--axis-label-spacing);
+}
+
+.rnsm-graph-x-axis .rnsm-graph-axis-min-value {
+    -unity-text-align: upper-left;
+}
+
+.rnsm-graph-x-axis .rnsm-graph-axis-max-value {
+    flex-grow: 1;
+    -unity-text-align: upper-right;
+}
+
+.rnsm-graph-y-axis {
+    flex-direction: column-reverse;
+}
+
+.rnsm-graph-y-axis Label {
+    min-width: 45px;
+    margin-top: var(--axis-label-spacing);
+    margin-bottom: var(--axis-label-spacing);
+    margin-right: var(--axis-label-spacing);
+    padding: var(--axis-label-spacing);
+}
+
+.rnsm-graph-y-axis .rnsm-graph-axis-max-value {
+    -unity-text-align: upper-left;
+}
+
+.rnsm-graph-y-axis .rnsm-graph-axis-min-value {
+    flex-grow: 1;
+    -unity-text-align: lower-left;
+}
+
+.rnsm-no-data-received-label {
+    font-size: 11px;
+}
+
+.rnsm-graph-legend {
+    flex-wrap: wrap;
+    flex-direction: row;
+    padding-top: 1px;
+}
+
+.rnsm-graph-legendkey {
+    flex-direction: row;
+    height: var(--legend-dimension);
+    margin-top: 3px;
+    margin-bottom: 3px;
+    margin-right: 8px;
+}
+
+.rnsm-graph-legendkey-swatch {
+    width: var(--legend-dimension);
+    height: var(--legend-dimension);
+    flex-shrink: 0;
+}
+
+.rnsm-graph-legendkey-label {
+    flex-shrink: 0;
+    margin-left: 1px;
+    -unity-text-align: middle-center;
+    font-size: 11px;
+    padding: 0px;
+    margin: 2px
+}
+
+›

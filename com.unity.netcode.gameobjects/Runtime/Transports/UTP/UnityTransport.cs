@@ -425,12 +425,38 @@ namespace Unity.Netcode.Transports.UTP
 
         internal static event Action<int, NetworkDriver> TransportInitialized;
         internal static event Action<int> TransportDisposed;
-        internal NetworkDriver NetworkDriver => m_Driver;
+        public NetworkDriver NetworkDriver => m_Driver;
+
+        protected NetworkDriver m_Driver;
+
+        /// <summary>
+        /// Gets a reference to the <see cref="Networking.Transport.NetworkDriver"/>.
+        /// </summary>
+        /// <returns>ref <see cref="Networking.Transport.NetworkDriver"/></returns>
+        public ref NetworkDriver GetNetworkDriver()
+        {
+            return ref m_Driver;
+        }
+
+        /// <summary>
+        /// Gets the local sytem's <see cref="NetworkEndpoint"/> that is assigned for the current network session.
+        /// </summary>
+        /// <remarks>
+        /// If the driver is not created it will return an invalid <see cref="NetworkEndpoint"/>.
+        /// </remarks>
+        /// <returns><see cref="NetworkEndpoint"/></returns>
+        public NetworkEndpoint GetLocalEndpoint()
+        {
+            if (m_Driver.IsCreated)
+            {
+                return m_Driver.GetLocalEndpoint();
+            }
+            return new NetworkEndpoint();
+        }
 
         private PacketLossCache m_PacketLossCache = new PacketLossCache();
 
         private State m_State = State.Disconnected;
-        private NetworkDriver m_Driver;
         private NetworkSettings m_NetworkSettings;
         private ulong m_ServerClientId;
 
@@ -450,7 +476,10 @@ namespace Unity.Netcode.Transports.UTP
 
         private RelayServerData m_RelayServerData;
 
-        internal NetworkManager NetworkManager;
+        /// <summary>
+        /// NetworkManager associated to this transport instance
+        /// </summary>
+        protected NetworkManager m_NetworkManager;
 
         private IRealTimeProvider m_RealTimeProvider;
 
@@ -555,10 +584,15 @@ namespace Unity.Netcode.Transports.UTP
                 return false;
             }
 
-            var serverConnection = m_Driver.Connect(serverEndpoint);
+            var serverConnection = Connect(serverEndpoint);
             m_ServerClientId = ParseClientId(serverConnection);
 
             return true;
+        }
+
+        protected virtual NetworkConnection Connect(NetworkEndpoint serverEndpoint)
+        {
+            return m_Driver.Connect(serverEndpoint);
         }
 
         private bool ServerBindAndListen(NetworkEndpoint endPoint)
@@ -790,10 +824,10 @@ namespace Unity.Netcode.Transports.UTP
             }
 
             var mtu = 0;
-            if (NetworkManager)
+            if (m_NetworkManager)
             {
-                var ngoClientId = NetworkManager.ConnectionManager.TransportIdToClientId(sendTarget.ClientId);
-                mtu = NetworkManager.GetPeerMTU(ngoClientId);
+                var ngoClientId = m_NetworkManager.ConnectionManager.TransportIdToClientId(sendTarget.ClientId);
+                mtu = m_NetworkManager.GetPeerMTU(ngoClientId);
             }
 
             new SendBatchedMessagesJob
@@ -942,7 +976,7 @@ namespace Unity.Netcode.Transports.UTP
                 }
 
 #if MULTIPLAYER_TOOLS_1_0_0_PRE_7
-                if (NetworkManager)
+                if (m_NetworkManager)
                 {
                     ExtractNetworkMetrics();
                 }
@@ -958,16 +992,16 @@ namespace Unity.Netcode.Transports.UTP
 #if MULTIPLAYER_TOOLS_1_0_0_PRE_7
         private void ExtractNetworkMetrics()
         {
-            if (NetworkManager.IsServer)
+            if (m_NetworkManager.IsServer)
             {
-                var ngoConnectionIds = NetworkManager.ConnectedClients.Keys;
+                var ngoConnectionIds = m_NetworkManager.ConnectedClients.Keys;
                 foreach (var ngoConnectionId in ngoConnectionIds)
                 {
-                    if (ngoConnectionId == 0 && NetworkManager.IsHost)
+                    if (ngoConnectionId == 0 && m_NetworkManager.IsHost)
                     {
                         continue;
                     }
-                    var transportClientId = NetworkManager.ConnectionManager.ClientIdToTransportId(ngoConnectionId);
+                    var transportClientId = m_NetworkManager.ConnectionManager.ClientIdToTransportId(ngoConnectionId);
                     ExtractNetworkMetricsForClient(transportClientId);
                 }
             }
@@ -987,10 +1021,10 @@ namespace Unity.Netcode.Transports.UTP
             ExtractNetworkMetricsFromPipeline(m_UnreliableSequencedFragmentedPipeline, networkConnection);
             ExtractNetworkMetricsFromPipeline(m_ReliableSequencedPipeline, networkConnection);
 
-            var rttValue = NetworkManager.IsServer ? 0 : ExtractRtt(networkConnection);
+            var rttValue = m_NetworkManager.IsServer ? 0 : ExtractRtt(networkConnection);
             NetworkMetrics.UpdateRttToServer(rttValue);
 
-            var packetLoss = NetworkManager.IsServer ? 0 : ExtractPacketLoss(networkConnection);
+            var packetLoss = m_NetworkManager.IsServer ? 0 : ExtractPacketLoss(networkConnection);
             NetworkMetrics.UpdatePacketLoss(packetLoss);
         }
 
@@ -1194,9 +1228,9 @@ namespace Unity.Netcode.Transports.UTP
             // use the transport client ID) or from a user (which will be using the NGO client ID).
             // So we just try both cases (ExtractRtt returns 0 for invalid connections).
 
-            if (NetworkManager != null)
+            if (m_NetworkManager != null)
             {
-                var transportId = NetworkManager.ConnectionManager.ClientIdToTransportId(clientId);
+                var transportId = m_NetworkManager.ConnectionManager.ClientIdToTransportId(clientId);
 
                 var rtt = ExtractRtt(ParseClientId(transportId));
                 if (rtt > 0)
@@ -1216,14 +1250,14 @@ namespace Unity.Netcode.Transports.UTP
         {
             Debug.Assert(sizeof(ulong) == UnsafeUtility.SizeOf<NetworkConnection>(), "Netcode connection id size does not match UTP connection id size");
 
-            NetworkManager = networkManager;
+            m_NetworkManager = networkManager;
 
-            if (NetworkManager && NetworkManager.PortOverride.Overidden)
+            if (m_NetworkManager && m_NetworkManager.PortOverride.Overidden)
             {
-                ConnectionData.Port = NetworkManager.PortOverride.Value;
+                ConnectionData.Port = m_NetworkManager.PortOverride.Value;
             }
 
-            m_RealTimeProvider = NetworkManager ? NetworkManager.RealTimeProvider : new RealTimeProvider();
+            m_RealTimeProvider = m_NetworkManager ? m_NetworkManager.RealTimeProvider : new RealTimeProvider();
 
             m_NetworkSettings = new NetworkSettings(Allocator.Persistent);
 
@@ -1317,7 +1351,7 @@ namespace Unity.Netcode.Transports.UTP
                     // provide any reliability guarantees anymore. Disconnect the client since at
                     // this point they're bound to become desynchronized.
 
-                    var ngoClientId = NetworkManager?.ConnectionManager.TransportIdToClientId(clientId) ?? clientId;
+                    var ngoClientId = m_NetworkManager?.ConnectionManager.TransportIdToClientId(clientId) ?? clientId;
                     Debug.LogError($"Couldn't add payload of size {payload.Count} to reliable send queue. " +
                         $"Closing connection {ngoClientId} as reliability guarantees can't be maintained.");
 
@@ -1472,6 +1506,11 @@ namespace Unity.Netcode.Transports.UTP
         }
 #endif
 
+        protected override NetworkTopologyTypes OnCurrentTopology()
+        {
+            return m_NetworkManager != null ? m_NetworkManager.NetworkConfig.NetworkTopology : NetworkTopologyTypes.ClientServer;
+        }
+
         private string m_ServerPrivateKey;
         private string m_ServerCertificate;
 
@@ -1545,7 +1584,7 @@ namespace Unity.Netcode.Transports.UTP
                 heartbeatTimeoutMS: transport.m_HeartbeatTimeoutMS);
 
 #if UNITY_WEBGL && !UNITY_EDITOR
-            if (NetworkManager.IsServer && m_ProtocolType != ProtocolType.RelayUnityTransport)
+            if (m_NetworkManager.IsServer && m_ProtocolType != ProtocolType.RelayUnityTransport)
             {
                 throw new Exception("WebGL as a server is not supported by Unity Transport, outside the Editor.");
             }
@@ -1567,7 +1606,7 @@ namespace Unity.Netcode.Transports.UTP
                 }
                 else
                 {
-                    if (NetworkManager.IsServer)
+                    if (m_NetworkManager.IsServer)
                     {
                         if (string.IsNullOrEmpty(m_ServerCertificate) || string.IsNullOrEmpty(m_ServerPrivateKey))
                         {

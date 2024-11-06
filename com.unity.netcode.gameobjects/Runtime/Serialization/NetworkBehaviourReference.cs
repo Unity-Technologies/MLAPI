@@ -5,15 +5,14 @@ namespace Unity.Netcode
 {
     /// <summary>
     /// A helper struct for serializing <see cref="NetworkBehaviour"/>s over the network. Can be used in RPCs and <see cref="NetworkVariable{T}"/>.
-    /// Network IDs get recycled by the NetworkManager after a while, so using a NetworkBehaviourReference for too long may result in a
-    /// different NetworkBehaviour being returned for the assigned NetworkBehaviourId. NetworkBehaviourReferences are best for short-term
-    /// use when receieved via RPC or custom message, rather than for long-term references to NetworkBehaviours.
+    /// Note: network ids get recycled by the NetworkManager after a while. So a reference pointing to
     /// </summary>
     public struct NetworkBehaviourReference : INetworkSerializable, IEquatable<NetworkBehaviourReference>
     {
         private NetworkObjectReference m_NetworkObjectReference;
         private ushort m_NetworkBehaviourId;
         private static ushort s_NullId = ushort.MaxValue;
+
 
         /// <summary>
         /// Creates a new instance of the <see cref="NetworkBehaviourReference{T}"/> struct.
@@ -69,6 +68,7 @@ namespace Unity.Netcode
             {
                 return null;
             }
+
             if (networkBehaviourRef.m_NetworkObjectReference.TryGet(out NetworkObject networkObject, networkManager))
             {
                 return networkObject.GetNetworkBehaviourAtOrderIndex(networkBehaviourRef.m_NetworkBehaviourId);

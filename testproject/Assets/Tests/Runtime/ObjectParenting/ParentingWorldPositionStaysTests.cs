@@ -11,6 +11,8 @@ using Object = UnityEngine.Object;
 
 namespace TestProject.RuntimeTests
 {
+    [TestFixture(NetworkTopologyTypes.DistributedAuthority)]
+    [TestFixture(NetworkTopologyTypes.ClientServer)]
     public class ParentingWorldPositionStaysTests : IntegrationTestWithApproximation
     {
         private const int k_NestedChildren = 10;
@@ -155,6 +157,8 @@ namespace TestProject.RuntimeTests
         private Vector3 m_ChildStartPosition = new Vector3(100.0f, -100.0f, 100.0f);
         private Quaternion m_ChildStartRotation = Quaternion.Euler(-35.0f, 0.0f, -180.0f);
         private Vector3 m_ChildStartScale = Vector3.one;
+
+        public ParentingWorldPositionStaysTests(NetworkTopologyTypes networkTopologyType) : base(networkTopologyType) { }
 
         protected override IEnumerator OnSetup()
         {

@@ -14,6 +14,9 @@ namespace TestProject.RuntimeTests
     /// Integration test to validate ClientRpcs will only
     /// send to observers of the NetworkObject
     /// </summary>
+#if NGO_DAMODE
+    [TestFixture(HostOrServer.DAHost)]
+#endif
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     public class RpcObserverTests : NetcodeIntegrationTest

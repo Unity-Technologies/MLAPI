@@ -8,7 +8,7 @@ using Object = UnityEngine.Object;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class NetworkManagerEventsTests
+    internal class NetworkManagerEventsTests
     {
         private NetworkManager m_ClientManager;
         private NetworkManager m_ServerManager;
@@ -66,7 +66,6 @@ namespace Unity.Netcode.RuntimeTests
             m_Destroyed = true;
             Assert.True(m_NetworkManagerInstantiated == networkManager, $"Destroying {nameof(NetworkManager)} and current instance is not a match for the one passed into the event!");
         }
-
 
         [UnityTest]
         public IEnumerator OnServerStoppedCalledWhenServerStops()
@@ -283,9 +282,6 @@ namespace Unity.Netcode.RuntimeTests
         [UnityTearDown]
         public virtual IEnumerator Teardown()
         {
-            NetworkManager.OnInstantiated -= NetworkManager_OnInstantiated;
-            NetworkManager.OnDestroying -= NetworkManager_OnDestroying;
-
             NetcodeIntegrationTestHelpers.Destroy();
             if (m_ServerManager != null)
             {

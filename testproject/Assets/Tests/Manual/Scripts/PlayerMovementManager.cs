@@ -25,7 +25,7 @@ namespace TestProject.ManualTests
                 return;
             }
 
-            if (m_RandomMovement.HasAuthority())
+            if (m_RandomMovement.IsAuthority())
             {
                 if (Input.GetKeyDown(KeyCode.Space) && IsOwner)
                 {

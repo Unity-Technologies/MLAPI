@@ -8,7 +8,7 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class NamedMessageTests : NetcodeIntegrationTest
+    internal class NamedMessageTests : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 2;
 

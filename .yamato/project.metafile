@@ -1,5 +1,5 @@
-validation_editor: 2021.3
-mobile_validation_editor: 2021.3
+validation_editor: 6000.0
+mobile_validation_editor: 6000.0
 
 # Platforms that will be tested. The first entry in this array will also
 # be used for validation
@@ -42,9 +42,7 @@ projects:
       - name: com.unity.netcode.gameobjects
         path: com.unity.netcode.gameobjects
     test_editors:
-      - 2021.3
-      - 2022.2
-      - 2023.1
+      - 6000.0
       - trunk
   - name: minimalproject
     path: minimalproject
@@ -55,23 +53,22 @@ projects:
       - name: com.unity.netcode.gameobjects
         path: com.unity.netcode.gameobjects
     test_editors:
-      - 2021.3
+      - 6000.0
   - name: testproject-tools-integration
     path: testproject-tools-integration
     validate: false
     publish: false
     has_tests: true
     test_editors:
-      - 2021.3
-      - 2022.2
+      - 6000.0
       - trunk
 
 # Package dependencies
 dependencies: 
   - name: com.unity.transport
-    version: 2.0.0-pre.2
+    version: 2.2.1
     test_editors:
-      - 2022.2
+      - 6000.0
       - trunk
 
 # Scripting backends used by Standalone Playmode Tests

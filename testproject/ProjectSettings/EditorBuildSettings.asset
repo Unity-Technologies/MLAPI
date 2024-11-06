@@ -90,9 +90,6 @@ EditorBuildSettings:
     path: Assets/Samples/Physics/PhysicsSample.unity
     guid: 2c76877ad66aa22458c62a0d74514a91
   - enabled: 1
-    path: Assets/Tests/Runtime/ObjectParenting/NetworkObjectParentingTests.unity
-    guid: 7522f8723c5674939a3c24acfd83a688
-  - enabled: 1
     path: Assets/Tests/Manual/IntegrationTestScenes/UnitTestBaseScene.unity
     guid: fa0b4956a4a0aee48ae43f9116d28354
   - enabled: 1
@@ -111,9 +108,6 @@ EditorBuildSettings:
     path: Assets/Samples/Teleport/TeleportSample.unity
     guid: efa247d1f78ca694f8d2dcb5672e8f8b
   - enabled: 1
-    path: Assets/Tests/Runtime/ObjectParenting/ParentingInSceneObjects.unity
-    guid: 49fd14bff1eceda4f9299721a9029750
-  - enabled: 1
     path: Assets/Tests/Manual/NestedNetworkTransforms/NestedNetworkTransforms.unity
     guid: 92b8cccf28cbaba40854a025b66e2ac3
   - enabled: 1
@@ -125,6 +119,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Tests/Manual/NestedNetworkTransforms/LerpVsSlerpScene.unity
     guid: 54ca4944ec2b95640a68bc35403a4977
+  - enabled: 1
+    path: Assets/Tests/Runtime/ObjectParenting/ParentingInSceneObjects.unity
+    guid: d04d395e163705441935990f702c782f
   - enabled: 1
     path: Assets/Tests/Manual/IntegrationTestScenes/GenericInScenePlacedObject.unity
     guid: 43c36dc1d38660e4d9879e84e580e22f
@@ -144,6 +141,9 @@ EditorBuildSettings:
     path: Assets/Tests/Manual/PrefabTestAssets/PrefabTestScene.unity
     guid: 6449955dcdde54944ba1cdb97a23bd29
   - enabled: 1
+    path: Assets/Tests/Runtime/ObjectParenting/NetworkObjectParentingTests.unity
+    guid: abe92ece17d830e41a66dff7edc9245d
+  - enabled: 1
     path: Assets/Tests/Manual/IntegrationTestScenes/InSceneUnderGameObject.unity
     guid: 778ea62ad5daee5408d1ec1fce28673f
   - enabled: 1
@@ -153,8 +153,12 @@ EditorBuildSettings:
     path: Assets/Tests/Manual/IntegrationTestScenes/SessionSynchronize.unity
     guid: 468b795904b98234593ebc31bf0d578a
   - enabled: 1
+    path: Assets/Tests/Manual/IntegrationTestScenes/NetworkObjectSpawnerTest.unity
+    guid: 28ec9a0d98d9db64a9c57a79f38d6e0a
+  - enabled: 1
     path: Assets/Tests/Manual/NetworkAnimatorTests/AnimationBidirectionalTriggers/NetworkAnimatorDualTriggerCheer.unity
-    guid: a2408927b1ca1c74bb359402d44b4c73
+    guid: e12df855278120245a8a936a6a52b5bd
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: 5a3d5c53c25349c48912726ae850f3b0,
       type: 2}
+  m_UseUCBPForAssetBundles: 0

@@ -2,7 +2,7 @@ using NUnit.Framework;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class BitCounterTests
+    internal class BitCounterTests
     {
         [Test]
         public void WhenCountingUsedBitsIn64BitValue_ResultMatchesHighBitSetPlusOne([Range(0, 63)] int highBit)

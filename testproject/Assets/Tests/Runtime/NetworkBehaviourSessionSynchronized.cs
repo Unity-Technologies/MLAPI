@@ -7,12 +7,16 @@ using UnityEngine.TestTools;
 
 namespace TestProject.RuntimeTests
 {
+    [TestFixture(HostOrServer.Host)]
+    [TestFixture(HostOrServer.DAHost)]
     public class NetworkBehaviourSessionSynchronized : NetcodeIntegrationTest
     {
         private const string k_SceneToLoad = "SessionSynchronize";
         protected override int NumberOfClients => 0;
 
         private bool m_SceneLoaded;
+
+        public NetworkBehaviourSessionSynchronized(HostOrServer hostOrServer) : base(hostOrServer) { }
 
         [UnityTest]
         public IEnumerator InScenePlacedSessionSynchronized()

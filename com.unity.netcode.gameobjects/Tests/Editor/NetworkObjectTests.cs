@@ -6,7 +6,7 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class NetworkObjectTests
+    internal class NetworkObjectTests
     {
         [Test]
         public void NetworkManagerOverrideTest()
@@ -146,12 +146,12 @@ namespace Unity.Netcode.EditorTests
             public int NetworkBehaviourIndex;
         }
 
-        public class EmptyNetworkBehaviour : NetworkBehaviour
+        internal class EmptyNetworkBehaviour : NetworkBehaviour
         {
 
         }
 
-        public class EmptyMonoBehaviour : MonoBehaviour
+        internal class EmptyMonoBehaviour : MonoBehaviour
         {
 
         }

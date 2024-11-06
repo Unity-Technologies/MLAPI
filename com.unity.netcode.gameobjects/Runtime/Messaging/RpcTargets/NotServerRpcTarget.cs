@@ -2,8 +2,8 @@ namespace Unity.Netcode
 {
     internal class NotServerRpcTarget : BaseRpcTarget
     {
-        private IGroupRpcTarget m_GroupSendTarget;
-        private LocalSendRpcTarget m_LocalSendRpcTarget;
+        protected IGroupRpcTarget m_GroupSendTarget;
+        protected LocalSendRpcTarget m_LocalSendRpcTarget;
 
         public override void Dispose()
         {

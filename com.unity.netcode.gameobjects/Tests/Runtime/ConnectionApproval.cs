@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using NUnit.Framework;
 using Unity.Netcode.TestHelpers.Runtime;
+using UnityEngine;
 using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests
@@ -12,9 +13,10 @@ namespace Unity.Netcode.RuntimeTests
     [TestFixture(PlayerCreation.PrefabHash)]
     [TestFixture(PlayerCreation.NoPlayer)]
     [TestFixture(PlayerCreation.FailValidation)]
-    internal class ConnectionApprovalTests : NetcodeIntegrationTest
+    internal class ConnectionApprovalTests : IntegrationTestWithApproximation
     {
         private const string k_InvalidToken = "Invalid validation token!";
+
         public enum PlayerCreation
         {
             Prefab,
@@ -24,6 +26,8 @@ namespace Unity.Netcode.RuntimeTests
         }
         private PlayerCreation m_PlayerCreation;
         private bool m_ClientDisconnectReasonValidated;
+        private Vector3 m_ExpectedPosition;
+        private Quaternion m_ExpectedRotation;
 
         private Dictionary<ulong, bool> m_Validated = new Dictionary<ulong, bool>();
 
@@ -43,6 +47,12 @@ namespace Unity.Netcode.RuntimeTests
 
         protected override void OnServerAndClientsCreated()
         {
+            if (m_PlayerCreation == PlayerCreation.Prefab || m_PlayerCreation == PlayerCreation.PrefabHash)
+            {
+                m_ExpectedPosition = GetRandomVector3(-10.0f, 10.0f);
+                m_ExpectedRotation = Quaternion.Euler(GetRandomVector3(-359.98f, 359.98f));
+            }
+
             m_ClientDisconnectReasonValidated = false;
             m_BypassConnectionTimeout = m_PlayerCreation == PlayerCreation.FailValidation;
             m_Validated.Clear();
@@ -104,11 +114,36 @@ namespace Unity.Netcode.RuntimeTests
             return true;
         }
 
+        private bool ValidatePlayersPositionRotation()
+        {
+            foreach (var playerEntries in m_PlayerNetworkObjects)
+            {
+                foreach (var player in playerEntries.Value)
+                {
+                    if (!Approximately(player.Value.transform.position, m_ExpectedPosition))
+                    {
+                        return false;
+                    }
+                    if (!Approximately(player.Value.transform.rotation, m_ExpectedRotation))
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
         [UnityTest]
         public IEnumerator ConnectionApproval()
         {
             yield return WaitForConditionOrTimeOut(ClientAndHostValidated);
             AssertOnTimeout("Timed out waiting for all clients to be approved!");
+
+            if (m_PlayerCreation == PlayerCreation.Prefab || m_PlayerCreation == PlayerCreation.PrefabHash)
+            {
+                yield return WaitForConditionOrTimeOut(ValidatePlayersPositionRotation);
+                AssertOnTimeout("Not all player prefabs spawned in the correct position and/or rotation!");
+            }
         }
 
         private void NetworkManagerObject_ConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
@@ -127,8 +162,8 @@ namespace Unity.Netcode.RuntimeTests
             }
 
             response.CreatePlayerObject = ShouldCheckForSpawnedPlayers();
-            response.Position = null;
-            response.Rotation = null;
+            response.Position = m_ExpectedPosition;
+            response.Rotation = m_ExpectedRotation;
             response.PlayerPrefabHash = m_PlayerCreation == PlayerCreation.PrefabHash ? m_PlayerPrefab.GetComponent<NetworkObject>().GlobalObjectIdHash : null;
         }
 
@@ -150,3 +185,4 @@ namespace Unity.Netcode.RuntimeTests
         }
     }
 }
+

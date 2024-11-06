@@ -10,6 +10,7 @@ using UnityEngine.TestTools;
 
 namespace TestProject.RuntimeTests
 {
+    [TestFixture(HostOrServer.DAHost)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     public class NetworkSceneManagerEventCallbacks : NetcodeIntegrationTest

@@ -5,7 +5,7 @@ using NUnit.Framework.Internal;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class MessageVersioningTests
+    internal class MessageVersioningTests
     {
         public static int SentVersion;
         public static int ReceivedVersion;

@@ -8,12 +8,12 @@ using Unity.Netcode.TestHelpers.Runtime;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class NetworkRigidbody2DDynamicTest : NetworkRigidbody2DTestBase
+    internal class NetworkRigidbody2DDynamicTest : NetworkRigidbody2DTestBase
     {
         public override bool Kinematic => false;
     }
 
-    public class NetworkRigidbody2DKinematicTest : NetworkRigidbody2DTestBase
+    internal class NetworkRigidbody2DKinematicTest : NetworkRigidbody2DTestBase
     {
         public override bool Kinematic => true;
     }

@@ -7,7 +7,7 @@ using Random = System.Random;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class NetworkTimeTests
+    internal class NetworkTimeTests
     {
         [Test]
         [TestCase(0d, 0u)]

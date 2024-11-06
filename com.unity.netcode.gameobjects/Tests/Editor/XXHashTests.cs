@@ -2,7 +2,7 @@ using NUnit.Framework;
 
 namespace Unity.Netcode.EditorTests
 {
-    public class XXHashTests
+    internal class XXHashTests
     {
         [Test]
         public void TestXXHash32Short()

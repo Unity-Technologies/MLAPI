@@ -41,8 +41,11 @@ namespace Unity.Netcode
             base.OnInitialize();
 
             m_HasPreviousValue = true;
+            NetworkVariableSerialization<T>.Duplicate(m_InternalValue, ref m_InternalOriginalValue);
             NetworkVariableSerialization<T>.Duplicate(m_InternalValue, ref m_PreviousValue);
         }
+
+        internal override NetworkVariableType Type => NetworkVariableType.Value;
 
         /// <summary>
         /// Constructor for <see cref="NetworkVariable{T}"/>
@@ -56,6 +59,7 @@ namespace Unity.Netcode
             : base(readPerm, writePerm)
         {
             m_InternalValue = value;
+            m_InternalOriginalValue = default;
             // Since we start with IsDirty = true, this doesn't need to be duplicated
             // right away. It won't get read until after ResetDirty() is called, and
             // the duplicate will be made there. Avoiding calling
@@ -66,10 +70,30 @@ namespace Unity.Netcode
         }
 
         /// <summary>
+        /// Resets the NetworkVariable when the associated NetworkObject is not spawned
+        /// </summary>
+        /// <param name="value">the value to reset the NetworkVariable to (if none specified it resets to the default)</param>
+        public void Reset(T value = default)
+        {
+            if (m_NetworkBehaviour == null || m_NetworkBehaviour != null && !m_NetworkBehaviour.NetworkObject.IsSpawned)
+            {
+                m_InternalValue = value;
+                NetworkVariableSerialization<T>.Duplicate(m_InternalValue, ref m_InternalOriginalValue);
+                m_PreviousValue = default;
+            }
+        }
+
+        /// <summary>
         /// The internal value of the NetworkVariable
         /// </summary>
         [SerializeField]
         private protected T m_InternalValue;
+
+        // The introduction of standard .NET collections caused an issue with permissions since there is no way to detect changes in the
+        // collection without doing a full comparison. While this approach does consume more memory per collection instance, it is the
+        // lowest risk approach to resolving the issue where a client with no write permissions could make changes to a collection locally
+        // which can cause a myriad of issues. 
+        private protected T m_InternalOriginalValue;
 
         private protected T m_PreviousValue;
 
@@ -101,6 +125,7 @@ namespace Unity.Netcode
                 {
                     T previousValue = m_InternalValue;
                     m_InternalValue = value;
+                    NetworkVariableSerialization<T>.Duplicate(m_InternalValue, ref m_InternalOriginalValue);
                     SetDirty(true);
                     m_IsDisposed = false;
                     OnValueChanged?.Invoke(previousValue, m_InternalValue);
@@ -120,6 +145,17 @@ namespace Unity.Netcode
         public bool CheckDirtyState(bool forceCheck = false)
         {
             var isDirty = base.IsDirty();
+
+            // A client without permissions invoking this method should only check to assure the current value is equal to the last known current value
+            if (m_NetworkManager && !CanClientWrite(m_NetworkManager.LocalClientId))
+            {
+                // If modifications are detected, then revert back to the last known current value
+                if (!NetworkVariableSerialization<T>.AreEqual(ref m_InternalValue, ref m_InternalOriginalValue))
+                {
+                    NetworkVariableSerialization<T>.Duplicate(m_InternalOriginalValue, ref m_InternalValue);
+                }
+                return false;
+            }
 
             // Compare the previous with the current if not dirty or forcing a check.
             if ((!isDirty || forceCheck) && !NetworkVariableSerialization<T>.AreEqual(ref m_PreviousValue, ref m_InternalValue))
@@ -151,6 +187,7 @@ namespace Unity.Netcode
             }
 
             m_InternalValue = default;
+            m_InternalOriginalValue = default;
             if (m_HasPreviousValue && m_PreviousValue is IDisposable previousValueDisposable)
             {
                 m_HasPreviousValue = false;
@@ -158,6 +195,8 @@ namespace Unity.Netcode
             }
 
             m_PreviousValue = default;
+
+            base.Dispose();
         }
 
         ~NetworkVariable()
@@ -171,6 +210,13 @@ namespace Unity.Netcode
         /// <returns>Whether or not the container is dirty</returns>
         public override bool IsDirty()
         {
+            // If the client does not have write permissions but the internal value is determined to be locally modified and we are applying updates, then we should revert
+            // to the original collection value prior to applying updates (primarily for collections).
+            if (!NetworkUpdaterCheck && m_NetworkManager && !CanClientWrite(m_NetworkManager.LocalClientId) && !NetworkVariableSerialization<T>.AreEqual(ref m_InternalValue, ref m_InternalOriginalValue))
+            {
+                NetworkVariableSerialization<T>.Duplicate(m_InternalOriginalValue, ref m_InternalValue);
+                return true;
+            }
             // For most cases we can use the dirty flag.
             // This doesn't work for cases where we're wrapping more complex types
             // like INetworkSerializable, NativeList, NativeArray, etc.
@@ -182,11 +228,11 @@ namespace Unity.Netcode
                 return true;
             }
 
+            var dirty = !NetworkVariableSerialization<T>.AreEqual(ref m_PreviousValue, ref m_InternalValue);
             // Cache the dirty value so we don't perform this again if we already know we're dirty
             // Unfortunately we can't cache the NOT dirty state, because that might change
             // in between to checks... but the DIRTY state won't change until ResetDirty()
             // is called.
-            var dirty = !NetworkVariableSerialization<T>.AreEqual(ref m_PreviousValue, ref m_InternalValue);
             SetDirty(dirty);
             return dirty;
         }
@@ -204,20 +250,10 @@ namespace Unity.Netcode
             {
                 m_HasPreviousValue = true;
                 NetworkVariableSerialization<T>.Duplicate(m_InternalValue, ref m_PreviousValue);
+                // Once updated, assure the original current value is updated for future comparison purposes
+                NetworkVariableSerialization<T>.Duplicate(m_InternalValue, ref m_InternalOriginalValue);
             }
             base.ResetDirty();
-        }
-
-        /// <summary>
-        /// Sets the <see cref="Value"/>, marks the <see cref="NetworkVariable{T}"/> dirty, and invokes the <see cref="OnValueChanged"/> callback
-        /// if there are subscribers to that event.
-        /// </summary>
-        /// <param name="value">the new value of type `T` to be set/></param>
-        private protected void Set(T value)
-        {
-            SetDirty(true);
-            m_InternalValue = value;
-            OnValueChanged?.Invoke(m_PreviousValue, m_InternalValue);
         }
 
         /// <summary>
@@ -236,16 +272,20 @@ namespace Unity.Netcode
         /// <param name="keepDirtyDelta">Whether or not the container should keep the dirty delta, or mark the delta as consumed</param>
         public override void ReadDelta(FastBufferReader reader, bool keepDirtyDelta)
         {
-            // In order to get managed collections to properly have a previous and current value, we have to
-            // duplicate the collection at this point before making any modifications to the current.
-            m_HasPreviousValue = true;
-            NetworkVariableSerialization<T>.Duplicate(m_InternalValue, ref m_PreviousValue);
+            // If the client does not have write permissions but the internal value is determined to be locally modified and we are applying updates, then we should revert
+            // to the original collection value prior to applying updates (primarily for collections).
+            if (m_NetworkManager && !CanClientWrite(m_NetworkManager.LocalClientId) && !NetworkVariableSerialization<T>.AreEqual(ref m_InternalOriginalValue, ref m_InternalValue))
+            {
+                NetworkVariableSerialization<T>.Duplicate(m_InternalOriginalValue, ref m_InternalValue);
+            }
+
             NetworkVariableSerialization<T>.ReadDelta(reader, ref m_InternalValue);
 
-            // todo:
             // keepDirtyDelta marks a variable received as dirty and causes the server to send the value to clients
             // In a prefect world, whether a variable was A) modified locally or B) received and needs retransmit
             // would be stored in different fields
+            // LEGACY NOTE: This is only to handle NetworkVariableDeltaMessage Version 0 connections. The updated
+            // NetworkVariableDeltaMessage no longer uses this approach.
             if (keepDirtyDelta)
             {
                 SetDirty(true);
@@ -254,16 +294,64 @@ namespace Unity.Netcode
             OnValueChanged?.Invoke(m_PreviousValue, m_InternalValue);
         }
 
+        /// <summary>
+        /// This should be always invoked (client & server) to assure the previous values are set
+        /// !! IMPORTANT !!
+        /// When a server forwards delta updates to connected clients, it needs to preserve the previous dirty value(s)
+        /// until it is done serializing all valid NetworkVariable field deltas (relative to each client). This is invoked 
+        /// after it is done forwarding the deltas at the end of the <see cref="NetworkVariableDeltaMessage.Handle(ref NetworkContext)"/> method.
+        /// </summary>
+        internal override void PostDeltaRead()
+        {
+            // In order to get managed collections to properly have a previous and current value, we have to
+            // duplicate the collection at this point before making any modifications to the current.
+            m_HasPreviousValue = true;
+            NetworkVariableSerialization<T>.Duplicate(m_InternalValue, ref m_PreviousValue);
+            // Once updated, assure the original current value is updated for future comparison purposes
+            NetworkVariableSerialization<T>.Duplicate(m_InternalValue, ref m_InternalOriginalValue);
+        }
+
         /// <inheritdoc />
         public override void ReadField(FastBufferReader reader)
         {
+            // If the client does not have write permissions but the internal value is determined to be locally modified and we are applying updates, then we should revert
+            // to the original collection value prior to applying updates (primarily for collections).
+            if (m_NetworkManager && !CanClientWrite(m_NetworkManager.LocalClientId) && !NetworkVariableSerialization<T>.AreEqual(ref m_InternalOriginalValue, ref m_InternalValue))
+            {
+                NetworkVariableSerialization<T>.Duplicate(m_InternalOriginalValue, ref m_InternalValue);
+            }
+
             NetworkVariableSerialization<T>.Read(reader, ref m_InternalValue);
+            // In order to get managed collections to properly have a previous and current value, we have to
+            // duplicate the collection at this point before making any modifications to the current.
+            // We duplicate the final value after the read (for ReadField ONLY) so the previous value is at par
+            // with the current value (since this is only invoked when initially synchronizing).
+            m_HasPreviousValue = true;
+            NetworkVariableSerialization<T>.Duplicate(m_InternalValue, ref m_PreviousValue);
+
+            // Once updated, assure the original current value is updated for future comparison purposes
+            NetworkVariableSerialization<T>.Duplicate(m_InternalValue, ref m_InternalOriginalValue);
         }
 
         /// <inheritdoc />
         public override void WriteField(FastBufferWriter writer)
         {
             NetworkVariableSerialization<T>.Write(writer, ref m_InternalValue);
+        }
+
+        internal override void WriteFieldSynchronization(FastBufferWriter writer)
+        {
+            // If we have a pending update, then synchronize the client with the previously known
+            // value since the updated version will be sent on the next tick or next time it is
+            // set to be updated
+            if (base.IsDirty() && m_HasPreviousValue)
+            {
+                NetworkVariableSerialization<T>.Write(writer, ref m_PreviousValue);
+            }
+            else
+            {
+                base.WriteFieldSynchronization(writer);
+            }
         }
     }
 }

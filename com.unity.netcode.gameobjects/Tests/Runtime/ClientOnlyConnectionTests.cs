@@ -7,7 +7,7 @@ using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class ClientOnlyConnectionTests
+    internal class ClientOnlyConnectionTests
     {
         private NetworkManager m_ClientNetworkManager;
         private GameObject m_NetworkManagerGameObject;

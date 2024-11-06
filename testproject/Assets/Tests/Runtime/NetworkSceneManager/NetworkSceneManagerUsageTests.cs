@@ -7,6 +7,7 @@ using UnityEngine.TestTools;
 
 namespace TestProject.RuntimeTests
 {
+    [TestFixture(HostOrServer.DAHost)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     public class NetworkSceneManagerUsageTests : NetcodeIntegrationTest
@@ -38,7 +39,14 @@ namespace TestProject.RuntimeTests
         [Test]
         public void ClientSetClientSynchronizationMode()
         {
-            LogAssert.Expect(UnityEngine.LogType.Warning, "[Netcode] Clients should not set this value as it is automatically synchronized with the server's setting!");
+            if (!m_DistributedAuthority)
+            {
+                LogAssert.Expect(UnityEngine.LogType.Warning, "[Netcode] Clients should not set this value as it is automatically synchronized with the server's setting!");
+            }
+            else
+            {
+                LogAssert.NoUnexpectedReceived();
+            }
             m_ClientNetworkManagers[0].SceneManager.SetClientSynchronizationMode(LoadSceneMode.Single);
         }
 
@@ -48,11 +56,21 @@ namespace TestProject.RuntimeTests
         [UnityTest]
         public IEnumerator ServerSetClientSynchronizationModeAfterClientsConnected()
         {
-            // Verify that changing this setting when additional clients are connect will generate the warning
-            LogAssert.Expect(UnityEngine.LogType.Warning, "[Netcode] Server is changing client synchronization mode after clients have been synchronized! It is recommended to do this before clients are connected!");
+            if (!m_DistributedAuthority)
+            {
+                // Verify that changing this setting when additional clients are connect will generate the warning
+                LogAssert.Expect(UnityEngine.LogType.Warning, "[Netcode] Server is changing client synchronization mode after clients have been synchronized! It is recommended to do this before clients are connected!");
+            }
+            else
+            {
+                LogAssert.NoUnexpectedReceived();
+            }
+
             m_ServerNetworkManager.SceneManager.SetClientSynchronizationMode(LoadSceneMode.Additive);
+
             // Verify that changing this setting when no additional clients are connected will not generate a warning
             yield return StopOneClient(m_ClientNetworkManagers[0]);
+
             m_ServerNetworkManager.SceneManager.SetClientSynchronizationMode(LoadSceneMode.Additive);
             LogAssert.NoUnexpectedReceived();
         }
@@ -65,7 +83,13 @@ namespace TestProject.RuntimeTests
         {
             m_CurrentSceneName = k_AdditiveScene1;
             var statusResult = m_ClientNetworkManagers[0].SceneManager.LoadScene(m_CurrentSceneName, loadSceneMode);
-            Assert.True(statusResult == SceneEventProgressStatus.ServerOnlyAction, $"[Client][Load][{loadSceneMode}] Failed to receive a {nameof(SceneEventProgressStatus.ServerOnlyAction)} response!");
+            var expectedResult = SceneEventProgressStatus.ServerOnlyAction;
+            if (m_DistributedAuthority)
+            {
+                expectedResult = SceneEventProgressStatus.SessionOwnerOnlyAction;
+            }
+
+            Assert.True(statusResult == expectedResult, $"[Client][Load][{loadSceneMode}] Failed to receive a {nameof(expectedResult)} response!");
 
             // Check that a client cannot call UnloadScene
             m_ServerNetworkManager.SceneManager.OnSceneEvent += ServerSceneManager_OnSceneEvent;
@@ -82,7 +106,9 @@ namespace TestProject.RuntimeTests
 
             // Now try to unload the scene as a client
             statusResult = m_ClientNetworkManagers[0].SceneManager.UnloadScene(m_CurrentScene);
-            Assert.True(statusResult == SceneEventProgressStatus.ServerOnlyAction, $"[Client][Unload] Failed to receive a {nameof(SceneEventProgressStatus.ServerOnlyAction)} response!");
+
+
+            Assert.True(statusResult == expectedResult, $"[Client][Unload] Failed to receive a {nameof(expectedResult)} response!");
 
             foreach (var clientNetworkManager in m_ClientNetworkManagers)
             {

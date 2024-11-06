@@ -8,7 +8,7 @@ using Unity.Multiplayer.Tools.NetStats;
 
 namespace Unity.Netcode.EditorTests.Metrics
 {
-    public class NetworkMetricsRegistrationTests
+    internal class NetworkMetricsRegistrationTests
     {
         private static Type[] s_MetricTypes = AppDomain.CurrentDomain.GetAssemblies()
             .SelectMany(x => x.GetTypes())

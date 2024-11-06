@@ -326,20 +326,30 @@ namespace Unity.Netcode.TestHelpers.Runtime
 
             s_IsStarted = false;
 
-            // Shutdown the server which forces clients to disconnect
-            foreach (var networkManager in NetworkManagerInstances)
+            try
             {
-                networkManager.Shutdown();
-                s_Hooks.Remove(networkManager);
-            }
-
-            // Destroy the network manager instances
-            foreach (var networkManager in NetworkManagerInstances)
-            {
-                if (networkManager.gameObject != null)
+                // Shutdown the server which forces clients to disconnect
+                foreach (var networkManager in NetworkManagerInstances)
                 {
-                    Object.DestroyImmediate(networkManager.gameObject);
+                    if (networkManager != null && networkManager.IsListening)
+                    {
+                        networkManager?.Shutdown();
+                        s_Hooks.Remove(networkManager);
+                    }
                 }
+
+                // Destroy the network manager instances
+                foreach (var networkManager in NetworkManagerInstances)
+                {
+                    if (networkManager != null && networkManager.gameObject)
+                    {
+                        Object.DestroyImmediate(networkManager.gameObject);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
             }
 
             NetworkManagerInstances.Clear();
@@ -378,7 +388,8 @@ namespace Unity.Netcode.TestHelpers.Runtime
         {
             // If VerifySceneBeforeLoading is not already set, then go ahead and set it so the host/server
             // will not try to synchronize clients to the TestRunner scene.  We only need to do this for the server.
-            if (networkManager.IsServer && networkManager.SceneManager.VerifySceneBeforeLoading == null)
+            // All clients in distributed authority mode, should have this registered (since any one client can become the session owner).
+            if ((networkManager.IsServer && networkManager.SceneManager.VerifySceneBeforeLoading == null) || networkManager.DistributedAuthorityMode)
             {
                 networkManager.SceneManager.VerifySceneBeforeLoading = VerifySceneIsValidForClientsToLoad;
 
@@ -408,13 +419,32 @@ namespace Unity.Netcode.TestHelpers.Runtime
                 // with the clients.
                 if (!networkManager.SceneManager.ScenesLoaded.ContainsKey(scene.handle))
                 {
-                    networkManager.SceneManager.ScenesLoaded.Add(scene.handle, scene);
+                    networkManager.SceneManager.ScenesLoaded.Add(scene.handle, new NetworkSceneManager.SceneData(null, scene));
+                }
+                // In distributed authority we need to check if this scene is already added
+                if (networkManager.DistributedAuthorityMode)
+                {
+                    if (!networkManager.SceneManager.ServerSceneHandleToClientSceneHandle.ContainsKey(scene.handle))
+                    {
+                        networkManager.SceneManager.ServerSceneHandleToClientSceneHandle.Add(scene.handle, scene.handle);
+                    }
+
+                    if (!networkManager.SceneManager.ClientSceneHandleToServerSceneHandle.ContainsKey(scene.handle))
+                    {
+                        networkManager.SceneManager.ClientSceneHandleToServerSceneHandle.Add(scene.handle, scene.handle);
+                    }
+                    return;
                 }
                 networkManager.SceneManager.ServerSceneHandleToClientSceneHandle.Add(scene.handle, scene.handle);
             }
         }
 
         public delegate void BeforeClientStartCallback();
+
+        internal static bool Start(bool host, bool startServer, NetworkManager server, NetworkManager[] clients)
+        {
+            return Start(host, server, clients, null, startServer);
+        }
 
         /// <summary>
         /// Starts NetworkManager instances created by the Create method.
@@ -424,7 +454,7 @@ namespace Unity.Netcode.TestHelpers.Runtime
         /// <param name="clients">The Clients NetworkManager</param>
         /// <param name="callback">called immediately after server is started and before client(s) are started</param>
         /// <returns></returns>
-        public static bool Start(bool host, NetworkManager server, NetworkManager[] clients, BeforeClientStartCallback callback = null)
+        public static bool Start(bool host, NetworkManager server, NetworkManager[] clients, BeforeClientStartCallback callback = null, bool startServer = true)
         {
             if (s_IsStarted)
             {
@@ -433,24 +463,26 @@ namespace Unity.Netcode.TestHelpers.Runtime
 
             s_IsStarted = true;
             s_ClientCount = clients.Length;
-
-            if (host)
+            var hooks = (MultiInstanceHooks)null;
+            if (startServer)
             {
-                server.StartHost();
+                if (host)
+                {
+                    server.StartHost();
+                }
+                else
+                {
+                    server.StartServer();
+                }
+
+                hooks = new MultiInstanceHooks();
+                server.ConnectionManager.MessageManager.Hook(hooks);
+                s_Hooks[server] = hooks;
+
+                // Register the server side handler (always pass true for server)
+                RegisterHandlers(server, true);
+                callback?.Invoke();
             }
-            else
-            {
-                server.StartServer();
-            }
-
-            var hooks = new MultiInstanceHooks();
-            server.ConnectionManager.MessageManager.Hook(hooks);
-            s_Hooks[server] = hooks;
-
-            // Register the server side handler (always pass true for server)
-            RegisterHandlers(server, true);
-
-            callback?.Invoke();
 
             for (int i = 0; i < clients.Length; i++)
             {
@@ -598,7 +630,7 @@ namespace Unity.Netcode.TestHelpers.Runtime
         /// Similar to WaitForClientConnected, this waits for multiple clients to be connected.
         /// </summary>
         /// <param name="clients">The clients to be connected</param>
-        /// <param name="result">The result. If null, it will automatically assert<</param>
+        /// <param name="result">The result. If null, it will automatically assert</param>
         /// <param name="maxFrames">The max frames to wait for</param>
         /// <returns></returns>
         public static IEnumerator WaitForClientsConnected(NetworkManager[] clients, ResultWrapper<bool> result = null, float timeout = DefaultTimeout)

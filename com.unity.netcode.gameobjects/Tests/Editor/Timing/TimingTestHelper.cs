@@ -7,7 +7,7 @@ namespace Unity.Netcode.EditorTests
     /// <summary>
     /// Helper functions for timing related tests. Allows to get a set of time steps and simulate time advancing without the need of a full playmode test.
     /// </summary>
-    public static class TimingTestHelper
+    internal static class TimingTestHelper
     {
         public static List<float> GetRandomTimeSteps(float totalDuration, float min, float max, int seed)
         {
