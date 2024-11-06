@@ -10,8 +10,11 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Added
 
+- Added `NetworkTransport.OnEarlyUpdate` and `NetworkTransport.OnPostLateUpdate` methods to provide more control over handling transport related events at the start and end of each frame. (#3113)
+
 ### Fixed
 
+- Fixed issue where queued UnitTransport (NetworkTransport) message batches were being sent on the next frame. They are now sent at the end of the frame during `PostLateUpdate`.  (#3113)
 - Fixed issue where `NotOwnerRpcTarget` or `OwnerRpcTarget` were not using their replacements `NotAuthorityRpcTarget` and `AuthorityRpcTarget` which would invoke a warning. (#3111)
 - Fixed issue where client is removed as an observer from spawned objects when their player instance is despawned. (#3110)
 - Fixed issue where `NetworkAnimator` would statically allocate write buffer space for `Animator` parameters that could cause a write error if the number of parameters exceeded the space allocated. (#3108)

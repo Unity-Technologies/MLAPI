@@ -45,9 +45,11 @@ namespace Unity.Netcode.RuntimeTests
             clientNetworkTransform.UseHalfFloatPrecision = false;
             var rigidBody = m_ClientNetworkTransformPrefab.AddComponent<Rigidbody>();
             rigidBody.useGravity = false;
+            rigidBody.maxDepenetrationVelocity = 0;
+            rigidBody.mass = 100;
+            rigidBody.linearDamping = 100;
             rigidBody.interpolation = RigidbodyInterpolation.None;
             rigidBody.maxLinearVelocity = 0;
-            rigidBody.mass = 0;
             rigidBody.detectCollisions = false;
             rigidBody.position = Vector3.zero;
             rigidBody.rotation = Quaternion.identity;
@@ -67,6 +69,9 @@ namespace Unity.Netcode.RuntimeTests
             var networkTransform = m_NetworkTransformPrefab.AddComponent<TestClientNetworkTransform>();
             rigidBody = m_NetworkTransformPrefab.AddComponent<Rigidbody>();
             rigidBody.useGravity = false;
+            rigidBody.maxDepenetrationVelocity = 0;
+            rigidBody.linearDamping = 100;
+            rigidBody.mass = 100;
             rigidBody.interpolation = RigidbodyInterpolation.None;
             rigidBody.maxLinearVelocity = 0;
             rigidBody.detectCollisions = false;
@@ -294,6 +299,7 @@ namespace Unity.Netcode.RuntimeTests
             };
             if (m_MotionModel == MotionModels.UseRigidbody)
             {
+                TestClientNetworkTransform.EnableLogState(m_EnableVerboseDebug);
                 var ownerRigidbody = ownerInstance.GetComponent<Rigidbody>();
                 ownerRigidbody.Move(valueSetByOwner, rotation);
                 yield return new WaitForFixedUpdate();
@@ -333,6 +339,7 @@ namespace Unity.Netcode.RuntimeTests
             {
                 Assert.True(nonOwnerInstance.OwnerClientId != networkManagerNonOwner.LocalClientId, $"Non-Owner Client-{networkManagerNonOwner.LocalClientId} was already the owner prior to changing ownership!");
                 nonOwnerInstance.NetworkObject.ChangeOwnership(networkManagerNonOwner.LocalClientId);
+                nonOwnerInstance.GetComponent<Rigidbody>().linearVelocity = Vector3.zero;
                 Assert.True(nonOwnerInstance.OwnerClientId == networkManagerNonOwner.LocalClientId, $"Client-{networkManagerNonOwner.LocalClientId} failed to change ownership!");
 
                 LogNonOwnerRigidBody(3);
@@ -356,6 +363,7 @@ namespace Unity.Netcode.RuntimeTests
             yield return WaitForConditionOrTimeOut(() => VerifyObjectIsSpawnedOnClient.GetClientInstance(networkManagerNonOwner.LocalClientId) != null);
             nonOwnerInstance = VerifyObjectIsSpawnedOnClient.GetClientInstance(networkManagerNonOwner.LocalClientId);
             Assert.NotNull(nonOwnerInstance);
+            Assert.True(!nonOwnerInstance.IsOwner, $"Ownership failed to change on Client-{networkManagerNonOwner.LocalClientId} side! Expected owner to be {networkManagerOwner.LocalClientId} but owner is still {networkManagerNonOwner.LocalClientId}!");
 
             // Make sure the owner is not kinematic and the non-owner(s) are kinematic
             Assert.False(ownerInstance.GetComponent<Rigidbody>().isKinematic, $"{networkManagerOwner.name}'s object instance {ownerInstance.name} is kinematic when it should not be!");
@@ -369,7 +377,7 @@ namespace Unity.Netcode.RuntimeTests
             Assert.False(s_GlobalTimeoutHelper.TimedOut, $"Timed out waiting for {networkManagerNonOwner.name}'s object instance {nonOwnerInstance.name} to change its transform!\n" +
                 $"Expected Position: {valueSetByOwner} | Current Position: {transformToTest.position}\n" +
                 $"Expected Rotation: {valueSetByOwner} | Current Rotation: {transformToTest.rotation.eulerAngles}\n" +
-                $"Expected Scale: {valueSetByOwner} | Current Scale: {transformToTest.localScale}\n {ownerInstance.GetComponent<TestClientNetworkTransform>().LogInfoBuilder}");
+                $"Expected Scale: {valueSetByOwner} | Current Scale: {transformToTest.localScale}\n {nonOwnerInstance.GetComponent<TestClientNetworkTransform>().LogInfoBuilder}");
 
             LogNonOwnerRigidBody(5);
             // Have the new owner change transform values and wait for those values to be applied on the non-owner side.
@@ -379,11 +387,11 @@ namespace Unity.Netcode.RuntimeTests
             LogOwnerRigidBody(1);
             if (m_MotionModel == MotionModels.UseRigidbody)
             {
-                TestClientNetworkTransform.EnableLogState(true);
                 m_UseAdjustedVariance = true;
                 var ownerRigidbody = ownerInstance.GetComponent<Rigidbody>();
                 ownerRigidbody.Move(valueSetByOwner, rotation);
                 LogOwnerRigidBody(2);
+                yield return new WaitForFixedUpdate();
                 ownerInstance.GetComponent<NetworkTransform>().LogMotion = m_EnableVerboseDebug;
                 nonOwnerInstance.GetComponent<NetworkTransform>().LogMotion = m_EnableVerboseDebug;
                 ownerRigidbody.linearVelocity = Vector3.zero;
@@ -407,7 +415,7 @@ namespace Unity.Netcode.RuntimeTests
             Assert.False(s_GlobalTimeoutHelper.TimedOut, $"Timed out waiting for {networkManagerNonOwner.name}'s object instance {nonOwnerInstance.name} to change its transform!\n" +
                 $"Expected Position: {valueSetByOwner} | Current Position: {transformToTest.position}\n" +
                 $"Expected Rotation: {valueSetByOwner} | Current Rotation: {transformToTest.rotation.eulerAngles}\n" +
-                $"Expected Scale: {valueSetByOwner} | Current Scale: {transformToTest.localScale}\n {ownerInstance.GetComponent<TestClientNetworkTransform>().LogInfoBuilder}");
+                $"Expected Scale: {valueSetByOwner} | Current Scale: {transformToTest.localScale}\n {nonOwnerInstance.GetComponent<TestClientNetworkTransform>().LogInfoBuilder}");
 
             // The last check is to verify non-owners cannot change transform values after ownership has changed
             nonOwnerInstance.transform.position = Vector3.zero;
@@ -574,10 +582,26 @@ namespace Unity.Netcode.RuntimeTests
                 }
             }
 
+            protected override void OnOwnershipChanged(ulong previous, ulong current)
+            {
 
+                if (s_LogStateEnabled)
+                {
+                    LogInfoBuilder.AppendLine($"Ownership Changed: {previous} --> {current} | Position: {transform.position}");
+                }
+                LogInfo(LocalAuthoritativeNetworkState);
+                base.OnOwnershipChanged(previous, current);
+
+                // Assure no velocity is set on this object for this particular test
+                if (current == NetworkManager.LocalClientId)
+                {
+                    GetComponent<Rigidbody>().linearVelocity = Vector3.zero;
+                }
+            }
 
             protected override void OnAuthorityPushTransformState(ref NetworkTransformState networkTransformState)
             {
+                LogInfo(networkTransformState);
                 base.OnAuthorityPushTransformState(ref networkTransformState);
             }
 
