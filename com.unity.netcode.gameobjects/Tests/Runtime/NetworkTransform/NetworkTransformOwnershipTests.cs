@@ -36,7 +36,7 @@ namespace Unity.Netcode.RuntimeTests
         {
             VerifyObjectIsSpawnedOnClient.ResetObjectTable();
             m_ClientNetworkTransformPrefab = CreateNetworkObjectPrefab("OwnerAuthorityTest");
-            var clientNetworkTransform = m_ClientNetworkTransformPrefab.AddComponent<NetworkTransform>();
+            var clientNetworkTransform = m_ClientNetworkTransformPrefab.AddComponent<TestClientNetworkTransform>();
             clientNetworkTransform.AuthorityMode = NetworkTransform.AuthorityModes.Owner;
             clientNetworkTransform.Interpolate = false;
             clientNetworkTransform.UseHalfFloatPrecision = false;
@@ -58,7 +58,7 @@ namespace Unity.Netcode.RuntimeTests
             m_ClientNetworkTransformPrefab.AddComponent<VerifyObjectIsSpawnedOnClient>();
 
             m_NetworkTransformPrefab = CreateNetworkObjectPrefab("ServerAuthorityTest");
-            var networkTransform = m_NetworkTransformPrefab.AddComponent<NetworkTransform>();
+            var networkTransform = m_NetworkTransformPrefab.AddComponent<TestClientNetworkTransform>();
             rigidBody = m_NetworkTransformPrefab.AddComponent<Rigidbody>();
             rigidBody.useGravity = false;
             rigidBody.interpolation = RigidbodyInterpolation.None;
@@ -367,6 +367,7 @@ namespace Unity.Netcode.RuntimeTests
             LogOwnerRigidBody(1);
             if (m_MotionModel == MotionModels.UseRigidbody)
             {
+                TestClientNetworkTransform.EnableLogState(true);
                 m_UseAdjustedVariance = true;
                 var ownerRigidbody = ownerInstance.GetComponent<Rigidbody>();
                 ownerRigidbody.Move(valueSetByOwner, rotation);
@@ -390,10 +391,11 @@ namespace Unity.Netcode.RuntimeTests
                 LogOwnerRigidBody(4);
                 LogNonOwnerRigidBody(7);
             }
+
             Assert.False(s_GlobalTimeoutHelper.TimedOut, $"Timed out waiting for {networkManagerNonOwner.name}'s object instance {nonOwnerInstance.name} to change its transform!\n" +
                 $"Expected Position: {valueSetByOwner} | Current Position: {transformToTest.position}\n" +
                 $"Expected Rotation: {valueSetByOwner} | Current Rotation: {transformToTest.rotation.eulerAngles}\n" +
-                $"Expected Scale: {valueSetByOwner} | Current Scale: {transformToTest.localScale}");
+                $"Expected Scale: {valueSetByOwner} | Current Scale: {transformToTest.localScale}\n {ownerInstance.GetComponent<TestClientNetworkTransform>().LogInfoBuilder}");
 
             // The last check is to verify non-owners cannot change transform values after ownership has changed
             nonOwnerInstance.transform.position = Vector3.zero;
@@ -456,6 +458,12 @@ namespace Unity.Netcode.RuntimeTests
                 yield return new WaitForFixedUpdate();
             }
             Assert.True(nonOwnerInstance.transform.position == valueSetByOwner, $"{m_ClientNetworkManagers[0].name}'s object instance {nonOwnerInstance.name} was allowed to change its position! Expected: {Vector3.one} Is Currently:{nonOwnerInstance.transform.position}");
+        }
+
+        protected override IEnumerator OnTearDown()
+        {
+            TestClientNetworkTransform.EnableLogState(false);
+            return base.OnTearDown();
         }
 
         /// <summary>
@@ -528,28 +536,41 @@ namespace Unity.Netcode.RuntimeTests
         [DisallowMultipleComponent]
         internal class TestClientNetworkTransform : NetworkTransform
         {
-            //public override void OnNetworkSpawn()
-            //{
-            //    base.OnNetworkSpawn();
-            //    CanCommitToTransform = IsOwner;
-            //}
-
-            //protected override void Update()
-            //{
-            //    CanCommitToTransform = IsOwner;
-            //    base.Update();
-            //    if (NetworkManager.Singleton != null && (NetworkManager.Singleton.IsConnectedClient || NetworkManager.Singleton.IsListening))
-            //    {
-            //        if (CanCommitToTransform)
-            //        {
-            //            TryCommitTransformToServer(transform, NetworkManager.LocalTime.Time);
-            //        }
-            //    }
-            //}
-
-            protected override bool OnIsServerAuthoritative()
+            public static void EnableLogState(bool enable)
             {
-                return false;
+                s_LogStateEnabled = enable;
+                TrackByStateId = enable;
+            }
+
+            private static bool s_LogStateEnabled;
+
+            internal StringBuilder LogInfoBuilder = new StringBuilder();
+
+            private void LogInfo(NetworkTransformState state)
+            {
+                if (s_LogStateEnabled)
+                {
+                    LogInfoBuilder.AppendLine($"N:{name} | CID:{NetworkManager.LocalClientId} | SID: {state.StateId} |  NT:{NetworkManager.ServerTime.Tick} | Pos: {transform.position} | Sc: {transform.localScale}");
+                }
+            }
+
+
+
+            protected override void OnAuthorityPushTransformState(ref NetworkTransformState networkTransformState)
+            {
+                base.OnAuthorityPushTransformState(ref networkTransformState);
+            }
+
+            protected override void OnBeforeUpdateTransformState()
+            {
+                LogInfo(LocalAuthoritativeNetworkState);
+                base.OnBeforeUpdateTransformState();
+            }
+
+            protected override void OnNetworkTransformStateUpdated(ref NetworkTransformState oldState, ref NetworkTransformState newState)
+            {
+                LogInfo(newState);
+                base.OnNetworkTransformStateUpdated(ref oldState, ref newState);
             }
         }
     }
