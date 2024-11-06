@@ -357,7 +357,7 @@ namespace Unity.Netcode.RuntimeTests
             Assert.False(s_GlobalTimeoutHelper.TimedOut, $"Timed out waiting for {networkManagerNonOwner.name}'s object instance {nonOwnerInstance.name} to change its transform!\n" +
                 $"Expected Position: {valueSetByOwner} | Current Position: {transformToTest.position}\n" +
                 $"Expected Rotation: {valueSetByOwner} | Current Rotation: {transformToTest.rotation.eulerAngles}\n" +
-                $"Expected Scale: {valueSetByOwner} | Current Scale: {transformToTest.localScale}");
+                $"Expected Scale: {valueSetByOwner} | Current Scale: {transformToTest.localScale}\n {ownerInstance.GetComponent<TestClientNetworkTransform>().LogInfoBuilder}");
 
             LogNonOwnerRigidBody(5);
             // Have the new owner change transform values and wait for those values to be applied on the non-owner side.
