@@ -107,6 +107,10 @@ namespace Unity.Netcode.RuntimeTests
                 s_Instances.Clear();
             }
 
+            /// <summary>
+            /// Simulate the <see cref="NetworkManager.NetworkUpdate"/> being invoked so <see cref="UnityTransport.EarlyUpdate"/>
+            /// and <see cref="UnityTransport.PostLateUpdate"/> are invoked.
+            /// </summary>
             public void NetworkUpdate(NetworkUpdateStage updateStage)
             {
                 switch (updateStage)
@@ -114,11 +118,6 @@ namespace Unity.Netcode.RuntimeTests
                     case NetworkUpdateStage.EarlyUpdate:
                         {
                             EarlyUpdate();
-                            break;
-                        }
-                    case NetworkUpdateStage.PreUpdate:
-                        {
-                            PreUpdate();
                             break;
                         }
                     case NetworkUpdateStage.PostLateUpdate:

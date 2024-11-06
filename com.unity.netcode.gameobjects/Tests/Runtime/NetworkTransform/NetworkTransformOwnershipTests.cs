@@ -36,6 +36,9 @@ namespace Unity.Netcode.RuntimeTests
         {
             VerifyObjectIsSpawnedOnClient.ResetObjectTable();
             m_ClientNetworkTransformPrefab = CreateNetworkObjectPrefab("OwnerAuthorityTest");
+            var clientNetworkObject = m_ClientNetworkTransformPrefab.GetComponent<NetworkObject>();
+            // When running in distributed authority mode, make the NetworkObject transferable
+            clientNetworkObject.SetOwnershipStatus(m_DistributedAuthority ? NetworkObject.OwnershipStatus.Transferable : NetworkObject.OwnershipStatus.None);
             var clientNetworkTransform = m_ClientNetworkTransformPrefab.AddComponent<TestClientNetworkTransform>();
             clientNetworkTransform.AuthorityMode = NetworkTransform.AuthorityModes.Owner;
             clientNetworkTransform.Interpolate = false;
@@ -58,6 +61,9 @@ namespace Unity.Netcode.RuntimeTests
             m_ClientNetworkTransformPrefab.AddComponent<VerifyObjectIsSpawnedOnClient>();
 
             m_NetworkTransformPrefab = CreateNetworkObjectPrefab("ServerAuthorityTest");
+            var networkObject = m_ClientNetworkTransformPrefab.GetComponent<NetworkObject>();
+            // When running in distributed authority mode, make the NetworkObject transferable
+            networkObject.SetOwnershipStatus(m_DistributedAuthority ? NetworkObject.OwnershipStatus.Transferable : NetworkObject.OwnershipStatus.None);
             var networkTransform = m_NetworkTransformPrefab.AddComponent<TestClientNetworkTransform>();
             rigidBody = m_NetworkTransformPrefab.AddComponent<Rigidbody>();
             rigidBody.useGravity = false;
@@ -325,15 +331,21 @@ namespace Unity.Netcode.RuntimeTests
             VerifyObjectIsSpawnedOnClient.ResetObjectTable();
             if (m_DistributedAuthority)
             {
-                ownerInstance.NetworkObject.ChangeOwnership(networkManagerNonOwner.LocalClientId);
+                Assert.True(nonOwnerInstance.OwnerClientId != networkManagerNonOwner.LocalClientId, $"Non-Owner Client-{networkManagerNonOwner.LocalClientId} was already the owner prior to changing ownership!");
+                nonOwnerInstance.NetworkObject.ChangeOwnership(networkManagerNonOwner.LocalClientId);
+                Assert.True(nonOwnerInstance.OwnerClientId == networkManagerNonOwner.LocalClientId, $"Client-{networkManagerNonOwner.LocalClientId} failed to change ownership!");
+
+                LogNonOwnerRigidBody(3);
+                yield return WaitForConditionOrTimeOut(() => ownerInstance.GetComponent<NetworkObject>().OwnerClientId == networkManagerNonOwner.LocalClientId);
+                Assert.False(s_GlobalTimeoutHelper.TimedOut, $"Timed out waiting for original owner {networkManagerOwner.name}'s object instance {nonOwnerInstance.name} to change ownership!");
             }
             else
             {
                 m_ServerNetworkManager.SpawnManager.ChangeOwnership(serverSideInstance.GetComponent<NetworkObject>(), networkManagerNonOwner.LocalClientId, true);
+                LogNonOwnerRigidBody(3);
+                yield return WaitForConditionOrTimeOut(() => nonOwnerInstance.GetComponent<NetworkObject>().OwnerClientId == networkManagerNonOwner.LocalClientId);
+                Assert.False(s_GlobalTimeoutHelper.TimedOut, $"Timed out waiting for {networkManagerNonOwner.name}'s object instance {nonOwnerInstance.name} to change ownership!");
             }
-            LogNonOwnerRigidBody(3);
-            yield return WaitForConditionOrTimeOut(() => nonOwnerInstance.GetComponent<NetworkObject>().OwnerClientId == networkManagerNonOwner.LocalClientId);
-            Assert.False(s_GlobalTimeoutHelper.TimedOut, $"Timed out waiting for {networkManagerNonOwner.name}'s object instance {nonOwnerInstance.name} to change ownership!");
 
             LogNonOwnerRigidBody(4);
             // Re-assign the ownership references and wait for the non-owner instance to be notified of ownership change
@@ -478,6 +490,10 @@ namespace Unity.Netcode.RuntimeTests
                 NetworkManagerRelativeSpawnedObjects.Clear();
             }
 
+            /// <summary>
+            /// For testing, just before changing ownership the table is cleared to assure that
+            /// ownership tansfer occurs. This will add the new owner to the table.
+            /// </summary>
             public override void OnGainedOwnership()
             {
                 if (!NetworkManagerRelativeSpawnedObjects.ContainsKey(NetworkManager.LocalClientId))
@@ -487,6 +503,10 @@ namespace Unity.Netcode.RuntimeTests
                 base.OnGainedOwnership();
             }
 
+            /// <summary>
+            /// For testing, just before changing ownership the table is cleared to assure that
+            /// ownership tansfer occurs. This will add the previous owner to the table.
+            /// </summary>
             public override void OnLostOwnership()
             {
                 if (!NetworkManagerRelativeSpawnedObjects.ContainsKey(NetworkManager.LocalClientId))
