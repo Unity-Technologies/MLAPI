@@ -974,6 +974,7 @@ namespace Unity.Netcode.Transports.UTP
                     ;
                 }
             }
+            base.OnEarlyUpdate();
         }
 
         /// <summary>
@@ -999,7 +1000,7 @@ namespace Unity.Netcode.Transports.UTP
                 }
 #endif
             }
-            base.PostLateUpdate();
+            base.OnPostLateUpdate();
         }
 
         private void OnDestroy()
