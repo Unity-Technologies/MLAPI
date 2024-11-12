@@ -14,7 +14,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Fixed
 
-- Fixed issue where spawning a player using `NetworkObject.InstantiateAndSpawn` or `NetworkSpawnManager.InstantiateAndSpawn` would not update the `NetworkSpawnManager.PlayerObjects` or assign the newly spawned player to the `NetworkClient.PlayerObject`.
+- Fixed issue where spawning a player using `NetworkObject.InstantiateAndSpawn` or `NetworkSpawnManager.InstantiateAndSpawn` would not update the `NetworkSpawnManager.PlayerObjects` or assign the newly spawned player to the `NetworkClient.PlayerObject`. (#3122)
 - Fixed issue where queued UnitTransport (NetworkTransport) message batches were being sent on the next frame. They are now sent at the end of the frame during `PostLateUpdate`.  (#3113)
 - Fixed issue where `NotOwnerRpcTarget` or `OwnerRpcTarget` were not using their replacements `NotAuthorityRpcTarget` and `AuthorityRpcTarget` which would invoke a warning. (#3111)
 - Fixed issue where client is removed as an observer from spawned objects when their player instance is despawned. (#3110)
