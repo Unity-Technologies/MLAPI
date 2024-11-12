@@ -751,7 +751,15 @@ namespace Unity.Netcode
             networkObject.IsPlayerObject = isPlayerObject;
             networkObject.transform.position = position;
             networkObject.transform.rotation = rotation;
-            networkObject.SpawnWithOwnership(ownerClientId, destroyWithScene);
+            // If spawning as a player, then invoke SpawnAsPlayerObject
+            if (isPlayerObject)
+            {
+                networkObject.SpawnAsPlayerObject(ownerClientId, destroyWithScene);
+            }
+            else // Otherwise just spawn with ownership
+            {
+                networkObject.SpawnWithOwnership(ownerClientId, destroyWithScene);
+            }
             return networkObject;
         }
 
