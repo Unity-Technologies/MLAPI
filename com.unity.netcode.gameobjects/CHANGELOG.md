@@ -27,6 +27,8 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Changed
 
+- The Debug Simulator section of the Unity Transport component will now be hidden if Unity Transport 2.0 or later is installed. It was already non-functional in that situation and users should instead use the more featureful [Network Simulator](https://docs-multiplayer.unity3d.com/tools/current/tools-network-simulator/) tool from the Multiplayer Tools package.
+
 
 ## [1.11.0] - 2024-08-20
 

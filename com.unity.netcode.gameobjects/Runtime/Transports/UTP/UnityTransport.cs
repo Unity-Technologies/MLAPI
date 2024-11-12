@@ -406,6 +406,7 @@ namespace Unity.Netcode.Transports.UTP
 
 #if UTP_TRANSPORT_2_0_ABOVE
         [Obsolete("DebugSimulator is no longer supported and has no effect. Use Network Simulator from the Multiplayer Tools package.", false)]
+        [HideInInspector]
 #endif
         public SimulatorParameters DebugSimulator = new SimulatorParameters
         {
