@@ -521,6 +521,7 @@ namespace Unity.Netcode.Components
 
         private unsafe struct AnimatorParamCache
         {
+            internal bool Exclude;
             internal int Hash;
             internal int Type;
             internal fixed byte Value[4]; // this is a max size of 4 bytes
@@ -1064,6 +1065,11 @@ namespace Unity.Netcode.Components
             {
                 ref var cacheValue = ref UnsafeUtility.ArrayElementAsRef<AnimatorParamCache>(m_CachedAnimatorParameters.GetUnsafePtr(), i);
 
+                if (cacheValue.Exclude)
+                {
+                    continue;
+                }
+
                 // If a parameter gets controlled by a curve during runtime after initialization of NetworkAnimator
                 // then ignore changes to this parameter. We are not removing the parameter in the event that
                 // it no longer is controlled by a curve.
@@ -1561,6 +1567,32 @@ namespace Unity.Netcode.Components
         public void ResetTrigger(int hash)
         {
             SetTrigger(hash, false);
+        }
+
+        /// <summary>
+        /// Allows for the enabling or disabling the synchronization of a specific
+        /// <see cref="Animator"/> parameter.
+        /// </summary>
+        /// <param name="parameterName">name of the parameter</param>
+        /// <param name="enable">whether to enable or disable synchronizing it</param>
+        public void ToggleParameterSync(string parameterName, bool enable)
+        {
+            var serverAuthoritative = OnIsServerAuthoritative();
+            if (!IsSpawned || serverAuthoritative && IsServer || !serverAuthoritative && IsOwner)
+            {
+                var hash32 = Animator.StringToHash(parameterName);
+
+                for (int i = 0; i < m_CachedAnimatorParameters.Length; i++)
+                {
+                    var cachedParameter = m_CachedAnimatorParameters[i];
+                    if (cachedParameter.Hash == hash32)
+                    {
+                        cachedParameter.Exclude = !enable;
+                        m_CachedAnimatorParameters[i] = cachedParameter;
+                        break;
+                    }
+                }
+            }
         }
     }
 }
