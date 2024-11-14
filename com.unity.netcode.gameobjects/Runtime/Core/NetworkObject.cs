@@ -106,6 +106,7 @@ namespace Unity.Netcode
         internal void RefreshAllPrefabInstances()
         {
             var instanceGlobalId = GlobalObjectId.GetGlobalObjectIdSlow(this);
+            NetworkObjectRefreshTool.PrefabNetworkObject = this;
             if (!PrefabUtility.IsPartOfAnyPrefab(this) || instanceGlobalId.identifierType != k_ImportedAssetObjectType)
             {
                 EditorUtility.DisplayDialog("Network Prefab Assets Only", "This action can only be performed on a network prefab asset.", "Ok");
