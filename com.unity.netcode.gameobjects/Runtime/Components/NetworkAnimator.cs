@@ -1126,6 +1126,12 @@ namespace Unity.Netcode.Components
             foreach (var parameterIndex in m_ParametersToUpdate)
             {
                 ref var cacheValue = ref UnsafeUtility.ArrayElementAsRef<AnimatorParamCache>(m_CachedAnimatorParameters.GetUnsafePtr(), parameterIndex);
+
+                if (cacheValue.Exclude)
+                {
+                    continue;
+                }
+
                 var hash = cacheValue.Hash;
                 BytePacker.WriteValuePacked(writer, (uint)parameterIndex);
                 if (cacheValue.Type == AnimationParamEnumWrapper.AnimatorControllerParameterInt)
