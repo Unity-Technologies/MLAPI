@@ -17,6 +17,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Fixed
 
+- Fixed issue where `NetworkAnimator` would statically allocate write buffer space for `Animator` parameters that could cause a write error if the number of parameters exceeded the space allocated.
 - Fixed issue with the in-scene network prefab instance update menu tool where it was not properly updating scenes when invoked on the root prefab instance. (#3084)
 - Fixed issue where `NetworkAnimator` would send updates to non-observer clients. (#3058)
 - Fixed issue where an exception could occur when receiving a universal RPC for a `NetworkObject` that has been despawned. (#3055)
