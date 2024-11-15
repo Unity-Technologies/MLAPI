@@ -245,8 +245,30 @@ namespace Unity.Netcode
             ChangeOwnership(networkObject, NetworkManager.ServerClientId);
         }
 
+        private Dictionary<ulong, float> m_LastChangeInOwnership = new Dictionary<ulong, float>();
+        private const int k_MaximumTickOwnershipChangeMultiplier = 6;
+
         internal void ChangeOwnership(NetworkObject networkObject, ulong clientId)
         {
+            // If ownership changes faster than the latency between the client-server and there are NetworkVariables being updated during ownership changes,
+            // then notify the user they could potentially lose state updates if developer logging is enabled.
+            if (m_LastChangeInOwnership.ContainsKey(networkObject.NetworkObjectId) && m_LastChangeInOwnership[networkObject.NetworkObjectId] > Time.realtimeSinceStartup)
+            {
+                var hasNetworkVariables = false;
+                for (int i = 0; i < networkObject.ChildNetworkBehaviours.Count; i++)
+                {
+                    hasNetworkVariables = networkObject.ChildNetworkBehaviours[i].NetworkVariableFields.Count > 0;
+                    if (hasNetworkVariables)
+                    {
+                        break;
+                    }
+                }
+                if (hasNetworkVariables && NetworkManager.LogLevel == LogLevel.Developer)
+                {
+                    NetworkLog.LogWarningServer($"[Rapid Ownership Change Detected][Potential Loss in State] Detected a rapid change in ownership that exceeds a frequency less than {k_MaximumTickOwnershipChangeMultiplier}x the current network tick rate! Provide at least {k_MaximumTickOwnershipChangeMultiplier}x the current network tick rate between ownership changes to avoid NetworkVariable state loss.");
+                }
+            }
+
             if (!NetworkManager.IsServer)
             {
                 throw new NotServerException("Only the server can change ownership");
@@ -257,21 +279,29 @@ namespace Unity.Netcode
                 throw new SpawnStateException("Object is not spawned");
             }
 
-            var previous = networkObject.OwnerClientId;
+            // Used to distinguish whether a new owner should receive any currently dirty NetworkVariable updates
+            networkObject.PreviousOwnerId = networkObject.OwnerClientId;
+
             // Assign the new owner
             networkObject.OwnerClientId = clientId;
 
             // Always notify locally on the server when ownership is lost
             networkObject.InvokeBehaviourOnLostOwnership();
 
-            networkObject.MarkVariablesDirty(true);
-            NetworkManager.BehaviourUpdater.AddForUpdate(networkObject);
-
             // Server adds entries for all client ownership
             UpdateOwnershipTable(networkObject, networkObject.OwnerClientId);
 
             // Always notify locally on the server when a new owner is assigned
             networkObject.InvokeBehaviourOnGainedOwnership();
+
+            if (networkObject.PreviousOwnerId == NetworkManager.LocalClientId)
+            {
+                // Mark any owner read variables as dirty
+                networkObject.MarkOwnerReadVariablesDirty();
+                // Immediately queue any pending deltas and order the message before the
+                // change in ownership message.
+                NetworkManager.BehaviourUpdater.NetworkBehaviourUpdate(true);
+            }
 
             var message = new ChangeOwnershipMessage
             {
@@ -292,7 +322,15 @@ namespace Unity.Netcode
             /// !!Important!!
             /// This gets called specifically *after* sending the ownership message so any additional messages that need to proceed an ownership
             /// change can be sent from NetworkBehaviours that override the <see cref="NetworkBehaviour.OnOwnershipChanged"></see>
-            networkObject.InvokeOwnershipChanged(previous, clientId);
+            networkObject.InvokeOwnershipChanged(networkObject.PreviousOwnerId, clientId);
+
+            // Keep track of the ownership change frequency to assure a user is not exceeding changes faster than 2x the current Tick Rate.
+            if (!m_LastChangeInOwnership.ContainsKey(networkObject.NetworkObjectId))
+            {
+                m_LastChangeInOwnership.Add(networkObject.NetworkObjectId, 0.0f);
+            }
+            var tickFrequency = 1.0f / NetworkManager.NetworkConfig.TickRate;
+            m_LastChangeInOwnership[networkObject.NetworkObjectId] = Time.realtimeSinceStartup + (tickFrequency * k_MaximumTickOwnershipChangeMultiplier);
         }
 
         internal bool HasPrefab(NetworkObject.SceneObject sceneObject)

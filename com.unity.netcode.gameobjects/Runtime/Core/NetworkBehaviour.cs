@@ -765,6 +765,13 @@ namespace Unity.Netcode
         internal void InternalOnGainedOwnership()
         {
             UpdateNetworkProperties();
+            // New owners need to assure any NetworkVariables they have write permissions 
+            // to are updated so the previous and original values are aligned with the
+            // current value (primarily for collections).
+            if (OwnerClientId == NetworkManager.LocalClientId)
+            {
+                UpdateNetworkVariableOnOwnershipChanged();
+            }
             OnGainedOwnership();
         }
 
@@ -946,20 +953,20 @@ namespace Unity.Netcode
             PreNetworkVariableWrite();
         }
 
-        internal void VariableUpdate(ulong targetClientId)
-        {
-            NetworkVariableUpdate(targetClientId, NetworkBehaviourId);
-        }
-
         internal readonly List<int> NetworkVariableIndexesToReset = new List<int>();
         internal readonly HashSet<int> NetworkVariableIndexesToResetSet = new HashSet<int>();
 
-        private void NetworkVariableUpdate(ulong targetClientId, int behaviourIndex)
+        internal void NetworkVariableUpdate(ulong targetClientId, int behaviourIndex, bool forceSend = false)
         {
-            if (!CouldHaveDirtyNetworkVariables())
+            if (!forceSend && !CouldHaveDirtyNetworkVariables())
             {
                 return;
             }
+            // Getting these ahead of time actually improves performance
+            var networkManager = NetworkManager;
+            var networkObject = NetworkObject;
+            var messageManager = networkManager.MessageManager;
+            var connectionManager = networkManager.ConnectionManager;
 
             for (int j = 0; j < m_DeliveryMappedNetworkVariableIndices.Count; j++)
             {
@@ -982,10 +989,14 @@ namespace Unity.Netcode
                     var message = new NetworkVariableDeltaMessage
                     {
                         NetworkObjectId = NetworkObjectId,
-                        NetworkBehaviourIndex = NetworkObject.GetNetworkBehaviourOrderIndex(this),
+                        NetworkBehaviourIndex = networkObject.GetNetworkBehaviourOrderIndex(this),
                         NetworkBehaviour = this,
                         TargetClientId = targetClientId,
-                        DeliveryMappedNetworkVariableIndex = m_DeliveryMappedNetworkVariableIndices[j]
+                        DeliveryMappedNetworkVariableIndex = m_DeliveryMappedNetworkVariableIndices[j],
+                        // By sending the network delivery we can forward messages immediately as opposed to processing them
+                        // at the end. While this will send updates to clients that cannot read, the handler will ignore anything
+                        // sent to a client that does not have read permissions.
+                        NetworkDelivery = m_DeliveryTypesForNetworkVariableGroups[j]
                     };
                     // TODO: Serialization is where the IsDirty flag gets changed.
                     // Messages don't get sent from the server to itself, so if we're host and sending to ourselves,
@@ -994,7 +1005,7 @@ namespace Unity.Netcode
                     // so we don't have to do this serialization work if we're not going to use the result.
                     if (IsServer && targetClientId == NetworkManager.ServerClientId)
                     {
-                        var tmpWriter = new FastBufferWriter(NetworkManager.MessageManager.NonFragmentedMessageMaxSize, Allocator.Temp, NetworkManager.MessageManager.FragmentedMessageMaxSize);
+                        var tmpWriter = new FastBufferWriter(messageManager.NonFragmentedMessageMaxSize, Allocator.Temp, messageManager.FragmentedMessageMaxSize);
                         using (tmpWriter)
                         {
                             message.Serialize(tmpWriter, message.Version);
@@ -1002,7 +1013,7 @@ namespace Unity.Netcode
                     }
                     else
                     {
-                        NetworkManager.ConnectionManager.SendMessage(ref message, m_DeliveryTypesForNetworkVariableGroups[j], targetClientId);
+                        connectionManager.SendMessage(ref message, m_DeliveryTypesForNetworkVariableGroups[j], targetClientId);
                     }
                 }
             }
@@ -1029,11 +1040,42 @@ namespace Unity.Netcode
             return false;
         }
 
+        /// <summary>
+        /// Invoked on a new client to assure the previous and original values
+        /// are synchronized with the current known value.
+        /// </summary>
+        /// <remarks>
+        /// Primarily for collections to assure the previous value(s) is/are the
+        /// same as the current value(s) in order to not re-send already known entries.
+        /// </remarks>
+        internal void UpdateNetworkVariableOnOwnershipChanged()
+        {
+            for (int j = 0; j < NetworkVariableFields.Count; j++)
+            {
+                // Only invoke OnInitialize on NetworkVariables the owner can write to
+                if (NetworkVariableFields[j].CanClientWrite(OwnerClientId))
+                {
+                    NetworkVariableFields[j].OnInitialize();
+                }
+            }
+        }
+
         internal void MarkVariablesDirty(bool dirty)
         {
             for (int j = 0; j < NetworkVariableFields.Count; j++)
             {
                 NetworkVariableFields[j].SetDirty(dirty);
+            }
+        }
+
+        internal void MarkOwnerReadVariablesDirty()
+        {
+            for (int j = 0; j < NetworkVariableFields.Count; j++)
+            {
+                if (NetworkVariableFields[j].ReadPerm == NetworkVariableReadPermission.Owner)
+                {
+                    NetworkVariableFields[j].SetDirty(true);
+                }
             }
         }
 
@@ -1067,7 +1109,11 @@ namespace Unity.Netcode
                         // The way we do packing, any value > 63 in a ushort will use the full 2 bytes to represent.
                         writer.WriteValueSafe((ushort)0);
                         var startPos = writer.Position;
-                        NetworkVariableFields[j].WriteField(writer);
+                        // Write the NetworkVariable field value
+                        // WriteFieldSynchronization will write the current value only if there are no pending changes.
+                        // Otherwise, it will write the previous value if there are pending changes since the pending
+                        // changes will be sent shortly after the client's synchronization.
+                        NetworkVariableFields[j].WriteFieldSynchronization(writer);
                         var size = writer.Position - startPos;
                         writer.Seek(writePos);
                         writer.WriteValueSafe((ushort)size);
@@ -1075,7 +1121,11 @@ namespace Unity.Netcode
                     }
                     else
                     {
-                        NetworkVariableFields[j].WriteField(writer);
+                        // Write the NetworkVariable field value
+                        // WriteFieldSynchronization will write the current value only if there are no pending changes.
+                        // Otherwise, it will write the previous value if there are pending changes since the pending
+                        // changes will be sent shortly after the client's synchronization.
+                        NetworkVariableFields[j].WriteFieldSynchronization(writer);
                     }
                 }
                 else // Only if EnsureNetworkVariableLengthSafety, otherwise just skip

@@ -272,6 +272,8 @@ namespace Unity.Netcode
         /// </summary>
         public ulong OwnerClientId { get; internal set; }
 
+        internal ulong PreviousOwnerId;
+
         /// <summary>
         /// If true, the object will always be replicated as root on clients and the parent will be ignored.
         /// </summary>
@@ -1484,6 +1486,14 @@ namespace Unity.Netcode
             }
         }
 
+        internal void MarkOwnerReadVariablesDirty()
+        {
+            for (int i = 0; i < ChildNetworkBehaviours.Count; i++)
+            {
+                ChildNetworkBehaviours[i].MarkOwnerReadVariablesDirty();
+            }
+        }
+
         // NGO currently guarantees that the client will receive spawn data for all objects in one network tick.
         //  Children may arrive before their parents; when they do they are stored in OrphanedChildren and then
         //  resolved when their parents arrived.  Because we don't send a partial list of spawns (yet), something
@@ -1725,7 +1735,7 @@ namespace Unity.Netcode
             }
         }
 
-        internal void PostNetworkVariableWrite()
+        internal void PostNetworkVariableWrite(bool forceSend)
         {
             for (int k = 0; k < ChildNetworkBehaviours.Count; k++)
             {
