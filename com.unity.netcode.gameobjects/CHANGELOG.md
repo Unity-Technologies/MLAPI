@@ -17,6 +17,10 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Fixed
 
+- Fixed issue where a newly synchronizing client would be synchronized with the current `NetworkVariable` values always which could cause issues with collections if there were any pending state updates. Now, when initially synchronizing a client, if a `NetworkVariable` has a pending state update it will serialize the previously known value(s) to the synchronizing client so when the pending updates are sent they aren't duplicate values on the newly connected client side. (#3126)
+- Fixed issue where changing ownership would mark every `NetworkVariable` dirty. Now, it will only mark any `NetworkVariable` with owner read permissions as dirty and will send/flush any pending updates to all clients prior to sending the change in ownership message.  (#3126)
+- Fixed issue with `NetworkVariable` collections where transferring ownership to another client would not update the new owner's previous value to the most current value which could cause the last/previous added value to be detected as a change when adding or removing an entry (as long as the entry removed was not the last/previously added value).  (#3126)
+- Fixed issue where a client (or server) with no write permissions for a `NetworkVariable` using a standard .NET collection type could still modify the collection which could cause various issues depending upon the modification and collection type.  (#3126)
 - Fixed issue with the in-scene network prefab instance update menu tool where it was not properly updating scenes when invoked on the root prefab instance. (#3084)
 - Fixed issue where `NetworkAnimator` would send updates to non-observer clients. (#3058)
 - Fixed issue where an exception could occur when receiving a universal RPC for a `NetworkObject` that has been despawned. (#3055)
@@ -27,6 +31,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Changed
 
+- Changed `NetworkVariableDeltaMessage` so the server now forwards delta state updates (owner write permission based from a client) to other clients immediately as opposed to keeping a `NetworkVariable` or `NetworkList` dirty and processing them at the end of the frame or potentially on the next network tick. (#3126)
 - The Debug Simulator section of the Unity Transport component will now be hidden if Unity Transport 2.0 or later is installed. It was already non-functional in that situation and users should instead use the more featureful [Network Simulator](https://docs-multiplayer.unity3d.com/tools/current/tools-network-simulator/) tool from the Multiplayer Tools package. (#3120)
 
 
