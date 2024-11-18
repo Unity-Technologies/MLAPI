@@ -187,7 +187,13 @@ namespace Unity.Netcode
             }
 
             m_InternalValue = default;
+
+            if (m_InternalOriginalValue is IDisposable internalOriginalValueDisposable)
+            {
+                internalOriginalValueDisposable.Dispose();
+            }
             m_InternalOriginalValue = default;
+
             if (m_HasPreviousValue && m_PreviousValue is IDisposable previousValueDisposable)
             {
                 m_HasPreviousValue = false;
