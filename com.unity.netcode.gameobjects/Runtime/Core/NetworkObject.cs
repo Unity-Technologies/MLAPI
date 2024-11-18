@@ -1739,7 +1739,7 @@ namespace Unity.Netcode
         {
             for (int k = 0; k < ChildNetworkBehaviours.Count; k++)
             {
-                ChildNetworkBehaviours[k].PostNetworkVariableWrite();
+                ChildNetworkBehaviours[k].PostNetworkVariableWrite(forceSend);
             }
         }
 
