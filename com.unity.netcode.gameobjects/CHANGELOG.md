@@ -21,6 +21,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 - Fixed issue where changing ownership would mark every `NetworkVariable` dirty. Now, it will only mark any `NetworkVariable` with owner read permissions as dirty and will send/flush any pending updates to all clients prior to sending the change in ownership message.  (#3126)
 - Fixed issue with `NetworkVariable` collections where transferring ownership to another client would not update the new owner's previous value to the most current value which could cause the last/previous added value to be detected as a change when adding or removing an entry (as long as the entry removed was not the last/previously added value).  (#3126)
 - Fixed issue where a client (or server) with no write permissions for a `NetworkVariable` using a standard .NET collection type could still modify the collection which could cause various issues depending upon the modification and collection type.  (#3126)
+- Fixed issue where `NetworkAnimator` would statically allocate write buffer space for `Animator` parameters that could cause a write error if the number of parameters exceeded the space allocated. (#3124)
 - Fixed issue with the in-scene network prefab instance update menu tool where it was not properly updating scenes when invoked on the root prefab instance. (#3084)
 - Fixed issue where `NetworkAnimator` would send updates to non-observer clients. (#3058)
 - Fixed issue where an exception could occur when receiving a universal RPC for a `NetworkObject` that has been despawned. (#3055)
