@@ -1,6 +1,9 @@
 using System;
 using System.Collections;
 using NUnit.Framework;
+using Unity.Netcode.TestHelpers.Runtime;
+using Unity.Netcode.Transports.UTP;
+using Unity.Networking.Transport;
 using UnityEngine;
 using UnityEngine.TestTools;
 
@@ -155,6 +158,51 @@ namespace Unity.Netcode.RuntimeTests
             public override void DisconnectLocalClient()
             {
             }
+        }
+    }
+
+    /// <summary>
+    /// Verifies the UnityTransport.GetEndpoint method returns
+    /// valid NetworkEndpoint information.
+    /// </summary>
+    internal class TransportEndpointTests : NetcodeIntegrationTest
+    {
+        protected override int NumberOfClients => 2;
+
+        [UnityTest]
+        public IEnumerator GetEndpointReportedCorrectly()
+        {
+            var serverUnityTransport = m_ServerNetworkManager.NetworkConfig.NetworkTransport as UnityTransport;
+            var serverEndpoint = new NetworkEndpoint();
+            var clientEndpoint = new NetworkEndpoint();
+            foreach (var client in m_ClientNetworkManagers)
+            {
+                var unityTransport = client.NetworkConfig.NetworkTransport as UnityTransport;
+                serverEndpoint = unityTransport.GetEndpoint(m_ServerNetworkManager.LocalClientId);
+                clientEndpoint = serverUnityTransport.GetEndpoint(client.LocalClientId);
+                Assert.IsTrue(serverEndpoint.IsValid);
+                Assert.IsTrue(clientEndpoint.IsValid);
+                Assert.IsTrue(clientEndpoint.Address.Split(":")[0] == unityTransport.ConnectionData.Address);
+                Assert.IsTrue(serverEndpoint.Address.Split(":")[0] == serverUnityTransport.ConnectionData.Address);
+                Assert.IsTrue(serverEndpoint.Port == unityTransport.ConnectionData.Port);
+                Assert.IsTrue(clientEndpoint.Port >= serverUnityTransport.ConnectionData.Port);
+            }
+
+            // Now validate that when disconnected it returns a non-valid NetworkEndPoint
+            var clientId = m_ClientNetworkManagers[0].LocalClientId;
+            m_ClientNetworkManagers[0].Shutdown();
+            yield return s_DefaultWaitForTick;
+
+            serverEndpoint = (m_ClientNetworkManagers[0].NetworkConfig.NetworkTransport as UnityTransport).GetEndpoint(m_ServerNetworkManager.LocalClientId);
+            clientEndpoint = serverUnityTransport.GetEndpoint(clientId);
+            Assert.IsFalse(serverEndpoint.IsValid);
+            Assert.IsFalse(clientEndpoint.IsValid);
+
+            // Validate that invalid client identifiers return an invalid NetworkEndPoint
+            serverEndpoint = (m_ClientNetworkManagers[0].NetworkConfig.NetworkTransport as UnityTransport).GetEndpoint((ulong)UnityEngine.Random.Range(NumberOfClients + 1, 30));
+            clientEndpoint = serverUnityTransport.GetEndpoint((ulong)UnityEngine.Random.Range(NumberOfClients + 1, 30));
+            Assert.IsFalse(serverEndpoint.IsValid);
+            Assert.IsFalse(clientEndpoint.IsValid);
         }
     }
 }
