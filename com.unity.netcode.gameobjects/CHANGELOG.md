@@ -10,6 +10,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Added
 
+- Added `UnityTransport.GetEndpoint` method to provide a way to obtain `NetworkEndpoint` information of a connection via client identifier. (#3130)
 - Added `NetworkTransport.OnEarlyUpdate` and `NetworkTransport.OnPostLateUpdate` methods to provide more control over handling transport related events at the start and end of each frame. (#3113)
 
 ### Fixed
