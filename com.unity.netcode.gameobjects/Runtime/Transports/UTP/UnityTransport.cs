@@ -1210,6 +1210,30 @@ namespace Unity.Netcode.Transports.UTP
         }
 
         /// <summary>
+        /// Provides the <see cref="NetworkEndpoint"/> for the NGO client identifier specified.
+        /// </summary>
+        /// <remarks>
+        /// - This is only really useful for direct connections.
+        /// - Relay connections and clients connected using a distributed authority network topology will not provide the client's actual endpoint information.
+        /// - For LAN topologies this should work as long as it is a direct connection and not a relay connection.
+        /// </remarks>
+        /// <param name="clientId">NGO client identifier to get endpoint information about.</param>
+        /// <returns><see cref="NetworkEndpoint"/></returns>
+        public NetworkEndpoint GetEndpoint(ulong clientId)
+        {
+            if (m_Driver.IsCreated && NetworkManager != null && NetworkManager.IsListening)
+            {
+                var transportId = NetworkManager.ConnectionManager.ClientIdToTransportId(clientId);
+                var networkConnection = ParseClientId(transportId);
+                if (m_Driver.GetConnectionState(networkConnection) == NetworkConnection.State.Connected)
+                {
+                    return m_Driver.RemoteEndPoint(networkConnection);
+                }
+            }
+            return new NetworkEndpoint();
+        }
+
+        /// <summary>
         /// Initializes the transport
         /// </summary>
         /// <param name="networkManager">The NetworkManager that initialized and owns the transport</param>
