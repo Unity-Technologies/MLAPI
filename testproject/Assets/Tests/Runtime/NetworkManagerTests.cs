@@ -21,8 +21,7 @@ namespace TestProject.RuntimeTests
             SceneManagementEnabled,
             SceneManagementDisabled
         }
-
-        private bool m_EnableSceneManagement;
+        
         private NetworkObject m_NetworkObject;
         private bool m_NetworkObjectWasSpawned;
         private bool m_NetworkBehaviourIsHostWasSet;
@@ -85,7 +84,7 @@ namespace TestProject.RuntimeTests
 
         protected override void OnServerAndClientsCreated()
         {
-            m_ServerNetworkManager.NetworkConfig.EnableSceneManagement = m_EnableSceneManagement;
+            m_ServerNetworkManager.NetworkConfig.EnableSceneManagement = m_UseSceneManagement;
             m_NetworkObjectTestComponent.ConfigureClientConnected(m_ServerNetworkManager, OnClientConnectedCallback);
         }
 
@@ -108,7 +107,7 @@ namespace TestProject.RuntimeTests
 
         protected override void OnNewClientCreated(NetworkManager networkManager)
         {
-            networkManager.NetworkConfig.EnableSceneManagement = m_EnableSceneManagement;
+            networkManager.NetworkConfig.EnableSceneManagement = m_UseSceneManagement;
             foreach (var prefab in m_ServerNetworkManager.NetworkConfig.Prefabs.Prefabs)
             {
                 networkManager.NetworkConfig.Prefabs.Add(prefab);
