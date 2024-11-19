@@ -21,7 +21,7 @@ namespace TestProject.RuntimeTests
             SceneManagementEnabled,
             SceneManagementDisabled
         }
-        
+
         private NetworkObject m_NetworkObject;
         private bool m_NetworkObjectWasSpawned;
         private bool m_NetworkBehaviourIsHostWasSet;
