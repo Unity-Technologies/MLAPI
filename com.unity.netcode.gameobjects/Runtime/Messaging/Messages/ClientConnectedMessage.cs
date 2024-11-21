@@ -68,10 +68,11 @@ namespace Unity.Netcode
                     //    networkManager.SpawnManager.ShowHiddenObjectsToNewlyJoinedClient(ClientId);
                     //}
 
-                    // We defer redistribution to the end of the NetworkUpdateStage.PostLateUpdate
-                    networkManager.RedistributeToClient = true;
-                    networkManager.ClientToRedistribute = ClientId;
-                    networkManager.TickToRedistribute = networkManager.ServerTime.Tick + (int)(0.5f * networkManager.NetworkConfig.TickRate);
+                    /// We defer redistribution to happen after NetworkShow has been invoked
+                    /// <see cref="NetworkBehaviourUpdater.NetworkBehaviourUpdater_Tick"/>
+                    /// DANGO-TODO: Determine if this needs to be removed once the service handles object distribution
+                    networkManager.RedistributeToClients = true;
+                    networkManager.ClientsToRedistribute.Add(ClientId);
                 }
             }
         }

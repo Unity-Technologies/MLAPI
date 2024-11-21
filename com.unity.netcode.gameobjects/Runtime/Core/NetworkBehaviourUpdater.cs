@@ -141,6 +141,9 @@ namespace Unity.Netcode
 
             // Then show any NetworkObjects queued to be made visible/shown
             m_NetworkManager.SpawnManager.HandleNetworkObjectShow();
+
+            // Handle object redistribution (DA + disabled scene management only)
+            m_NetworkManager.HandleRedistributionToClients();
         }
     }
 }
