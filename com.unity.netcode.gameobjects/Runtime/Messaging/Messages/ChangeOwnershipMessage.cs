@@ -332,7 +332,7 @@ namespace Unity.Netcode
             // Sanity check that we are not sending duplicated change ownership messages
             if (networkObject.OwnerClientId == OwnerClientId)
             {
-                UnityEngine.Debug.LogError($"Unnecessary ownership changed message for {NetworkObjectId}.");
+                UnityEngine.Debug.LogError($"Client-{context.SenderId} sent unnecessary ownership changed message for {NetworkObjectId}.");
                 // Ignore the message
                 return;
             }

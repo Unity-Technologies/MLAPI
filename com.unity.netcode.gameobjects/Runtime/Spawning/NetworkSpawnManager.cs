@@ -580,7 +580,6 @@ namespace Unity.Netcode
                     {
                         networkObject.ChildNetworkBehaviours[i].UpdateNetworkProperties();
                     }
-
                     size = NetworkManager.ConnectionManager.SendMessage(ref message, NetworkDelivery.ReliableSequenced, NetworkManager.ServerClientId);
                     NetworkManager.NetworkMetrics.TrackOwnershipChangeSent(NetworkManager.LocalClientId, networkObject, size);
                 }
@@ -1976,14 +1975,14 @@ namespace Unity.Netcode
         /// synchronizing in order to "show" (spawn) anything that might be currently hidden from
         /// the session owner.
         /// </summary>
+        /// <remarks>
+        /// Replacement is: SynchronizeObjectsToNewlyJoinedClient
+        /// </remarks>
         internal void ShowHiddenObjectsToNewlyJoinedClient(ulong newClientId)
         {
-            if (!NetworkManager.DistributedAuthorityMode)
+            if (NetworkManager == null || NetworkManager.ShutdownInProgress && NetworkManager.LogLevel <= LogLevel.Developer)
             {
-                if (NetworkManager == null || !NetworkManager.ShutdownInProgress && NetworkManager.LogLevel <= LogLevel.Developer)
-                {
-                    Debug.LogWarning($"[Internal Error] {nameof(ShowHiddenObjectsToNewlyJoinedClient)} invoked while !");
-                }
+                Debug.LogWarning($"[Internal Error] {nameof(ShowHiddenObjectsToNewlyJoinedClient)} invoked while shutdown is in progress!");
                 return;
             }
 
@@ -2010,6 +2009,47 @@ namespace Unity.Netcode
                         {
                             // Track if there is some other location where the client is being added to the observers list when the object is hidden from the session owner
                             Debug.LogWarning($"[{networkObject.name}] Has new client as an observer but it is hidden from the session owner!");
+                        }
+                        // For now, remove the client (impossible for the new client to have an instance since the session owner doesn't) to make sure newly added
+                        // code to handle this edge case works.
+                        networkObject.Observers.Remove(newClientId);
+                    }
+                    networkObject.NetworkShow(newClientId);
+                }
+            }
+        }
+
+        internal void SynchronizeObjectsToNewlyJoinedClient(ulong newClientId)
+        {
+            if (NetworkManager == null || NetworkManager.ShutdownInProgress && NetworkManager.LogLevel <= LogLevel.Developer)
+            {
+                Debug.LogWarning($"[Internal Error] {nameof(SynchronizeObjectsToNewlyJoinedClient)} invoked while shutdown is in progress!");
+                return;
+            }
+
+            if (!NetworkManager.DistributedAuthorityMode)
+            {
+                Debug.LogError($"[Internal Error] {nameof(SynchronizeObjectsToNewlyJoinedClient)} should only be invoked when using a distributed authority network topology!");
+                return;
+            }
+
+            if (NetworkManager.NetworkConfig.EnableSceneManagement)
+            {
+                Debug.LogError($"[Internal Error] {nameof(SynchronizeObjectsToNewlyJoinedClient)} should only be invoked when scene management is disabled!");
+                return;
+            }
+
+            var localClientId = NetworkManager.LocalClient.ClientId;
+            foreach (var networkObject in SpawnedObjectsList)
+            {
+                if (networkObject.SpawnWithObservers && networkObject.OwnerClientId == localClientId)
+                {
+                    if (networkObject.Observers.Contains(newClientId))
+                    {
+                        if (NetworkManager.LogLevel <= LogLevel.Developer)
+                        {
+                            // Temporary tracking to make sure we are not showing something already visibile (should never be the case for this)
+                            Debug.LogWarning($"[{nameof(SynchronizeObjectsToNewlyJoinedClient)}][{networkObject.name}] New client as already an observer!");
                         }
                         // For now, remove the client (impossible for the new client to have an instance since the session owner doesn't) to make sure newly added
                         // code to handle this edge case works.

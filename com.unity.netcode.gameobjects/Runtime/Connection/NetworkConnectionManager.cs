@@ -1001,6 +1001,14 @@ namespace Unity.Netcode
             }
 
             var distributedAuthority = NetworkManager.DistributedAuthorityMode;
+
+            // If not using DA return early or if using DA and scene management is disabled then exit early Since we use NetworkShow to spawn
+            // objects on the newly connected client side.
+            if (!distributedAuthority || distributedAuthority && !NetworkManager.NetworkConfig.EnableSceneManagement)
+            {
+                return networkClient;
+            }
+
             var sessionOwnerId = NetworkManager.CurrentSessionOwner;
             var isSessionOwner = NetworkManager.LocalClient.IsSessionOwner;
             foreach (var networkObject in NetworkManager.SpawnManager.SpawnedObjectsList)

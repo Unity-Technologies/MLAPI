@@ -2894,7 +2894,7 @@ namespace Unity.Netcode
                 SyncObservers = syncObservers,
                 Observers = syncObservers ? Observers.ToArray() : null,
                 NetworkSceneHandle = NetworkSceneHandle,
-                Hash = HostCheckForGlobalObjectIdHashOverride(),
+                Hash = CheckForGlobalObjectIdHashOverride(),
                 OwnerObject = this,
                 TargetClientId = targetClientId
             };
@@ -3246,14 +3246,14 @@ namespace Unity.Netcode
         }
 
         /// <summary>
-        /// Only applies to Host mode.
+        /// Only applies to Hosts or session owners (for now)
         /// Will return the registered source NetworkPrefab's GlobalObjectIdHash if one exists.
         /// Server and Clients will always return the NetworkObject's GlobalObjectIdHash.
         /// </summary>
-        /// <returns></returns>
-        internal uint HostCheckForGlobalObjectIdHashOverride()
+        /// <returns>appropriate hash value</returns>
+        internal uint CheckForGlobalObjectIdHashOverride()
         {
-            if (NetworkManager.IsServer)
+            if (NetworkManager.IsServer || (NetworkManager.DistributedAuthorityMode && NetworkManager.LocalClient.IsSessionOwner))
             {
                 if (NetworkManager.PrefabHandler.ContainsHandler(this))
                 {
