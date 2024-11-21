@@ -1081,6 +1081,8 @@ namespace Unity.Netcode
             }
             else
             {
+                // Send to each individual client to assure only the in-scene placed NetworkObjects being observed by the client
+                // is serialized
                 foreach (var clientId in targetClientIds)
                 {
                     sceneEvent.TargetClientId = clientId;
@@ -1092,7 +1094,6 @@ namespace Unity.Netcode
                     NetworkManager.NetworkMetrics.TrackSceneEventSent(clientId, (uint)sceneEvent.SceneEventType, SceneNameFromHash(sceneEvent.SceneHash), size);
                 }
             }
-
         }
 
         /// <summary>
