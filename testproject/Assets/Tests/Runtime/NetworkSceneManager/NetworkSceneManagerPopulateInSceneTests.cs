@@ -11,8 +11,9 @@ using Object = UnityEngine.Object;
 namespace TestProject.RuntimeTests
 {
 
-    [TestFixture(NetworkTopologyTypes.DistributedAuthority)]
-    [TestFixture(NetworkTopologyTypes.ClientServer)]
+    [TestFixture(NetworkTopologyTypes.DistributedAuthority, HostOrServer.DAHost)]
+    [TestFixture(NetworkTopologyTypes.ClientServer, HostOrServer.Host)]
+    [TestFixture(NetworkTopologyTypes.ClientServer, HostOrServer.Server)]
     public class NetworkSceneManagerPopulateInSceneTests : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 0;
@@ -20,7 +21,7 @@ namespace TestProject.RuntimeTests
 
         protected Dictionary<uint, GameObject> m_InSceneObjectList = new Dictionary<uint, GameObject>();
 
-        public NetworkSceneManagerPopulateInSceneTests(NetworkTopologyTypes networkTopologyType) : base(networkTopologyType) { }
+        public NetworkSceneManagerPopulateInSceneTests(NetworkTopologyTypes networkTopologyType, HostOrServer hostOrServer) : base(networkTopologyType, hostOrServer) { }
 
         protected override IEnumerator OnSetup()
         {

@@ -13,8 +13,9 @@ using UnityEngine.TestTools;
 
 namespace TestProject.RuntimeTests
 {
-    [TestFixture(NetworkTopologyTypes.DistributedAuthority)]
-    [TestFixture(NetworkTopologyTypes.ClientServer)]
+    [TestFixture(NetworkTopologyTypes.DistributedAuthority, HostOrServer.DAHost)]
+    [TestFixture(NetworkTopologyTypes.ClientServer, HostOrServer.Host)]
+    [TestFixture(NetworkTopologyTypes.ClientServer, HostOrServer.Server)]
     public class InScenePlacedNetworkObjectTests : IntegrationTestWithApproximation
     {
         protected override int NumberOfClients => 2;
@@ -26,7 +27,7 @@ namespace TestProject.RuntimeTests
         private bool m_CanStartServerAndClients;
         private string m_SceneLoading = k_SceneToLoad;
 
-        public InScenePlacedNetworkObjectTests(NetworkTopologyTypes networkTopologyType) : base(networkTopologyType) { }
+        public InScenePlacedNetworkObjectTests(NetworkTopologyTypes networkTopologyType, HostOrServer hostOrServer) : base(networkTopologyType, hostOrServer) { }
 
         protected override IEnumerator OnSetup()
         {

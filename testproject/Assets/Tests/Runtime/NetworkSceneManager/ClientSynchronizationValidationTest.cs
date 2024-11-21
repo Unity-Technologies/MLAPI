@@ -9,8 +9,9 @@ using UnityEngine.TestTools;
 
 namespace TestProject.RuntimeTests
 {
-    [TestFixture(NetworkTopologyTypes.DistributedAuthority)]
-    [TestFixture(NetworkTopologyTypes.ClientServer)]
+    [TestFixture(NetworkTopologyTypes.DistributedAuthority, HostOrServer.DAHost)]
+    [TestFixture(NetworkTopologyTypes.ClientServer, HostOrServer.Host)]
+    [TestFixture(NetworkTopologyTypes.ClientServer, HostOrServer.Server)]
     public class ClientSynchronizationValidationTest : NetcodeIntegrationTest
     {
         protected override int NumberOfClients => 0;
@@ -22,7 +23,7 @@ namespace TestProject.RuntimeTests
         private bool m_RuntimeSceneWasExcludedFromSynch;
 
         private List<ClientSceneVerificationHandler> m_ClientSceneVerifiers = new List<ClientSceneVerificationHandler>();
-        public ClientSynchronizationValidationTest(NetworkTopologyTypes networkTopologyType) : base(networkTopologyType) { }
+        public ClientSynchronizationValidationTest(NetworkTopologyTypes networkTopologyType, HostOrServer hostOrServer) : base(networkTopologyType, hostOrServer) { }
 
         protected override void OnNewClientStarted(NetworkManager networkManager)
         {
@@ -78,11 +79,17 @@ namespace TestProject.RuntimeTests
         /// Validates that connecting clients will exclude scenes using <see cref="NetworkSceneManager.VerifySceneBeforeLoading"/>
         /// </summary>
         [UnityTest]
-        public IEnumerator ClientVerifySceneBeforeLoading()
+        public IEnumerator ClientVerifySceneBeforeLoading([Values] bool startClientBefore)
         {
             m_IncludeSceneVerificationHandler = true;
             var scenesToLoad = new List<string>() { k_FirstSceneToLoad, k_SecondSceneToLoad, k_ThirdSceneToSkip };
             m_ServerNetworkManager.SceneManager.OnLoadComplete += OnLoadComplete;
+
+            if (startClientBefore)
+            {
+                yield return CreateAndStartNewClient();
+            }
+
             foreach (var sceneToLoad in scenesToLoad)
             {
                 m_SceneBeingLoadedIsLoaded = false;
@@ -91,9 +98,25 @@ namespace TestProject.RuntimeTests
 
                 yield return WaitForConditionOrTimeOut(() => m_SceneBeingLoadedIsLoaded);
                 AssertOnTimeout($"Timed out waiting for scene {m_SceneBeingLoaded} to finish loading!");
+
+                var serverId = m_ServerNetworkManager.LocalClientId;
+                var serverOrHost = m_ServerNetworkManager.IsHost ? "Host" : "Server";
+                foreach (var spawnedObjectEntry in m_ServerNetworkManager.SpawnManager.SpawnedObjects)
+                {
+                    var networkObject = spawnedObjectEntry.Value;
+                    if (!networkObject.IsSceneObject.Value)
+                    {
+                        continue;
+                    }
+
+                    Assert.True(networkObject.Observers.Contains(serverId), $"The {serverOrHost} is not an observer of in-scene placed {nameof(NetworkObject)} {networkObject.name}!");
+                }
             }
 
-            yield return CreateAndStartNewClient();
+            if (!startClientBefore)
+            {
+                yield return CreateAndStartNewClient();
+            }
 
             yield return WaitForConditionOrTimeOut(m_ClientSceneVerifiers[0].HasLoadedExpectedScenes);
             AssertOnTimeout($"Timed out waiting for the client to have loaded the expected scenes");
@@ -103,6 +126,18 @@ namespace TestProject.RuntimeTests
             foreach (var clientSceneVerifier in m_ClientSceneVerifiers)
             {
                 clientSceneVerifier.ValidateScenesLoaded();
+            }
+
+            // Finally, validate that all in-scene placed NetworkObjects were properly synchronized/spawned on the client side
+            foreach (var spawnedObjectEntry in m_ServerNetworkManager.SpawnManager.SpawnedObjects)
+            {
+                var networkObject = spawnedObjectEntry.Value;
+                if (!networkObject.IsSceneObject.Value)
+                {
+                    continue;
+                }
+                Assert.True(m_ClientNetworkManagers[0].SpawnManager.SpawnedObjects.ContainsKey(networkObject.NetworkObjectId), $"{nameof(NetworkObject)}-{networkObject.NetworkObjectId} " +
+                    $"did not synchronize on Client-{m_ClientNetworkManagers[0].LocalClientId}!");
             }
         }
 
