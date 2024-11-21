@@ -15,6 +15,8 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Fixed
 
+- Fixed in-scene `NertworkObject` synchronization issue when loading a scene with currently connected clients connected to a session created by a `NetworkManager` started as a server (i.e. not as a host). (#3133)
+- Fixed issue where a `NetworkManager` started as a server would not add itself as an observer to in-scene placed `NetworkObject`s instantiated and spawned by a scene loading event. (#3133)
 - Fixed issue where spawning a player using `NetworkObject.InstantiateAndSpawn` or `NetworkSpawnManager.InstantiateAndSpawn` would not update the `NetworkSpawnManager.PlayerObjects` or assign the newly spawned player to the `NetworkClient.PlayerObject`. (#3122)
 - Fixed issue where queued UnitTransport (NetworkTransport) message batches were being sent on the next frame. They are now sent at the end of the frame during `PostLateUpdate`.  (#3113)
 - Fixed issue where `NotOwnerRpcTarget` or `OwnerRpcTarget` were not using their replacements `NotAuthorityRpcTarget` and `AuthorityRpcTarget` which would invoke a warning. (#3111)
