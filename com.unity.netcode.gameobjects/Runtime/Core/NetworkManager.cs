@@ -80,6 +80,8 @@ namespace Unity.Netcode
         }
 #endif
 
+        internal SessionConfig SessionConfig;
+
         internal static bool IsDistributedAuthority;
 
         /// <summary>
@@ -1155,6 +1157,12 @@ namespace Unity.Netcode
 
         internal void Initialize(bool server)
         {
+            // Always create a default session config when starting a NetworkManager instance
+            if (DistributedAuthorityMode)
+            {
+                SessionConfig = new SessionConfig();
+            }
+
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
             if (!DisableNotOptimizedSerializedType)
             {
