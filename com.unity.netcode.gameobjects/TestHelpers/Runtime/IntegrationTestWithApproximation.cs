@@ -87,6 +87,8 @@ namespace Unity.Netcode.TestHelpers.Runtime
             return new Vector3(Random.Range(min, max), Random.Range(min, max), Random.Range(min, max));
         }
 
+        public IntegrationTestWithApproximation(NetworkTopologyTypes networkTopologyType, HostOrServer hostOrServer) : base(networkTopologyType, hostOrServer) { }
+
         public IntegrationTestWithApproximation(NetworkTopologyTypes networkTopologyType) : base(networkTopologyType) { }
 
         public IntegrationTestWithApproximation(HostOrServer hostOrServer) : base(hostOrServer) { }

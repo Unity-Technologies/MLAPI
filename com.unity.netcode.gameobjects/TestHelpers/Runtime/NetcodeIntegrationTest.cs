@@ -1759,6 +1759,13 @@ namespace Unity.Netcode.TestHelpers.Runtime
             m_DistributedAuthority = m_NetworkTopologyType == NetworkTopologyTypes.DistributedAuthority;
         }
 
+        public NetcodeIntegrationTest(NetworkTopologyTypes networkTopologyType, HostOrServer hostOrServer)
+        {
+            m_NetworkTopologyType = networkTopologyType;
+            m_DistributedAuthority = m_NetworkTopologyType == NetworkTopologyTypes.DistributedAuthority;
+            m_UseHost = hostOrServer == HostOrServer.Host || hostOrServer == HostOrServer.DAHost;
+        }
+
         /// <summary>
         /// Optional Host or Server integration tests
         /// Constructor that allows you To break tests up as a host

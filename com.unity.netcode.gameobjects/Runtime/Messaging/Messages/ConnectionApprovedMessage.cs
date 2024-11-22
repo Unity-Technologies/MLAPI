@@ -5,9 +5,12 @@ namespace Unity.Netcode
 {
     internal struct ServiceConfig : INetworkSerializable
     {
+        private const int k_AddServerRedistribution = 1;
+
         public uint Version;
         public bool IsRestoredSession;
         public ulong CurrentSessionOwner;
+        public bool ServerRedistribution;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -16,12 +19,22 @@ namespace Unity.Netcode
                 BytePacker.WriteValueBitPacked(serializer.GetFastBufferWriter(), Version);
                 serializer.SerializeValue(ref IsRestoredSession);
                 BytePacker.WriteValueBitPacked(serializer.GetFastBufferWriter(), CurrentSessionOwner);
+
+                if (Version >= k_AddServerRedistribution)
+                {
+                    serializer.SerializeValue(ref ServerRedistribution);
+                }
             }
             else
             {
                 ByteUnpacker.ReadValueBitPacked(serializer.GetFastBufferReader(), out Version);
                 serializer.SerializeValue(ref IsRestoredSession);
                 ByteUnpacker.ReadValueBitPacked(serializer.GetFastBufferReader(), out CurrentSessionOwner);
+
+                if (Version >= k_AddServerRedistribution)
+                {
+                    serializer.SerializeValue(ref ServerRedistribution);
+                }
             }
         }
     }

@@ -12,7 +12,8 @@ namespace Unity.Netcode
         /// is not bypass feature compatible.
         /// </summary>
         private const int k_BypassFeatureCompatible = 1;
-        public int Version => k_BypassFeatureCompatible;
+        private const int k_ServerDistributionCompatible = k_BypassFeatureCompatible + 1;
+        public int Version => k_ServerDistributionCompatible;
         public uint TickRate;
         public bool EnableSceneManagement;
 

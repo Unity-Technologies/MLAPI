@@ -1118,6 +1118,12 @@ namespace Unity.Netcode
             // then add all connected clients as observers
             if (!NetworkManager.DistributedAuthorityMode && NetworkManager.IsServer && networkObject.SpawnWithObservers)
             {
+                // If running as a server only, then make sure to always add the server's client identifier
+                if (!NetworkManager.IsHost)
+                {
+                    networkObject.Observers.Add(NetworkManager.LocalClientId);
+                }
+
                 // Add client observers
                 for (int i = 0; i < NetworkManager.ConnectedClientsIds.Count; i++)
                 {
