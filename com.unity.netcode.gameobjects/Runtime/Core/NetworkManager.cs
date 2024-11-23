@@ -174,10 +174,30 @@ namespace Unity.Netcode
             }
         }
 
-        // DANGO-TODO-MVP: Remove these properties once the service handles object distribution
-        internal ulong ClientToRedistribute;
-        internal bool RedistributeToClient;
-        internal int TickToRedistribute;
+        // DANGO-TODO: Determine if this needs to be removed once the service handles object distribution
+        internal List<ulong> ClientsToRedistribute = new List<ulong>();
+        internal bool RedistributeToClients;
+
+        /// <summary>
+        /// Handles object redistribution when scene management is disabled.
+        /// <see cref="NetworkBehaviourUpdater.NetworkBehaviourUpdater_Tick"/>
+        /// DANGO-TODO: Determine if this needs to be removed once the service handles object distribution
+        /// </summary>
+        internal void HandleRedistributionToClients()
+        {
+            if (!DistributedAuthorityMode || !RedistributeToClients || NetworkConfig.EnableSceneManagement || ShutdownInProgress)
+            {
+                return;
+            }
+
+            foreach (var clientId in ClientsToRedistribute)
+            {
+                SpawnManager.DistributeNetworkObjects(clientId);
+            }
+            RedistributeToClients = false;
+            ClientsToRedistribute.Clear();
+        }
+
 
         internal List<NetworkObject> DeferredDespawnObjects = new List<NetworkObject>();
 
@@ -404,16 +424,6 @@ namespace Unity.Netcode
 
                         // This is "ok" to invoke when not processing messages since it is just cleaning up messages that never got handled within their timeout period.
                         DeferredMessageManager.CleanupStaleTriggers();
-
-                        // DANGO-TODO-MVP: Remove this once the service handles object distribution
-                        // NOTE: This needs to be the last thing done and should happen exactly at this point
-                        // in the update
-                        if (RedistributeToClient && ServerTime.Tick <= TickToRedistribute)
-                        {
-                            RedistributeToClient = false;
-                            SpawnManager.DistributeNetworkObjects(ClientToRedistribute);
-                            ClientToRedistribute = 0;
-                        }
 
                         if (m_ShuttingDown)
                         {

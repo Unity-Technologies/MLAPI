@@ -55,19 +55,24 @@ namespace Unity.Netcode
                 // Don't redistribute for the local instance
                 if (ClientId != networkManager.LocalClientId)
                 {
+                    // Synchronize the client with spawned objects (relative to each client)
+                    networkManager.SpawnManager.SynchronizeObjectsToNewlyJoinedClient(ClientId);
+
+                    // Keeping for reference in case the above doesn't resolve for hidden objects (theoretically it should)
                     // Show any NetworkObjects that are:
                     // - Hidden from the session owner
                     // - Owned by this client
                     // - Has NetworkObject.SpawnWithObservers set to true (the default)
-                    if (!networkManager.LocalClient.IsSessionOwner)
-                    {
-                        networkManager.SpawnManager.ShowHiddenObjectsToNewlyJoinedClient(ClientId);
-                    }
+                    //if (!networkManager.LocalClient.IsSessionOwner)
+                    //{
+                    //    networkManager.SpawnManager.ShowHiddenObjectsToNewlyJoinedClient(ClientId);
+                    //}
 
-                    // We defer redistribution to the end of the NetworkUpdateStage.PostLateUpdate
-                    networkManager.RedistributeToClient = true;
-                    networkManager.ClientToRedistribute = ClientId;
-                    networkManager.TickToRedistribute = networkManager.ServerTime.Tick + 20;
+                    /// We defer redistribution to happen after NetworkShow has been invoked
+                    /// <see cref="NetworkBehaviourUpdater.NetworkBehaviourUpdater_Tick"/>
+                    /// DANGO-TODO: Determine if this needs to be removed once the service handles object distribution
+                    networkManager.RedistributeToClients = true;
+                    networkManager.ClientsToRedistribute.Add(ClientId);
                 }
             }
         }
