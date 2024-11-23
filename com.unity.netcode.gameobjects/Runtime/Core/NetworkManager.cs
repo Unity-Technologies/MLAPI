@@ -82,6 +82,16 @@ namespace Unity.Netcode
 
         internal SessionConfig SessionConfig;
 
+        /// <summary>
+        /// Used for internal testing purposes
+        /// </summary>
+        internal delegate SessionConfig OnGetSessionConfigHandler();
+        internal OnGetSessionConfigHandler OnGetSessionConfig;
+        private SessionConfig GetSessionConfig()
+        {
+            return OnGetSessionConfig != null ? OnGetSessionConfig.Invoke() : new SessionConfig();
+        }
+
         internal static bool IsDistributedAuthority;
 
         /// <summary>
@@ -1157,12 +1167,6 @@ namespace Unity.Netcode
 
         internal void Initialize(bool server)
         {
-            // Always create a default session config when starting a NetworkManager instance
-            if (DistributedAuthorityMode)
-            {
-                SessionConfig = new SessionConfig();
-            }
-
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
             if (!DisableNotOptimizedSerializedType)
             {
@@ -1176,6 +1180,12 @@ namespace Unity.Netcode
             NetworkTransformUpdate.Clear();
 
             UpdateTopology();
+
+            // Always create a default session config when starting a NetworkManager instance
+            if (DistributedAuthorityMode)
+            {
+                SessionConfig = GetSessionConfig();
+            }
 
             // Make sure the ServerShutdownState is reset when initializing
             if (server)

@@ -563,7 +563,7 @@ namespace Unity.Netcode
         {
             var message = new ConnectionRequestMessage
             {
-                CMBServiceConnection = NetworkManager.CMBServiceConnection,
+                DistributedAuthority = NetworkManager.DistributedAuthorityMode,
                 // Since only a remote client will send a connection request, we should always force the rebuilding of the NetworkConfig hash value
                 ConfigHash = NetworkManager.NetworkConfig.GetConfig(false),
                 ShouldSendConnectionData = NetworkManager.NetworkConfig.ConnectionApproval,
@@ -571,7 +571,7 @@ namespace Unity.Netcode
                 MessageVersions = new NativeArray<MessageVersionData>(MessageManager.MessageHandlers.Length, Allocator.Temp)
             };
 
-            if (NetworkManager.CMBServiceConnection)
+            if (NetworkManager.DistributedAuthorityMode)
             {
                 message.ClientConfig.SessionConfig = NetworkManager.SessionConfig;
                 message.ClientConfig.TickRate = NetworkManager.NetworkConfig.TickRate;

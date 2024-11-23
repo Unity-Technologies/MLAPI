@@ -13,7 +13,7 @@ namespace Unity.Netcode
         public bool EnableSceneManagement;
 
         // Only gets deserialized but should never be used unless testing
-        public int RemoteClientSessionVersion;
+        public uint RemoteClientSessionVersion;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -37,6 +37,8 @@ namespace Unity.Netcode
 
     internal struct ConnectionRequestMessage : INetworkMessage
     {
+        internal const string InvalidSessionVersionMessage = "The client version is not compatible with the session version.";
+
         // This version update is unidirectional (client to service) and version
         // handling occurs on the service side. This serialized data is never sent
         // to a host or server.
@@ -44,7 +46,7 @@ namespace Unity.Netcode
         public int Version => k_SendClientConfigToService;
 
         public ulong ConfigHash;
-        public bool CMBServiceConnection;
+        public bool DistributedAuthority;
         public ClientConfig ClientConfig;
 
         public byte[] ConnectionData;
@@ -69,7 +71,7 @@ namespace Unity.Netcode
             // END FORBIDDEN SEGMENT
             // ============================================================
 
-            if (CMBServiceConnection)
+            if (DistributedAuthority)
             {
                 writer.WriteNetworkSerializable(ClientConfig);
             }
@@ -116,6 +118,11 @@ namespace Unity.Netcode
             // ============================================================
             // END FORBIDDEN SEGMENT
             // ============================================================
+
+            if (networkManager.DAHost)
+            {
+                reader.ReadNetworkSerializable(out ClientConfig);
+            }
 
             if (networkManager.NetworkConfig.ConnectionApproval)
             {
@@ -179,21 +186,21 @@ namespace Unity.Netcode
             var networkManager = (NetworkManager)context.SystemOwner;
             var senderId = context.SenderId;
 
+            // DAHost mocking the service logic to disconnect clients trying to connect with a lower session version
+            if (networkManager.DAHost)
+            {
+                if (ClientConfig.RemoteClientSessionVersion < networkManager.SessionConfig.SessionVersion)
+                {
+                    //Disconnect with reason
+                    networkManager.ConnectionManager.DisconnectClient(senderId, InvalidSessionVersionMessage);
+                    return;
+                }
+            }
+
             if (networkManager.ConnectionManager.PendingClients.TryGetValue(senderId, out PendingClient client))
             {
                 // Set to pending approval to prevent future connection requests from being approved
                 client.ConnectionState = PendingClient.State.PendingApproval;
-            }
-
-            // DAHost mocking the service logic to disconnect clients trying to connect with a lower session version
-            if (networkManager.DAHost)
-            {
-                if (networkManager.SessionConfig.SessionVersion > ClientConfig.RemoteClientSessionVersion)
-                {
-                    //Disconnect with reason
-                    networkManager.ConnectionManager.DisconnectClient(senderId, "The client version is not compatible with the session version.");
-                    return;
-                }
             }
 
             if (networkManager.NetworkConfig.ConnectionApproval)
