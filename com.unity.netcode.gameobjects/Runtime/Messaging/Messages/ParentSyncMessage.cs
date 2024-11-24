@@ -70,10 +70,6 @@ namespace Unity.Netcode
         public bool Deserialize(FastBufferReader reader, ref NetworkContext context, int receivedMessageVersion)
         {
             var networkManager = (NetworkManager)context.SystemOwner;
-            if (!networkManager.IsClient)
-            {
-                return false;
-            }
 
             ByteUnpacker.ReadValueBitPacked(reader, out NetworkObjectId);
             reader.ReadValueSafe(out m_BitField);
