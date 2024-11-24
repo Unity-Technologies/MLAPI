@@ -88,6 +88,14 @@ namespace Unity.Netcode.Editor
 
                         while (observerClientIds.MoveNext())
                         {
+                            if (!m_NetworkObject.NetworkManager.ConnectedClients.ContainsKey(observerClientIds.Current))
+                            {
+                                if ((observerClientIds.Current == 0 && m_NetworkObject.NetworkManager.IsHost) || observerClientIds.Current > 0)
+                                {
+                                    Debug.LogWarning($"Client-{observerClientIds.Current} is listed as an observer but is not connected!");
+                                }
+                                continue;
+                            }
                             if (m_NetworkObject.NetworkManager.ConnectedClients[observerClientIds.Current].PlayerObject != null)
                             {
                                 EditorGUILayout.ObjectField($"ClientId: {observerClientIds.Current}", m_NetworkObject.NetworkManager.ConnectedClients[observerClientIds.Current].PlayerObject, typeof(GameObject), false);
