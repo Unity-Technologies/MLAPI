@@ -36,6 +36,24 @@ namespace Unity.Netcode.RuntimeTests
             Assert.Fail("Timed out while waiting for network event.");
         }
 
+        // Wait to ensure no event is sent.
+        public static IEnumerator EnsureNoNetworkEvent(List<TransportEvent> events, float timeout = MaxNetworkEventWaitTime)
+        {
+            int initialCount = events.Count;
+            float startTime = Time.realtimeSinceStartup;
+
+            while (Time.realtimeSinceStartup - startTime < timeout)
+            {
+                if (events.Count > initialCount)
+                {
+                    Assert.Fail("Received unexpected network event.");
+                }
+
+                yield return new WaitForSeconds(0.01f);
+            }
+        }
+
+
         // Common code to initialize a UnityTransport that logs its events.
         public static void InitializeTransport(out UnityTransport transport, out List<TransportEvent> events,
             int maxPayloadSize = UnityTransport.InitialMaxPayloadSize, int maxSendQueueSize = 0, NetworkFamily family = NetworkFamily.Ipv4)

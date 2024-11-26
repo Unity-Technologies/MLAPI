@@ -499,5 +499,46 @@ namespace Unity.Netcode.RuntimeTests
 
             yield return WaitForNetworkEvent(NetworkEvent.Data, m_Client1Events);
         }
+
+        public enum AfterShutdownAction
+        {
+            Send,
+            DisconnectRemoteClient,
+            DisconnectLocalClient,
+        }
+
+        [UnityTest]
+        public IEnumerator DoesNotActAfterShutdown([Values] AfterShutdownAction afterShutdownAction)
+        {
+            InitializeTransport(out m_Server, out m_ServerEvents);
+            InitializeTransport(out m_Client1, out m_Client1Events);
+
+            m_Server.StartServer();
+            m_Client1.StartClient();
+
+            yield return WaitForNetworkEvent(NetworkEvent.Connect, m_Client1Events);
+
+            m_Server.Shutdown();
+
+            if (afterShutdownAction == AfterShutdownAction.Send)
+            {
+                var data = new ArraySegment<byte>(new byte[16]);
+                m_Server.Send(m_Client1.ServerClientId, data, NetworkDelivery.Reliable);
+
+                yield return EnsureNoNetworkEvent(m_Client1Events);
+            }
+            else if (afterShutdownAction == AfterShutdownAction.DisconnectRemoteClient)
+            {
+                m_Server.DisconnectRemoteClient(m_Client1.ServerClientId);
+
+                LogAssert.Expect(LogType.Assert, "DisconnectRemoteClient should be called on a listening server");
+            }
+            else if (afterShutdownAction == AfterShutdownAction.DisconnectLocalClient)
+            {
+                m_Server.DisconnectLocalClient();
+
+                yield return EnsureNoNetworkEvent(m_Client1Events);
+            }
+        }
     }
 }
