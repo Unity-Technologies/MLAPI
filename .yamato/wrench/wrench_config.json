@@ -1,0 +1,37 @@
+{
+  "project_path": "Tools\\CI",
+  "schema_version": 0.6,
+  "packages": {
+    "com.unity.netcode.gameobjects": {
+      "directory": "com.unity.netcode.gameobjects/",
+      "prePackCommands": [],
+      "preTestCommands": {
+        "MacOS": [],
+        "Ubuntu": [],
+        "Windows": []
+      },
+      "InternalOnly": false,
+      "NeverPublish": false,
+      "MaxEditorVersion": "",
+      "coverageEnabled": false,
+      "coverageCommands": [
+        "generateAdditionalMetrics;generateHtmlReport;assemblyFilters:ASSEMBLY_NAME;pathReplacePatterns:@*,,**/PackageCache/,;sourcePaths:YAMATO_SOURCE_DIR/Packages;"
+      ],
+      "dependantsToIgnoreInPreviewApv": {}
+    }
+  },
+  "releasing_packages": [
+    "com.unity.netcode.gameobjects"
+  ],
+  "jobs_to_monitor": {
+    "com.unity.netcode.gameobjects": [
+      ".yamato/wrench/api-validation-jobs.yml#api_validation_-_netcode_gameobjects_-_2021_3_-_windows",
+      ".yamato/wrench/preview-a-p-v.yml#all_preview_apv_jobs",
+      ".yamato/wrench/promotion-jobs.yml#publish_dry_run_netcode_gameobjects"
+    ]
+  },
+  "publishing_job": ".yamato/wrench/promotion-jobs.yml#publish_netcode_gameobjects",
+  "branch_pattern": "ReleaseSlash",
+  "wrench_version": "0.10.25.0",
+  "pvp_exemption_path": ".yamato/wrench/pvp-exemptions.json"
+}
