@@ -633,7 +633,7 @@ namespace Unity.Netcode
             {
                 m_List.Dispose();
             }
-            
+
             if (m_DirtyEvents.IsCreated)
             {
                 m_DirtyEvents.Dispose();
@@ -642,7 +642,7 @@ namespace Unity.Netcode
             base.Dispose();
         }
 
-        
+
     }
 
     /// <summary>
