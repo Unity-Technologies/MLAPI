@@ -8,12 +8,12 @@ namespace Unity.Netcode
     internal struct ClientConfig : INetworkSerializable
     {
         public SessionConfig SessionConfig;
-        public uint SessionVersion => SessionConfig.SessionVersion;
+        public int SessionVersion => (int)SessionConfig.SessionVersion;
         public uint TickRate;
         public bool EnableSceneManagement;
 
         // Only gets deserialized but should never be used unless testing
-        public uint RemoteClientSessionVersion;
+        public int RemoteClientSessionVersion;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
