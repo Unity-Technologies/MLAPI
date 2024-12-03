@@ -23,10 +23,10 @@ validate_-_netcode_gameobjects_-_2021_3_-_macos:
   - command: upm-pvp test --unity .Editor --packages "upm-ci~/packages/*.tgz" --results upm-ci~/pvp
     timeout: 20
     retries: 0
-  - command: upm-pvp require "PVP-160-1 PVP-101-2" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
-    timeout: 5
+  - command: echo Skipping check for PVP-160-1 as there is a bug on Windows. https://jira.unity3d.com/browse/PETS-1462
+  - command: upm-pvp require "rme PVP-160-1 supported" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
+    timeout: 10
     retries: 0
-  - command: echo No additional PVP profiles to declared to check.
   - command: UnifiedTestRunner --testproject=test-netcode.gameobjects --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --artifacts_path=artifacts --suite=Editor --suite=Playmode "--ff={ops.upmpvpevidence.enable=true}"
     timeout: 30
     retries: 1
@@ -90,10 +90,10 @@ validate_-_netcode_gameobjects_-_2021_3_-_ubuntu:
   - command: upm-pvp test --unity .Editor --packages "upm-ci~/packages/*.tgz" --results upm-ci~/pvp
     timeout: 20
     retries: 0
-  - command: upm-pvp require "PVP-160-1 PVP-101-2" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
-    timeout: 5
+  - command: echo Skipping check for PVP-160-1 as there is a bug on Windows. https://jira.unity3d.com/browse/PETS-1462
+  - command: upm-pvp require "rme PVP-160-1 supported" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
+    timeout: 10
     retries: 0
-  - command: echo No additional PVP profiles to declared to check.
   - command: UnifiedTestRunner --testproject=test-netcode.gameobjects --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --artifacts_path=artifacts --suite=Editor --suite=Playmode "--ff={ops.upmpvpevidence.enable=true}"
     timeout: 30
     retries: 1
@@ -158,7 +158,9 @@ validate_-_netcode_gameobjects_-_2021_3_-_windows:
     timeout: 20
     retries: 0
   - command: echo Skipping check for PVP-160-1 as there is a bug on Windows. https://jira.unity3d.com/browse/PETS-1462
-  - command: echo No additional PVP profiles to declared to check.
+  - command: upm-pvp require "rme PVP-160-1 supported" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
+    timeout: 10
+    retries: 0
   - command: UnifiedTestRunner.exe --testproject=test-netcode.gameobjects --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --artifacts_path=artifacts --suite=Editor --suite=Playmode "--ff={ops.upmpvpevidence.enable=true}"
     timeout: 30
     retries: 1
@@ -222,10 +224,10 @@ validate_-_netcode_gameobjects_-_2022_3_-_macos:
   - command: upm-pvp test --unity .Editor --packages "upm-ci~/packages/*.tgz" --results upm-ci~/pvp
     timeout: 20
     retries: 0
-  - command: upm-pvp require "PVP-160-1 PVP-101-2" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
-    timeout: 5
+  - command: echo Skipping check for PVP-160-1 as there is a bug on Windows. https://jira.unity3d.com/browse/PETS-1462
+  - command: upm-pvp require "rme PVP-160-1 supported" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
+    timeout: 10
     retries: 0
-  - command: echo No additional PVP profiles to declared to check.
   - command: UnifiedTestRunner --testproject=test-netcode.gameobjects --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --artifacts_path=artifacts --suite=Editor --suite=Playmode "--ff={ops.upmpvpevidence.enable=true}"
     timeout: 30
     retries: 1
@@ -289,10 +291,10 @@ validate_-_netcode_gameobjects_-_2022_3_-_ubuntu:
   - command: upm-pvp test --unity .Editor --packages "upm-ci~/packages/*.tgz" --results upm-ci~/pvp
     timeout: 20
     retries: 0
-  - command: upm-pvp require "PVP-160-1 PVP-101-2" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
-    timeout: 5
+  - command: echo Skipping check for PVP-160-1 as there is a bug on Windows. https://jira.unity3d.com/browse/PETS-1462
+  - command: upm-pvp require "rme PVP-160-1 supported" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
+    timeout: 10
     retries: 0
-  - command: echo No additional PVP profiles to declared to check.
   - command: UnifiedTestRunner --testproject=test-netcode.gameobjects --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --artifacts_path=artifacts --suite=Editor --suite=Playmode "--ff={ops.upmpvpevidence.enable=true}"
     timeout: 30
     retries: 1
@@ -357,7 +359,9 @@ validate_-_netcode_gameobjects_-_2022_3_-_windows:
     timeout: 20
     retries: 0
   - command: echo Skipping check for PVP-160-1 as there is a bug on Windows. https://jira.unity3d.com/browse/PETS-1462
-  - command: echo No additional PVP profiles to declared to check.
+  - command: upm-pvp require "rme PVP-160-1 supported" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
+    timeout: 10
+    retries: 0
   - command: UnifiedTestRunner.exe --testproject=test-netcode.gameobjects --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --artifacts_path=artifacts --suite=Editor --suite=Playmode "--ff={ops.upmpvpevidence.enable=true}"
     timeout: 30
     retries: 1
@@ -421,10 +425,10 @@ validate_-_netcode_gameobjects_-_6000_0_-_macos:
   - command: upm-pvp test --unity .Editor --packages "upm-ci~/packages/*.tgz" --results upm-ci~/pvp
     timeout: 20
     retries: 0
-  - command: upm-pvp require "PVP-160-1 PVP-101-2" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
-    timeout: 5
+  - command: echo Skipping check for PVP-160-1 as there is a bug on Windows. https://jira.unity3d.com/browse/PETS-1462
+  - command: upm-pvp require "rme PVP-160-1 supported" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
+    timeout: 10
     retries: 0
-  - command: echo No additional PVP profiles to declared to check.
   - command: UnifiedTestRunner --testproject=test-netcode.gameobjects --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --artifacts_path=artifacts --suite=Editor --suite=Playmode "--ff={ops.upmpvpevidence.enable=true}"
     timeout: 30
     retries: 1
@@ -488,10 +492,10 @@ validate_-_netcode_gameobjects_-_6000_0_-_ubuntu:
   - command: upm-pvp test --unity .Editor --packages "upm-ci~/packages/*.tgz" --results upm-ci~/pvp
     timeout: 20
     retries: 0
-  - command: upm-pvp require "PVP-160-1 PVP-101-2" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
-    timeout: 5
+  - command: echo Skipping check for PVP-160-1 as there is a bug on Windows. https://jira.unity3d.com/browse/PETS-1462
+  - command: upm-pvp require "rme PVP-160-1 supported" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
+    timeout: 10
     retries: 0
-  - command: echo No additional PVP profiles to declared to check.
   - command: UnifiedTestRunner --testproject=test-netcode.gameobjects --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --artifacts_path=artifacts --suite=Editor --suite=Playmode "--ff={ops.upmpvpevidence.enable=true}"
     timeout: 30
     retries: 1
@@ -556,7 +560,9 @@ validate_-_netcode_gameobjects_-_6000_0_-_windows:
     timeout: 20
     retries: 0
   - command: echo Skipping check for PVP-160-1 as there is a bug on Windows. https://jira.unity3d.com/browse/PETS-1462
-  - command: echo No additional PVP profiles to declared to check.
+  - command: upm-pvp require "rme PVP-160-1 supported" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
+    timeout: 10
+    retries: 0
   - command: UnifiedTestRunner.exe --testproject=test-netcode.gameobjects --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --artifacts_path=artifacts --suite=Editor --suite=Playmode "--ff={ops.upmpvpevidence.enable=true}"
     timeout: 30
     retries: 1
@@ -620,10 +626,10 @@ validate_-_netcode_gameobjects_-_6000_1_-_macos:
   - command: upm-pvp test --unity .Editor --packages "upm-ci~/packages/*.tgz" --results upm-ci~/pvp
     timeout: 20
     retries: 0
-  - command: upm-pvp require "PVP-160-1 PVP-101-2" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
-    timeout: 5
+  - command: echo Skipping check for PVP-160-1 as there is a bug on Windows. https://jira.unity3d.com/browse/PETS-1462
+  - command: upm-pvp require "rme PVP-160-1 supported" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
+    timeout: 10
     retries: 0
-  - command: echo No additional PVP profiles to declared to check.
   - command: UnifiedTestRunner --testproject=test-netcode.gameobjects --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --artifacts_path=artifacts --suite=Editor --suite=Playmode "--ff={ops.upmpvpevidence.enable=true}"
     timeout: 30
     retries: 1
@@ -687,10 +693,10 @@ validate_-_netcode_gameobjects_-_6000_1_-_ubuntu:
   - command: upm-pvp test --unity .Editor --packages "upm-ci~/packages/*.tgz" --results upm-ci~/pvp
     timeout: 20
     retries: 0
-  - command: upm-pvp require "PVP-160-1 PVP-101-2" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
-    timeout: 5
+  - command: echo Skipping check for PVP-160-1 as there is a bug on Windows. https://jira.unity3d.com/browse/PETS-1462
+  - command: upm-pvp require "rme PVP-160-1 supported" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
+    timeout: 10
     retries: 0
-  - command: echo No additional PVP profiles to declared to check.
   - command: UnifiedTestRunner --testproject=test-netcode.gameobjects --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --artifacts_path=artifacts --suite=Editor --suite=Playmode "--ff={ops.upmpvpevidence.enable=true}"
     timeout: 30
     retries: 1
@@ -755,7 +761,9 @@ validate_-_netcode_gameobjects_-_6000_1_-_windows:
     timeout: 20
     retries: 0
   - command: echo Skipping check for PVP-160-1 as there is a bug on Windows. https://jira.unity3d.com/browse/PETS-1462
-  - command: echo No additional PVP profiles to declared to check.
+  - command: upm-pvp require "rme PVP-160-1 supported" --results upm-ci~/pvp --exemptions upm-ci~/pvp/failures.json
+    timeout: 10
+    retries: 0
   - command: UnifiedTestRunner.exe --testproject=test-netcode.gameobjects --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --artifacts_path=artifacts --suite=Editor --suite=Playmode "--ff={ops.upmpvpevidence.enable=true}"
     timeout: 30
     retries: 1
