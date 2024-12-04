@@ -1442,6 +1442,11 @@ namespace Unity.Netcode.Transports.UTP
         /// </summary>
         public override void Shutdown()
         {
+            if (NetworkManager && !NetworkManager.ShutdownInProgress)
+            {
+                Debug.LogWarning("Directly calling `UnityTransport.Shutdown()` results in unexpected shutdown behaviour. All pending events will be lost. Use `NetworkManager.Shutdown()` instead.");
+            }
+
             if (m_Driver.IsCreated)
             {
                 // Flush all send queues to the network. NGO can be configured to flush its message
@@ -1461,6 +1466,7 @@ namespace Unity.Netcode.Transports.UTP
             DisposeInternals();
 
             m_ReliableReceiveQueues.Clear();
+            m_State = State.Disconnected;
 
             // We must reset this to zero because UTP actually re-uses clientIds if there is a clean disconnect
             m_ServerClientId = 0;
