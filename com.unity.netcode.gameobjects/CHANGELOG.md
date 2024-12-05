@@ -18,6 +18,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Fixed
 
+- Fixed issue where an exception was thrown when calling `NetworkManager.Shutdown` after calling `UnityTransport.Shutdown`. (#3118)
 - Fixed issue where a newly synchronizing client would be synchronized with the current `NetworkVariable` values always which could cause issues with collections if there were any pending state updates. Now, when initially synchronizing a client, if a `NetworkVariable` has a pending state update it will serialize the previously known value(s) to the synchronizing client so when the pending updates are sent they aren't duplicate values on the newly connected client side. (#3126)
 - Fixed issue where changing ownership would mark every `NetworkVariable` dirty. Now, it will only mark any `NetworkVariable` with owner read permissions as dirty and will send/flush any pending updates to all clients prior to sending the change in ownership message.  (#3126)
 - Fixed issue with `NetworkVariable` collections where transferring ownership to another client would not update the new owner's previous value to the most current value which could cause the last/previous added value to be detected as a change when adding or removing an entry (as long as the entry removed was not the last/previously added value).  (#3126)
@@ -30,7 +31,6 @@ Additional documentation and release notes are available at [Multiplayer Documen
 - Fixed issue where collections v2.2.x was not supported when using UTP v2.2.x within Unity v2022.3. (#3033)
 - Fixed issue where the `NetworkSpawnManager.HandleNetworkObjectShow` could throw an exception if one of the `NetworkObject` components to show was destroyed during the same frame. (#3029)
 - Fixed issue where the `NetworkManagerHelper` was continuing to check for hierarchy changes when in play mode. (#3027)
-- Fixed issue where an exception was thrown when calling `NetworkManager.Shutdown` after calling `UnityTransport.Shutdown`. (#3118)
 
 ### Changed
 
@@ -210,7 +210,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 ### Added
 
 - Added a protected virtual method `NetworkTransform.OnInitialize(ref NetworkTransformState replicatedState)` that just returns the replicated state reference.
-  
+
 ### Fixed
 
 - Fixed issue where invoking `NetworkManager.Shutdown` within `NetworkManager.OnClientStopped` or `NetworkManager.OnServerStopped` would force `NetworkManager.ShutdownInProgress` to remain true after completing the shutdown process. (#2661)
