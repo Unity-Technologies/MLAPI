@@ -67,9 +67,28 @@ namespace Unity.Netcode
         SpecifiedInParams
     }
 
+    /// <summary>
+    /// This parameter controls the use of a particular performance optimization in situations where it can be used.<br />
+    /// Because BaseRpcTarget is a managed type, allocating a new one is expensive, as it puts pressure on the garbage collector.
+    /// </summary>
+    /// <remarks>
+    /// When using a <see cref="Temp"/> allocation type for the RPC target(s):<br />
+    /// You typically don't need to worry about persisting the <see cref="BaseRpcTarget"/> generated.
+    /// When using a <see cref="Persistent"/> allocation type for the RPC target(s): <br />
+    /// You will want to use <see cref="RpcTarget"/>, which returns <see cref="BaseRpcTarget"/>, during <see cref="NetworkBehaviour"/> initialization (i.e. <see cref="NetworkBehaviour.OnNetworkPostSpawn"/>) and it to a property.<br />
+    /// Then, When invoking the RPC, you would use your <see cref="BaseRpcTarget"/> which is a persisted allocation of a given set of client identifiers.
+    /// !! Important !!<br />
+    /// You will want to invoke <see cref="BaseRpcTarget.Dispose"/> of any persisted properties created via <see cref="RpcTarget"/> when despawning or destroying the associated <see cref="NetworkBehaviour"/> component's <see cref="NetworkObject"/>. Not doing so will result in small memory leaks.
+    /// </remarks>
     public enum RpcTargetUse
     {
+        /// <summary>
+        /// Creates a temporary <see cref="BaseRpcTarget"/> used for the frame an <see cref="RpcAttribute"/> decorated method is invoked.
+        /// </summary>
         Temp,
+        /// <summary>
+        /// Creates a persisted <see cref="BaseRpcTarget"/> that does not change and persists until it is disposed.
+        /// </summary>
         Persistent
     }
 
