@@ -35,8 +35,6 @@ namespace Unity.Netcode
 
         private NetworkManager m_InternalNetworkManager;
 
-        internal virtual NetworkVariableType Type => NetworkVariableType.Unknown;
-
         internal string GetWritePermissionError()
         {
             return $"|Client-{m_NetworkManager.LocalClientId}|{m_NetworkBehaviour.name}|{Name}| Write permissions ({WritePerm}) for this client instance is not allowed!";
@@ -351,7 +349,7 @@ namespace Unity.Netcode
         /// This should be always invoked (client & server) to assure the previous values are set
         /// !! IMPORTANT !!
         /// When a server forwards delta updates to connected clients, it needs to preserve the previous dirty value(s)
-        /// until it is done serializing all valid NetworkVariable field deltas (relative to each client). This is invoked 
+        /// until it is done serializing all valid NetworkVariable field deltas (relative to each client). This is invoked
         /// after it is done forwarding the deltas at the end of the <see cref="NetworkVariableDeltaMessage.Handle(ref NetworkContext)"/> method.
         /// </summary>
         internal virtual void PostDeltaRead()

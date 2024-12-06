@@ -14,8 +14,6 @@ namespace Unity.Netcode
     {
         internal static INetworkVariableSerializer<T> Serializer = new FallbackSerializer<T>();
 
-        internal static bool IsDistributedAuthority => NetworkManager.IsDistributedAuthority;
-
         /// <summary>
         /// A callback to check if two values are equal.
         /// </summary>
@@ -53,20 +51,7 @@ namespace Unity.Netcode
         /// <param name="value"></param>
         public static void Write(FastBufferWriter writer, ref T value)
         {
-            if (IsDistributedAuthority)
-            {
-#if DEVELOPMENT_BUILD || UNITY_EDITOR
-                if (!NetworkManager.DisableNotOptimizedSerializedType && !Serializer.IsDistributedAuthorityOptimized)
-                {
-                    NetworkManager.LogSerializedTypeNotOptimized<T>();
-                }
-#endif
-                Serializer.WriteDistributedAuthority(writer, ref value);
-            }
-            else
-            {
-                Serializer.Write(writer, ref value);
-            }
+            Serializer.Write(writer, ref value);
         }
 
         /// <summary>
@@ -91,14 +76,7 @@ namespace Unity.Netcode
         /// <param name="value"></param>
         public static void Read(FastBufferReader reader, ref T value)
         {
-            if (IsDistributedAuthority)
-            {
-                Serializer.ReadDistributedAuthority(reader, ref value);
-            }
-            else
-            {
-                Serializer.Read(reader, ref value);
-            }
+            Serializer.Read(reader, ref value);
         }
 
         /// <summary>
@@ -120,20 +98,7 @@ namespace Unity.Netcode
         /// <param name="value"></param>
         public static void WriteDelta(FastBufferWriter writer, ref T value, ref T previousValue)
         {
-            if (IsDistributedAuthority)
-            {
-#if DEVELOPMENT_BUILD || UNITY_EDITOR
-                if (!NetworkManager.DisableNotOptimizedSerializedType && !Serializer.IsDistributedAuthorityOptimized)
-                {
-                    NetworkManager.LogSerializedTypeNotOptimized<T>();
-                }
-#endif
-                Serializer.WriteDeltaDistributedAuthority(writer, ref value, ref previousValue);
-            }
-            else
-            {
-                Serializer.WriteDelta(writer, ref value, ref previousValue);
-            }
+            Serializer.WriteDelta(writer, ref value, ref previousValue);
         }
 
         /// <summary>
@@ -158,14 +123,7 @@ namespace Unity.Netcode
         /// <param name="value"></param>
         public static void ReadDelta(FastBufferReader reader, ref T value)
         {
-            if (IsDistributedAuthority)
-            {
-                Serializer.ReadDeltaDistributedAuthority(reader, ref value);
-            }
-            else
-            {
-                Serializer.ReadDelta(reader, ref value);
-            }
+            Serializer.ReadDelta(reader, ref value);
         }
 
         /// <summary>

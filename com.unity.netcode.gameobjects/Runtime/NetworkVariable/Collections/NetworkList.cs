@@ -24,7 +24,6 @@ namespace Unity.Netcode
         /// The callback to be invoked when the list gets changed
         /// </summary>
         public event OnListChangedDelegate OnListChanged;
-        internal override NetworkVariableType Type => NetworkVariableType.NetworkList;
 
         /// <summary>
         /// Constructor method for <see cref="NetworkList"/>
@@ -136,20 +135,6 @@ namespace Unity.Netcode
         /// <inheritdoc />
         public override void WriteField(FastBufferWriter writer)
         {
-            if (m_NetworkManager.DistributedAuthorityMode)
-            {
-                writer.WriteValueSafe(NetworkVariableSerialization<T>.Serializer.Type);
-                if (NetworkVariableSerialization<T>.Serializer.Type == NetworkVariableType.Unmanaged)
-                {
-                    // Write the size of the unmanaged serialized type as it has a fixed size. This allows the CMB runtime to correctly read the unmanged type.
-                    var placeholder = new T();
-                    var startPos = writer.Position;
-                    NetworkVariableSerialization<T>.Serializer.Write(writer, ref placeholder);
-                    var size = writer.Position - startPos;
-                    writer.Seek(startPos);
-                    BytePacker.WriteValueBitPacked(writer, size);
-                }
-            }
             writer.WriteValueSafe((ushort)m_List.Length);
             for (int i = 0; i < m_List.Length; i++)
             {
@@ -161,15 +146,6 @@ namespace Unity.Netcode
         public override void ReadField(FastBufferReader reader)
         {
             m_List.Clear();
-            if (m_NetworkManager.DistributedAuthorityMode)
-            {
-                SerializationTools.ReadType(reader, NetworkVariableSerialization<T>.Serializer);
-                // Collection item type is used by the DA server, drop value here.
-                if (NetworkVariableSerialization<T>.Serializer.Type == NetworkVariableType.Unmanaged)
-                {
-                    ByteUnpacker.ReadValueBitPacked(reader, out int _);
-                }
-            }
             reader.ReadValueSafe(out ushort count);
             for (int i = 0; i < count; i++)
             {

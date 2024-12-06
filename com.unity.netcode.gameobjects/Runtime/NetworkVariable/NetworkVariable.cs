@@ -45,8 +45,6 @@ namespace Unity.Netcode
             NetworkVariableSerialization<T>.Duplicate(m_InternalValue, ref m_PreviousValue);
         }
 
-        internal override NetworkVariableType Type => NetworkVariableType.Value;
-
         /// <summary>
         /// Constructor for <see cref="NetworkVariable{T}"/>
         /// </summary>
@@ -92,7 +90,7 @@ namespace Unity.Netcode
         // The introduction of standard .NET collections caused an issue with permissions since there is no way to detect changes in the
         // collection without doing a full comparison. While this approach does consume more memory per collection instance, it is the
         // lowest risk approach to resolving the issue where a client with no write permissions could make changes to a collection locally
-        // which can cause a myriad of issues. 
+        // which can cause a myriad of issues.
         private protected T m_InternalOriginalValue;
 
         private protected T m_PreviousValue;
@@ -305,7 +303,7 @@ namespace Unity.Netcode
         /// This should be always invoked (client & server) to assure the previous values are set
         /// !! IMPORTANT !!
         /// When a server forwards delta updates to connected clients, it needs to preserve the previous dirty value(s)
-        /// until it is done serializing all valid NetworkVariable field deltas (relative to each client). This is invoked 
+        /// until it is done serializing all valid NetworkVariable field deltas (relative to each client). This is invoked
         /// after it is done forwarding the deltas at the end of the <see cref="NetworkVariableDeltaMessage.Handle(ref NetworkContext)"/> method.
         /// </summary>
         internal override void PostDeltaRead()

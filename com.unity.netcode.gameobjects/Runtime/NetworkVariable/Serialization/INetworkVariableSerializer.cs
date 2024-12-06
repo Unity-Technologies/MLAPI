@@ -2,28 +2,8 @@ using Unity.Collections;
 
 namespace Unity.Netcode
 {
-    /// <summary>
-    /// Interface used by NetworkVariables to serialize them with additional information for the DA runtime
-    /// </summary>
-    ///
     /// <typeparam name="T"></typeparam>
-    internal interface IDistributedAuthoritySerializer<T>
-    {
-        /// <summary>
-        /// The Type tells the DA server how to parse this type.
-        /// The user should never be able to override this value, as it is meaningful for the DA server
-        /// </summary>
-        public NetworkVariableType Type { get; }
-        public bool IsDistributedAuthorityOptimized { get; }
-        public void WriteDistributedAuthority(FastBufferWriter writer, ref T value);
-        public void ReadDistributedAuthority(FastBufferReader reader, ref T value);
-        public void WriteDeltaDistributedAuthority(FastBufferWriter writer, ref T value, ref T previousValue);
-        public void ReadDeltaDistributedAuthority(FastBufferReader reader, ref T value);
-    }
-
-
-    /// <typeparam name="T"></typeparam>
-    internal interface INetworkVariableSerializer<T> : IDistributedAuthoritySerializer<T>
+    internal interface INetworkVariableSerializer<T>
     {
         // Write has to be taken by ref here because of INetworkSerializable
         // Open Instance Delegates (pointers to methods without an instance attached to them)

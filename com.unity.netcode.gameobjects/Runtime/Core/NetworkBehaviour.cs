@@ -826,7 +826,7 @@ namespace Unity.Netcode
         internal void InternalOnGainedOwnership()
         {
             UpdateNetworkProperties();
-            // New owners need to assure any NetworkVariables they have write permissions 
+            // New owners need to assure any NetworkVariables they have write permissions
             // to are updated so the previous and original values are aligned with the
             // current value (primarily for collections).
             if (OwnerClientId == NetworkManager.LocalClientId)
@@ -1181,14 +1181,8 @@ namespace Unity.Netcode
         {
             // Create any values that require accessing the NetworkManager locally (it is expensive to access it in NetworkBehaviour)
             var networkManager = NetworkManager;
-            var distributedAuthority = networkManager.DistributedAuthorityMode;
             var ensureLengthSafety = networkManager.NetworkConfig.EnsureNetworkVariableLengthSafety;
 
-            // Always write the NetworkVariable count even if zero for distributed authority (used by comb server)
-            if (distributedAuthority)
-            {
-                writer.WriteValueSafe((ushort)NetworkVariableFields.Count);
-            }
 
             // Exit early if there are no NetworkVariables
             if (NetworkVariableFields.Count == 0)
@@ -1203,14 +1197,8 @@ namespace Unity.Netcode
                 if (NetworkVariableFields[j].CanClientRead(targetClientId))
                 {
                     // Write additional NetworkVariable information when length safety is enabled or when in distributed authority mode
-                    if (ensureLengthSafety || distributedAuthority)
+                    if (ensureLengthSafety)
                     {
-                        // Write the type being serialized for distributed authority (only for comb-server)
-                        if (distributedAuthority)
-                        {
-                            writer.WriteValueSafe(NetworkVariableFields[j].Type);
-                        }
-
                         var writePos = writer.Position;
                         // Note: This value can't be packed because we don't know how large it will be in advance
                         // we reserve space for it, then write the data, then come back and fill in the space
@@ -1261,19 +1249,7 @@ namespace Unity.Netcode
         {
             // Stack cache any values that requires accessing the NetworkManager (it is expensive to access it in NetworkBehaviour)
             var networkManager = NetworkManager;
-            var distributedAuthority = networkManager.DistributedAuthorityMode;
             var ensureLengthSafety = networkManager.NetworkConfig.EnsureNetworkVariableLengthSafety;
-
-            // Always read the NetworkVariable count when in distributed authority (sanity check if comb-server matches what client has locally)
-            if (distributedAuthority)
-            {
-                reader.ReadValueSafe(out ushort variableCount);
-                if (variableCount != NetworkVariableFields.Count)
-                {
-                    Debug.LogError($"[{name}][NetworkObjectId: {NetworkObjectId}][NetworkBehaviourId: {NetworkBehaviourId}] NetworkVariable count mismatch! (Read: {variableCount} vs. Expected: {NetworkVariableFields.Count})");
-                    return;
-                }
-            }
 
             // Exit early if nothing else to read
             if (NetworkVariableFields.Count == 0)
@@ -1289,14 +1265,8 @@ namespace Unity.Netcode
                 // Distributed Authority: All clients have read permissions, always try to read the value
                 if (NetworkVariableFields[j].CanClientRead(clientId))
                 {
-                    if (ensureLengthSafety || distributedAuthority)
+                    if (ensureLengthSafety)
                     {
-                        // Read the type being serialized and discard it (for now) when in a distributed authority network topology (only used by comb-server)
-                        if (distributedAuthority)
-                        {
-                            reader.ReadValueSafe(out NetworkVariableType _);
-                        }
-
                         reader.ReadValueSafe(out varSize);
                         if (varSize == 0)
                         {
@@ -1320,11 +1290,11 @@ namespace Unity.Netcode
                     continue;
                 }
 
-                // Read the NetworkVarible value
+                // Read the NetworkVariable value
                 NetworkVariableFields[j].ReadField(reader);
 
-                // When EnsureNetworkVariableLengthSafety or DistributedAuthorityMode always do a bounds check
-                if (ensureLengthSafety || distributedAuthority)
+                // When EnsureNetworkVariableLengthSafety always do a bounds check
+                if (ensureLengthSafety)
                 {
                     if (reader.Position > (readStartPos + varSize))
                     {
