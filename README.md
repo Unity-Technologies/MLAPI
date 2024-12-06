@@ -17,6 +17,14 @@ Visit the [Multiplayer Docs Site](https://docs-multiplayer.unity3d.com/) for pac
 
 You can also jump right into our [Hello World](https://docs-multiplayer.unity3d.com/netcode/current/tutorials/helloworld) guide for a taste of how to use the framework for basic networked tasks.
 
+### Netcode for GameObjects v2 
+The most recent version of Netcode for GameObjects (v2) includes several improvements along with the more recent [distributed authority network topology](https://docs-multiplayer.unity3d.com/netcode/current/terms-concepts/distributed-authority/) feature. You can find the source code for this on the [develop-2.0.0 branch](https://github.com/Unity-Technologies/com.unity.netcode.gameobjects/tree/develop-2.0.0). 
+- The develop-2.0.0 branch incudes additional examples:
+  - [Netcode for GameObjects Smooth Transform Space Transitions](https://github.com/Unity-Technologies/com.unity.netcode.gameobjects/tree/develop-2.0.0/Examples/CharacterControllerMovingBodies)
+    - This example has plenty of parenting examples, parenting under moving bodies, smooth transitioning between two parents, and a basic example of path defined motion.
+  - [Ping Tool](https://github.com/Unity-Technologies/com.unity.netcode.gameobjects/tree/develop-2.0.0/Examples/PingTool)
+    - This includes a custom Runtime Netwokr Stats Monitor that includes client to client message processing ping times.
+
 ### Community and Feedback
 
 For general questions, networking advice or discussions about Netcode for GameObjects, please join our [Discord Community](https://discord.gg/FM8SE9E) or create a post in the [Unity Multiplayer Forum](https://forum.unity.com/forums/multiplayer.26/).
@@ -24,7 +32,7 @@ For general questions, networking advice or discussions about Netcode for GameOb
 ### Compatibility
 
 Netcode for GameObjects targets the following Unity versions:
-- Unity 2021.3(LTS), and 2022.3(LTS)
+- Unity 2021.3(LTS), 2022.3(LTS), and Unity 6 (6000.0)
 
 On the following runtime platforms:
 - Windows, MacOS, and Linux
