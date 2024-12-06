@@ -68,7 +68,7 @@ namespace Unity.Netcode
     }
 
     /// <summary>
-    /// This parameter controls the use of a particular performance optimization in situations where it can be used.<br />
+    /// This parameter configures a performance optimization. This optimization is not valid in all situations.<br />
     /// Because BaseRpcTarget is a managed type, allocating a new one is expensive, as it puts pressure on the garbage collector.
     /// </summary>
     /// <remarks>
