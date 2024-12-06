@@ -87,7 +87,7 @@ namespace Unity.Netcode
         /// </summary>
         Temp,
         /// <summary>
-        /// Creates a persisted <see cref="BaseRpcTarget"/> that does not change and persists until it is disposed.
+        /// Creates a persisted <see cref="BaseRpcTarget"/> that does not change and will persist until <see cref="BaseRpcTarget.Dispose"/> is called.
         /// </summary>
         Persistent
     }
