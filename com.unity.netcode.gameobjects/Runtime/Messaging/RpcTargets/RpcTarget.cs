@@ -80,7 +80,7 @@ namespace Unity.Netcode
     }
 
     /// <summary>
-    /// This parameter controls the use of a particular performance optimization in situations where it can be used.<br />
+    /// This parameter configures a performance optimization. This optimization is not valid in all situations.<br />
     /// Because BaseRpcTarget is a managed type, allocating a new one is expensive, as it puts pressure on the garbage collector.
     /// </summary>
     /// <remarks>
@@ -99,7 +99,7 @@ namespace Unity.Netcode
         /// </summary>
         Temp,
         /// <summary>
-        /// Creates a persisted <see cref="BaseRpcTarget"/> that does not change and persists until it is disposed.
+        /// Creates a persisted <see cref="BaseRpcTarget"/> that does not change and will persist until <see cref="BaseRpcTarget.Dispose"/> is called.
         /// </summary>
         Persistent
     }
