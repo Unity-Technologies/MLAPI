@@ -85,9 +85,14 @@ namespace Unity.Netcode.RuntimeTests
         private const string k_PrefabObjectName = "NetworkPrefabHandlerTestObject";
 
         [Test]
-        public void NetworkPrefabHandlerClass()
+        public void NetworkPrefabHandlerClass([Values] bool distributedAuthority)
         {
-            Assert.IsTrue(NetworkManagerHelper.StartNetworkManager(out _));
+            var networkConfig = new NetworkConfig()
+            {
+                NetworkTopology = distributedAuthority ? NetworkTopologyTypes.DistributedAuthority : NetworkTopologyTypes.ClientServer,
+            };
+            
+            Assert.IsTrue(NetworkManagerHelper.StartNetworkManager(out _, networkConfig: networkConfig));
             var testPrefabObjectName = k_PrefabObjectName;
 
             Guid baseObjectID = NetworkManagerHelper.AddGameNetworkObject(testPrefabObjectName);
