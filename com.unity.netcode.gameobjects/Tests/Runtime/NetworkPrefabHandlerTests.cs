@@ -91,7 +91,7 @@ namespace Unity.Netcode.RuntimeTests
             {
                 NetworkTopology = distributedAuthority ? NetworkTopologyTypes.DistributedAuthority : NetworkTopologyTypes.ClientServer,
             };
-            
+
             Assert.IsTrue(NetworkManagerHelper.StartNetworkManager(out _, networkConfig: networkConfig));
             var testPrefabObjectName = k_PrefabObjectName;
 
