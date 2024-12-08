@@ -3,12 +3,51 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
+
 using UnityEngine;
 using UnityEngine.SceneManagement;
+#if UNITY_EDITOR
+using Unity.Netcode.Editor;
+using UnityEditor;
 
+/// <summary>
+/// The custom editor for the <see cref="SceneBootstrapLoaderEditor"/> component.
+/// </summary>
+[CustomEditor(typeof(SceneBootstrapLoader), true)]
+[CanEditMultipleObjects]
+public class SceneBootstrapLoaderEditor : NetcodeEditorBase<SceneBootstrapLoader>
+{
+    private SerializedProperty m_ServerSceneDefines;
+    private SerializedProperty m_ClientSceneDefines;
+
+    public override void OnEnable()
+    {
+        m_ServerSceneDefines = serializedObject.FindProperty(nameof(SceneBootstrapLoader.ServerSceneDefines));
+        m_ClientSceneDefines = serializedObject.FindProperty(nameof(SceneBootstrapLoader.ClientSceneDefines));
+        base.OnEnable();
+    }
+
+    private void DisplaySceneBootstrapLoaderProperties()
+    {
+        var sceneBootstrapLoader = target as SceneBootstrapLoader;
+        var networkManager = sceneBootstrapLoader.GetComponent<NetworkManager>();
+        if (networkManager.NetworkConfig.NetworkTopology == NetworkTopologyTypes.ClientServer)
+        {
+            EditorGUILayout.PropertyField(m_ServerSceneDefines);
+        }
+        EditorGUILayout.PropertyField(m_ClientSceneDefines);
+    }
+
+    public override void OnInspectorGUI()
+    {
+        var sceneBootstrapLoader = target as SceneBootstrapLoader;
+        void SetExpanded(bool expanded) { sceneBootstrapLoader.SceneBootstrapLoaderExpanded = expanded; };
+        DrawFoldOutGroup<NetworkManagerBootstrapper>(sceneBootstrapLoader.GetType(), DisplaySceneBootstrapLoaderProperties, sceneBootstrapLoader.SceneBootstrapLoaderExpanded, SetExpanded);
+        base.OnInspectorGUI();
+    }
+}
+
+#endif
 
 /// <summary>
 /// Example of how to control scene loading using a <see cref="NetworkSceneManager"/> additive client
@@ -18,9 +57,15 @@ using UnityEngine.SceneManagement;
 /// This component should be added to the same GameObject that the <see cref="NetworkManager"/> component
 /// is attached to (for this example we extended <see cref="NetworkManager"/> to <see cref="NetworkManagerBootstrapper"/>).
 /// </remarks>
+[RequireComponent(typeof(NetworkManager))]
+[RequireComponent(typeof(SceneBootstrapLoader))]
 public class SceneBootstrapLoader : MonoBehaviour
 {
 #if UNITY_EDITOR
+    // Inspector view expand/collapse settings for this derived child class
+    [HideInInspector]
+    public bool SceneBootstrapLoaderExpanded;
+
     [Tooltip("The main menu or out of session scene to load.")]
     public SceneAsset MainMenuSceneAsset;
 
@@ -33,7 +78,11 @@ public class SceneBootstrapLoader : MonoBehaviour
         {
             m_MainMenuScene = MainMenuSceneAsset.name;
         }
-        ServerSceneDefines.Validate();
+        var networkManager = GetComponent<NetworkManager>();
+        if (networkManager.NetworkConfig.NetworkTopology == NetworkTopologyTypes.ClientServer)
+        {
+            ServerSceneDefines.Validate();
+        }        
         ClientSceneDefines.Validate();
     }
 #endif
@@ -72,14 +121,21 @@ public class SceneBootstrapLoader : MonoBehaviour
         }
     }
 
+    public enum StartAsTypes
+    {
+        Server,
+        Host,
+        Client
+    }
+
     /// <summary>
     /// Invoked by the <see cref="NetworkManagerBootstrapper"/> when
     /// starting a client or server.
     /// </summary>
     /// <param name="startAsServer"></param>
-    public void StartSession(bool startAsServer)
+    public void StartSession(StartAsTypes startAsType)
     {
-        StartCoroutine(PreSceneLoading(startAsServer));
+        StartCoroutine(PreSceneLoading(startAsType));
     }
 
     /// <summary>
@@ -91,9 +147,12 @@ public class SceneBootstrapLoader : MonoBehaviour
     }
 
     #region SCENE PRE & POST START LOADING METHODS
-    private IEnumerator PreSceneLoading(bool isServer)
+
+
+
+    private IEnumerator PreSceneLoading(StartAsTypes startAsType)
     {
-        var sceneDefines = !isServer ? ClientSceneDefines : ServerSceneDefines;
+        var sceneDefines = startAsType == StartAsTypes.Client ? ClientSceneDefines : ServerSceneDefines;
         SceneManager.sceneLoaded += SceneLoaded;
 
         // Unloads any currently loaded scenes and becomes the default active scene.
@@ -106,21 +165,69 @@ public class SceneBootstrapLoader : MonoBehaviour
         {
             yield return HandleSceneLoading(sceneName, LoadSceneMode.Additive);
         }
+
+        // When running as a host, we load the client scenes too
+        if (startAsType == StartAsTypes.Host)
+        {
+            foreach (var sceneName in ClientSceneDefines.LocalScenes)
+            {
+                yield return HandleSceneLoading(sceneName, LoadSceneMode.Additive);
+            }
+        }
+
         SceneManager.sceneLoaded -= SceneLoaded;
 
         // Now start the NetworkManager (server or client)
-        if (isServer)
+        if (startAsType != StartAsTypes.Client && m_NetworkManager.NetworkConfig.NetworkTopology == NetworkTopologyTypes.ClientServer)
         {
             // Server needs to do some additional congiruations to ignore the local scene loaded and
             // will load any additional shared and synchronized scenes via the NetworkSceneManager.
             m_NetworkManager.OnServerStarted += OnServerStarted;
             m_NetworkManager.OnServerStopped += OnNetworkManagerShutdown;
-            m_NetworkManager.StartServer();
+            if (startAsType == StartAsTypes.Server)
+            {
+                m_NetworkManager.StartServer();
+            }
+            else
+            {
+                m_NetworkManager.StartHost();
+            }
         }
         else
         {
             m_NetworkManager.OnClientStopped += OnNetworkManagerShutdown;
-            m_NetworkManager.StartClient();
+
+            // Distributed authority needs to start using the service and needs to know when the client becomes
+            // the session owner.
+            if (m_NetworkManager.NetworkConfig.NetworkTopology == NetworkTopologyTypes.DistributedAuthority)
+            {
+                m_NetworkManager.OnSessionOwnerPromoted += OnSessionOwnerPromoted;
+                m_NetworkManager.StartOrConnectToDistributedAuthoritySession();
+            }
+            else
+            {
+                m_NetworkManager.StartClient();
+            }
+        }
+    }
+
+    /// <summary>
+    /// When the session owner is promoted, it needs to configure itself for the additive client synchronization
+    /// and handle scene validations.
+    /// </summary>
+    /// <param name="sessionOwnerPromoted"></param>
+    private void OnSessionOwnerPromoted(ulong sessionOwnerPromoted)
+    {
+        if (sessionOwnerPromoted == m_NetworkManager.LocalClientId)
+        {
+            // When we set the client synchronization mode to additive, the session owner will include this setting
+            // setting when synchronizing a newly joining client and the client will use any already loaded scenes 
+            // that the session owner determines should be synchronized. If a scene that is being synchronized is not
+            // yet loaded, then the client will load that scene.
+            m_NetworkManager.SceneManager.SetClientSynchronizationMode(LoadSceneMode.Additive);
+
+            // Add a callback to control which scene the session owner synchronizes with clients
+            m_NetworkManager.SceneManager.VerifySceneBeforeLoading = SessionOwnerVerifySceneShouldBeSynchronized;
         }
     }
 
@@ -167,6 +274,7 @@ public class SceneBootstrapLoader : MonoBehaviour
     private void OnServerStarted()
     {
         m_NetworkManager.OnServerStarted -= OnServerStarted;
+
         // When we set the client synchronization mode to additive, the server will include this setting
         // when synchronizing a client and the client will use any already loaded scenes that the server
         // wants to synchronize. If a scene that is being synchronized is not yet loaded, then the client
@@ -191,6 +299,24 @@ public class SceneBootstrapLoader : MonoBehaviour
     private bool ServerVerifySceneShouldBeSynchronized(int sceneIndex, string sceneName, LoadSceneMode loadSceneMode)
     {
         return !ServerSceneDefines.LocalScenes.Contains(sceneName);
+    }
+
+    /// <summary>
+    /// When a client is first synchronized, the session owner will determine what scenes it should synchronize with the
+    /// client. This callback is invoked for every scene currently loaded and if it returns false then it will not
+    /// attempt to synchronize the scene with the client being synchronized.
+    /// </summary>
+    /// <remarks>
+    /// We use the <see cref="ClientSceneDefines"/> for distributed authority to just exclude scenes that are already preloaded.
+    /// This is optional and semi-redundant since in a distributed network topology state is mirrored across all clients and
+    /// having locally loaded scenes not synchronized just limits where spawned objects can be migrated.
+    /// This is just for example purposes in the event you might need platform specific scenes loaded on a per client basis and/or
+    /// have some other project specific need to have locally loaded scenes that are not synchronized between all connected clients.
+    /// The recommended design for a distributed authority network topology is to just synchronize all scenes if possible.
+    /// </remarks>
+    private bool SessionOwnerVerifySceneShouldBeSynchronized(int sceneIndex, string sceneName, LoadSceneMode loadSceneMode)
+    {
+        return !ClientSceneDefines.LocalScenes.Contains(sceneName);
     }
 
 

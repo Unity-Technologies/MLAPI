@@ -129,6 +129,7 @@ GameObject:
   m_Component:
   - component: {fileID: 455857870}
   - component: {fileID: 455857873}
+  - component: {fileID: 455857874}
   - component: {fileID: 455857872}
   - component: {fileID: 455857871}
   m_Layer: 0
@@ -198,7 +199,7 @@ MonoBehaviour:
   NetworkConfig:
     ProtocolVersion: 0
     NetworkTransport: {fileID: 455857871}
-    PlayerPrefab: {fileID: 8921789205124766477, guid: 8ae02ac62e2067144b8ff06d48aeb47a, type: 3}
+    PlayerPrefab: {fileID: 4710599683293591777, guid: 90bfa3cd2cce8f14ead59b4dbdae92bb, type: 3}
     Prefabs:
       NetworkPrefabsLists:
       - {fileID: 11400000, guid: 3d25a2b1f6c12ee47bf7601c2edd7e70, type: 2}
@@ -224,7 +225,7 @@ MonoBehaviour:
     OldPrefabList: []
   RunInBackground: 1
   LogLevel: 1
-  NetworkManagerBootstrapperExpanded: 0
+  NetworkManagerBootstrapperExpanded: 1
   TargetFrameRate: 100
   EnableVSync: 0
   m_OriginalVSyncCount: 1
@@ -240,6 +241,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c4251d3d650053a419a5c503babb13a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  SceneBootstrapLoaderExpanded: 0
   MainMenuSceneAsset: {fileID: 102900000, guid: 1ec6afcedd7df124e91af7bfbcea59b2, type: 3}
   ServerSceneDefines:
     DefaultActiveScene: SharedScene
@@ -258,6 +260,20 @@ MonoBehaviour:
     LocalSceneAssets:
     - {fileID: 102900000, guid: d8ac305138d51a84dbbb734b81c4054e, type: 3}
   m_MainMenuScene: MainMenu
+--- !u!114 &455857874
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 455857869}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c472ff64b067344893ed2e632d0f9f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ClientNetworkPrefab: {fileID: 6472733969592893139, guid: 3e5167b6e6bcb5645abb2dbc0078091e, type: 3}
+  ServerNetworkPrefab: {fileID: 4710599683293591777, guid: 90bfa3cd2cce8f14ead59b4dbdae92bb, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

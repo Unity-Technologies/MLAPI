@@ -10,25 +10,26 @@ using UnityEngine;
 /// needs to have code within the <see cref="NetworkBehaviour"/> component to account for
 /// any missing dependencies.
 /// </summary>
-public class NetworkPrefabOverrideHandler : NetworkBehaviour, INetworkPrefabInstanceHandler
+[RequireComponent(typeof(NetworkManager))]
+[RequireComponent(typeof(NetworkPrefabOverrideHandler))]
+public class NetworkPrefabOverrideHandler : MonoBehaviour, INetworkPrefabInstanceHandler
 {
     public GameObject ClientNetworkPrefab;
 
     public GameObject ServerNetworkPrefab;
 
-    public override void OnNetworkSpawn()
+    private NetworkManager m_NetworkManager;
+
+    private void Start()
     {
-        // Register the server network prefab since server is handling spawning
-        if (NetworkManager && NetworkManager.PrefabHandler != null)
-        {
-            NetworkManager.PrefabHandler.AddHandler(ServerNetworkPrefab, this);
-        }
+        m_NetworkManager = GetComponent<NetworkManager>();
+        m_NetworkManager.PrefabHandler.AddHandler(ServerNetworkPrefab, this);
+        NetworkManager.OnDestroying += NetworkManager_OnDestroying;
     }
 
-    public override void OnNetworkDespawn()
+    private void NetworkManager_OnDestroying(NetworkManager obj)
     {
-        NetworkManager.PrefabHandler.RemoveHandler(ServerNetworkPrefab);
-        base.OnNetworkDespawn();
+        m_NetworkManager.PrefabHandler.RemoveHandler(ServerNetworkPrefab);
     }
 
     /// <summary>
@@ -42,7 +43,7 @@ public class NetworkPrefabOverrideHandler : NetworkBehaviour, INetworkPrefabInst
     /// <returns></returns>
     public NetworkObject Instantiate(ulong ownerClientId, Vector3 position, Quaternion rotation)
     {
-        var gameObject = IsServer ? Instantiate(ServerNetworkPrefab) : Instantiate(ClientNetworkPrefab);
+        var gameObject = m_NetworkManager.IsClient ? Instantiate(ClientNetworkPrefab) : Instantiate(ServerNetworkPrefab);
         // You could integrate spawn locations here and on the server side apply the spawn position at
         // this stage of the spawn process.
         gameObject.transform.position = position;

@@ -35,7 +35,7 @@ public class PlayerColor : NetworkBehaviour
 
         if (IsLocalPlayer)
         {
-            var gameObject = GameObject.Find("ServerHostClientDisplay");
+            var gameObject = FindAnyObjectByType<ServerHostClientText>();
             if (gameObject != null)
             {
                 var serverHost = gameObject.GetComponent<ServerHostClientText>();

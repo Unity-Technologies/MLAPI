@@ -4,13 +4,20 @@ using UnityEngine;
 
 /// <summary>
 /// An example of how to get server or client specific behaviors without
-/// directly using a <see cref="NetworkBehaviour"/>.
-/// The comments below explain a bit further.
+/// directly using a <see cref="NetworkBehaviour"/> but still associating
+/// with a <see cref="NetworkBehaviour"/>.
 /// </summary>
 public class InstanceTypeLocalBehavior : MonoBehaviour, INetworkUpdateSystem
 {
+    [Tooltip("When enabled, this will run only on a server or host.")]
+    public bool ServerOnly;
+
+    [Tooltip("This is the unique message example text displayed when running locally.")]
     public string UniqueLocalInstanceContent;
+
     private MoverScriptNoRigidbody m_MoverScriptNoRigidbody;
+    private NetworkManager m_NetworkManager;
+    private float m_NextTimeToLogMessage;
 
     private void Awake()
     {
@@ -29,11 +36,16 @@ public class InstanceTypeLocalBehavior : MonoBehaviour, INetworkUpdateSystem
     {
         if (spawned)
         {
-            NetworkUpdateLoop.RegisterNetworkUpdate(this, NetworkUpdateStage.Update);
+            m_NetworkManager = m_MoverScriptNoRigidbody.NetworkManager;
+            if (ServerOnly && m_NetworkManager.IsServer)
+            {
+                NetworkUpdateLoop.RegisterNetworkUpdate(this, NetworkUpdateStage.Update);
+            }
         }
         else
         {
             NetworkUpdateLoop.UnregisterAllNetworkUpdates(this);
+            m_NetworkManager = null;
         }
     }
 
@@ -45,14 +57,14 @@ public class InstanceTypeLocalBehavior : MonoBehaviour, INetworkUpdateSystem
         }
     }
 
-    private float m_NextTimeToLog;
+
     private void OnUpdate()
     {
-        if (m_NextTimeToLog < Time.realtimeSinceStartup)
+        if (m_NextTimeToLogMessage < Time.realtimeSinceStartup)
         {
             var serverClient = m_MoverScriptNoRigidbody.IsServer ? "Server" : "Client";
             NetworkManagerBootstrapper.Instance.LogMessage($"[{Time.realtimeSinceStartup}][{serverClient}-{m_MoverScriptNoRigidbody.name}] {UniqueLocalInstanceContent}");
-            m_NextTimeToLog = Time.realtimeSinceStartup + 5.0f;
+            m_NextTimeToLogMessage = Time.realtimeSinceStartup + 5.0f;
         }
     }
 }

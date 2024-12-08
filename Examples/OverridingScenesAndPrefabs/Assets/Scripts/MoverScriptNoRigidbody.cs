@@ -149,8 +149,11 @@ public class MoverScriptNoRigidbody : NetworkTransform
     /// </summary>
     protected override void OnNetworkPostSpawn()
     {
-        // Notify any client or server specific componant that this instance has spawned.
-        NotifySpawnStatusChanged?.Invoke(true);
+        // Authority of this object sends local notifications to any non-networkbehaviour subscribers
+        if (HasAuthority)
+        {
+            NotifySpawnStatusChanged?.Invoke(true);
+        }
 
         m_CharacterController.enabled = CanCommitToTransform;
         if (CanCommitToTransform)

@@ -1,6 +1,13 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Unity.Netcode;
+using Unity.Services.Authentication;
+using Unity.Services.Core;
+using Unity.Services.Multiplayer;
 using UnityEngine;
+using SessionState = Unity.Services.Multiplayer.SessionState;
 
 #region NetworkManagerBootstrapperEditor
 #if UNITY_EDITOR
@@ -84,6 +91,17 @@ public class NetworkManagerBootstrapper : NetworkManager
     }
 
     private ConnectionStates m_ConnectionState;
+    private bool m_ServicesRegistered;
+    private ISession m_CurrentSession;
+    private string m_SessionName;
+    private string m_ProfileName;
+    private Task m_SessionTask;
+
+    public static string GetRandomString(int length)
+    {
+        var r = new System.Random();
+        return new string(Enumerable.Range(0, length).Select(_ => (char)r.Next('a', 'z')).ToArray());
+    }
 
     public void SetFrameRate(int targetFrameRate, bool enableVsync)
     {
@@ -97,13 +115,35 @@ public class NetworkManagerBootstrapper : NetworkManager
         SetFrameRate(TargetFrameRate, EnableVSync);
         SetSingleton();
         m_SceneBootstrapLoader = GetComponent<SceneBootstrapLoader>();
+
+        m_ServicesRegistered = CloudProjectSettings.organizationName != string.Empty && CloudProjectSettings.organizationId != string.Empty;
     }
 
-    private void Start()
+    private async void Start()
     {
         OnClientConnectedCallback += OnClientConnected;
         OnClientDisconnectCallback += OnClientDisconnect;
         OnConnectionEvent += OnClientConnectionEvent;
+
+        // Check to see if the project has been registered with an organization before trying to sign in
+        if (m_ServicesRegistered)
+        {
+            if (UnityServices.Instance != null && UnityServices.Instance.State != ServicesInitializationState.Initialized)
+            {
+                await UnityServices.InitializeAsync();
+            }
+            if (!AuthenticationService.Instance.IsSignedIn)
+            {
+                AuthenticationService.Instance.SignInFailed += SignInFailed;
+                AuthenticationService.Instance.SignedIn += SignedIn;
+                if (string.IsNullOrEmpty(m_ProfileName))
+                {
+                    m_ProfileName = GetRandomString(5);
+                }
+                AuthenticationService.Instance.SwitchProfile(m_ProfileName);
+                await AuthenticationService.Instance.SignInAnonymouslyAsync();
+            }
+        }
         m_SceneBootstrapLoader.LoadMainMenu();
     }
 
@@ -112,6 +152,34 @@ public class NetworkManagerBootstrapper : NetworkManager
         OnClientConnectedCallback -= OnClientConnected;
         OnClientDisconnectCallback -= OnClientDisconnect;
         OnConnectionEvent -= OnClientConnectionEvent;
+    }
+
+
+    private void OnClientConnectionEvent(NetworkManager networkManager, ConnectionEventData eventData)
+    {
+        LogMessage($"[{Time.realtimeSinceStartup}] Connection event {eventData.EventType} for Client-{eventData.ClientId}.");
+    }
+
+    private void OnClientConnected(ulong clientId)
+    {
+        LogMessage($"[{Time.realtimeSinceStartup}] Connected event invoked for Client-{clientId}.");
+    }
+
+    private void OnClientDisconnect(ulong clientId)
+    {
+        LogMessage($"[{Time.realtimeSinceStartup}] Disconnected event invoked for Client-{clientId}.");
+    }
+
+    private void SignedIn()
+    {
+        AuthenticationService.Instance.SignedIn -= SignedIn;
+        Debug.Log($"Signed in anonymously with profile {m_ProfileName}");
+    }
+
+    private void SignInFailed(RequestFailedException error)
+    {
+        AuthenticationService.Instance.SignInFailed -= SignInFailed;
+        Debug.LogError($"Failed to sign in {m_ProfileName} anonymously: {error}");
     }
 
     private void SessionStarted()
@@ -139,38 +207,99 @@ public class NetworkManagerBootstrapper : NetworkManager
         }
     }
 
+    public void StartOrConnectToDistributedAuthoritySession()
+    {
+        m_SessionTask = ConnectThroughLiveService();
+        m_ConnectionState = ConnectionStates.Connecting;
+        LogMessage($"Connecting to session {m_SessionName}...");
+    }
+
     private void OnUpdateGUIDisconnected()
     {
-        GUILayout.BeginArea(new Rect(10, 10, 300, 800));
-        if (GUILayout.Button("Start Server"))
-        {
-            OnServerStopped += SessionStopped;
-            OnServerStarted += SessionStarted;
-            m_SceneBootstrapLoader.StartSession(true);
-        }
+        var width = !m_ServicesRegistered ? 600 : 300;
+        GUILayout.BeginArea(new Rect(10, 10, width, 800));
 
-        if (GUILayout.Button("Start Client"))
+        if (NetworkConfig.NetworkTopology == NetworkTopologyTypes.DistributedAuthority)
         {
-            OnClientStopped += SessionStopped;
-            OnClientStarted += SessionStarted;
-            m_SceneBootstrapLoader.StartSession(false);
+            if (!m_ServicesRegistered)
+            {
+                GUILayout.Label("Project-Settings:Services-General-Settings is not configured.");
+                GUILayout.Label("Distributed authority requires project to be registered with your organization's services account for authentication purposes.");
+            }
+            else
+            {
+                m_SessionName = GUILayout.TextField(m_SessionName);
+
+                if (GUILayout.Button("Create or Connect To Session"))
+                {
+                    NetworkConfig.UseCMBService = true;
+                    OnClientStopped += SessionStopped;
+                    OnClientStarted += SessionStarted;
+                    m_SceneBootstrapLoader.StartSession(SceneBootstrapLoader.StartAsTypes.Client);
+                }
+            }
+        }
+        else
+        {
+            if (GUILayout.Button("Start Server"))
+            {
+                OnServerStopped += SessionStopped;
+                OnServerStarted += SessionStarted;
+                m_SceneBootstrapLoader.StartSession(SceneBootstrapLoader.StartAsTypes.Server);
+            }
+
+            if (GUILayout.Button("Start Host"))
+            {
+                OnServerStopped += SessionStopped;
+                OnServerStarted += SessionStarted;
+                m_SceneBootstrapLoader.StartSession(SceneBootstrapLoader.StartAsTypes.Host);
+            }
+
+            if (GUILayout.Button("Start Client"))
+            {
+                OnClientStopped += SessionStopped;
+                OnClientStarted += SessionStarted;
+                m_SceneBootstrapLoader.StartSession(SceneBootstrapLoader.StartAsTypes.Client);
+            }
         }
         GUILayout.EndArea();
     }
 
-    private void OnUpdateGUIConnected()
+    private int OnUpdateGUIConnected(int yAxisOffset)
     {
         GUILayout.BeginArea(new Rect(10, 10, 800, 800));
-        GUILayout.Label($"Client-Server Session");
+        if (CMBServiceConnection)
+        {
+            GUILayout.Label($"Distributed Authority Session: {m_SessionName}");
+            if (LocalClient.IsSessionOwner)
+            {
+                GUILayout.Label("[Session Owner]");
+                yAxisOffset += 20;
+            }
+        }
+        else
+        {
+            GUILayout.Label($"Client-Server Session");
+        }
         GUILayout.EndArea();
 
         GUILayout.BeginArea(new Rect(Display.main.renderingWidth - 160, 10, 150, 80));
-        var endSessionText = IsServer ? "Shutdown" : "Disconnect";
+        var endSessionText = IsServer && !DistributedAuthorityMode ? "Shutdown" : "Disconnect";
         if (GUILayout.Button(endSessionText))
         {
-            Shutdown();
+            if (m_CurrentSession != null && m_CurrentSession.State == SessionState.Connected)
+            {
+                m_CurrentSession.LeaveAsync();
+                m_CurrentSession = null;
+            }
+            else
+            {
+                Shutdown();
+            }
         }
         GUILayout.EndArea();
+
+        return yAxisOffset;
     }
 
     private void OnGUI()
@@ -186,8 +315,7 @@ public class NetworkManagerBootstrapper : NetworkManager
                 }
             case ConnectionStates.Connected:
                 {
-                    yAxisOffset = 40;
-                    OnUpdateGUIConnected();
+                    yAxisOffset = OnUpdateGUIConnected(40);
                     break;
                 }
         }
@@ -206,13 +334,28 @@ public class NetworkManagerBootstrapper : NetworkManager
         GUILayout.EndArea();
     }
 
-    /// <summary>
-    /// General update for client-side
-    /// </summary>
-    private void ClientSideUpdate()
-    {
 
+    private async Task<ISession> ConnectThroughLiveService()
+    {
+        try
+        {
+            var options = new SessionOptions()
+            {
+                Name = m_SessionName,
+                MaxPlayers = 32
+            }.WithDistributedAuthorityNetwork();
+
+            m_CurrentSession = await MultiplayerService.Instance.CreateOrJoinSessionAsync(m_SessionName, options);
+            return m_CurrentSession;
+        }
+        catch (Exception e)
+        {
+            LogMessage($"{e.Message}");
+            Debug.LogException(e);
+        }
+        return null;
     }
+
 
     private Vector3 m_CameraOriginalPosition;
     private Quaternion m_CameraOriginalRotation;
@@ -228,6 +371,8 @@ public class NetworkManagerBootstrapper : NetworkManager
             Camera.main.transform.rotation = m_CameraOriginalRotation;
         }
     }
+
+    #region Update Methods and Properties
 
     /// <summary>
     /// General update for server-side
@@ -258,6 +403,15 @@ public class NetworkManagerBootstrapper : NetworkManager
         }
     }
 
+
+    /// <summary>
+    /// General update for client-side
+    /// </summary>
+    private void ClientSideUpdate()
+    {
+
+    }
+
     private void Update()
     {
         if (IsListening)
@@ -285,21 +439,10 @@ public class NetworkManagerBootstrapper : NetworkManager
             }
         }
     }
+    #endregion
 
-    private void OnClientConnectionEvent(NetworkManager networkManager, ConnectionEventData eventData)
-    {
-        LogMessage($"[{Time.realtimeSinceStartup}] Connection event {eventData.EventType} for Client-{eventData.ClientId}.");
-    }
 
-    private void OnClientConnected(ulong clientId)
-    {
-        LogMessage($"[{Time.realtimeSinceStartup}] Connected event invoked for Client-{clientId}.");
-    }
-
-    private void OnClientDisconnect(ulong clientId)
-    {
-        LogMessage($"[{Time.realtimeSinceStartup}] Disconnected event invoked for Client-{clientId}.");
-    }
+    #region Message Logging Methods and Properties
 
     private List<MessageLog> m_MessageLogs = new List<MessageLog>();
 
@@ -328,6 +471,7 @@ public class NetworkManagerBootstrapper : NetworkManager
 
         Debug.Log(msg);
     }
+    #endregion
 
     public NetworkManagerBootstrapper()
     {
