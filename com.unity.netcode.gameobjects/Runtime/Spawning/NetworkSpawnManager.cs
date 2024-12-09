@@ -736,12 +736,20 @@ namespace Unity.Netcode
         internal NetworkObject InstantiateAndSpawnNoParameterChecks(NetworkObject networkPrefab, ulong ownerClientId = NetworkManager.ServerClientId, bool destroyWithScene = false, bool isPlayerObject = false, bool forceOverride = false, Vector3 position = default, Quaternion rotation = default)
         {
             var networkObject = networkPrefab;
-            // Host spawns the ovveride and server spawns the original prefab unless forceOverride is set to true where both server or host will spawn the override.
-            // In distributed authority mode, we alaways get the override
-            if (forceOverride || NetworkManager.IsHost || NetworkManager.DistributedAuthorityMode)
+            // - Host and clients always instantiate the ovveride if one exists.
+            // - Server instantiates the original prefab unless:
+            // -- forceOverride is set to true =or=
+            // -- The prefab has a registered prefab handler, then we let user code determine what to spawn.
+            // - Distributed authority mode always spawns the ovveride if one exists.
+            if (forceOverride || NetworkManager.IsClient || NetworkManager.DistributedAuthorityMode || NetworkManager.PrefabHandler.ContainsHandler(networkPrefab.GlobalObjectIdHash))
             {
                 networkObject = GetNetworkObjectToSpawn(networkPrefab.GlobalObjectIdHash, ownerClientId, position, rotation);
             }
+            else // Under this case, server instantiate the prefab passed in.
+            {
+                networkObject = InstantiateNetworkPrefab(networkPrefab.gameObject, networkPrefab.GlobalObjectIdHash, position, rotation);
+            }
+
             if (networkObject == null)
             {
                 Debug.LogError($"Failed to instantiate and spawn {networkPrefab.name}!");
@@ -824,13 +832,34 @@ namespace Unity.Netcode
                 else
                 {
                     // Create prefab instance while applying any pre-assigned position and rotation values
-                    networkObject = UnityEngine.Object.Instantiate(networkPrefabReference).GetComponent<NetworkObject>();
-                    networkObject.transform.position = position ?? networkObject.transform.position;
-                    networkObject.transform.rotation = rotation ?? networkObject.transform.rotation;
-                    networkObject.NetworkManagerOwner = NetworkManager;
-                    networkObject.PrefabGlobalObjectIdHash = globalObjectIdHash;
+                    networkObject = InstantiateNetworkPrefab(networkPrefabReference, globalObjectIdHash, position, rotation);
                 }
             }
+            return networkObject;
+        }
+
+        /// <summary>
+        /// Instantiates a network prefab instance, assigns the base prefab <see cref="NetworkObject.GlobalObjectIdHash"/>, positions, and orients
+        /// the instance.
+        /// !!! Should only be invoked by <see cref="GetNetworkObjectToSpawn"/> unless used by an integration test !!!
+        /// </summary>
+        /// <remarks>
+        /// <param name="prefabGlobalObjectIdHash"> should be the base prefab <see cref="NetworkObject.GlobalObjectIdHash"/> value and not the
+        /// overrided value.
+        /// (Can be used for integration testing)
+        /// </remarks>
+        /// <param name="networkPrefab">prefab to instantiate</param>
+        /// <param name="prefabGlobalObjectIdHash"><see cref="NetworkObject.GlobalObjectIdHash"/> of the base prefab instance</param>
+        /// <param name="position">conditional position in place of the network prefab's default position</param>
+        /// <param name="rotation">conditional rotation in place of the network prefab's default rotation</param>
+        /// <returns>the instance of the <see cref="NetworkObject"/></returns>
+        internal NetworkObject InstantiateNetworkPrefab(GameObject networkPrefab, uint prefabGlobalObjectIdHash, Vector3? position, Quaternion? rotation)
+        {
+            var networkObject = UnityEngine.Object.Instantiate(networkPrefab).GetComponent<NetworkObject>();
+            networkObject.transform.position = position ?? networkObject.transform.position;
+            networkObject.transform.rotation = rotation ?? networkObject.transform.rotation;
+            networkObject.NetworkManagerOwner = NetworkManager;
+            networkObject.PrefabGlobalObjectIdHash = prefabGlobalObjectIdHash;
             return networkObject;
         }
 
