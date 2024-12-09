@@ -12,7 +12,7 @@ package_pack_-_netcode_gameobjects:
   - command: npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     timeout: 20
     retries: 10
-  - command: curl https://artifactory.prd.it.unity3d.com/artifactory/stevedore-unity-internal/wrench-localapv/1-2-53_31e57270c4c5fcef5b1fcad7cb7d842414c9340113201c4b4cc1de3e9e8e8a6a.zip -o wrench-localapv.zip
+  - command: curl https://artifactory.prd.it.unity3d.com/artifactory/stevedore-unity-internal/wrench-localapv/1-2-54_4ed3929f39f0279ecefec81a437d0eb42e21a4f9c6469a88d31e8f3d764709fe.zip -o wrench-localapv.zip
   - command: 7z x -aoa wrench-localapv.zip
   - command: pip install semver requests --index-url https://artifactory-slo.bf.unity3d.com/artifactory/api/pypi/pypi/simple
   - command: python PythonScripts/print_machine_info.py
@@ -29,8 +29,8 @@ package_pack_-_netcode_gameobjects:
       - upm-ci~/packages/**/*
   variables:
     UPMCI_ACK_LARGE_PACKAGE: 1
-    UPMPVP_CONTEXT_WRENCH: 0.10.30.0
+    UPMPVP_CONTEXT_WRENCH: 0.10.31.0
   metadata:
     Job Maintainers: '#rm-packageworks'
-    Wrench: 0.10.30.0
+    Wrench: 0.10.31.0
 
