@@ -736,11 +736,11 @@ namespace Unity.Netcode
         internal NetworkObject InstantiateAndSpawnNoParameterChecks(NetworkObject networkPrefab, ulong ownerClientId = NetworkManager.ServerClientId, bool destroyWithScene = false, bool isPlayerObject = false, bool forceOverride = false, Vector3 position = default, Quaternion rotation = default)
         {
             var networkObject = networkPrefab;
-            // - Host and clients always instantiate the ovveride if one exists.
+            // - Host and clients always instantiate the override if one exists.
             // - Server instantiates the original prefab unless:
             // -- forceOverride is set to true =or=
             // -- The prefab has a registered prefab handler, then we let user code determine what to spawn.
-            // - Distributed authority mode always spawns the ovveride if one exists.
+            // - Distributed authority mode always spawns the override if one exists.
             if (forceOverride || NetworkManager.IsClient || NetworkManager.DistributedAuthorityMode || NetworkManager.PrefabHandler.ContainsHandler(networkPrefab.GlobalObjectIdHash))
             {
                 networkObject = GetNetworkObjectToSpawn(networkPrefab.GlobalObjectIdHash, ownerClientId, position, rotation);
