@@ -291,7 +291,7 @@ namespace Unity.Netcode
             if (GlobalObjectIdHash != oldValue)
             {
                 // Check if this is an in-scnee placed NetworkObject (Special Case for In-Scene Placed)
-                if (IsSceneObject.Value)
+                if (IsSceneObject.HasValue && IsSceneObject.Value)
                 {
                     // Sanity check to make sure this is a scene placed object
                     if (globalId.identifierType != k_SceneObjectType)
