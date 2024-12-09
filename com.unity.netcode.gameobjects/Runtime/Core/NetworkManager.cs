@@ -1023,8 +1023,7 @@ namespace Unity.Netcode
         {
             if (IsListening && change == PlayModeStateChange.ExitingPlayMode)
             {
-                // Make sure we are not holding onto anything in case domain reload is disabled
-                ShutdownInternal();
+                OnApplicationQuit();
             }
         }
 #endif
