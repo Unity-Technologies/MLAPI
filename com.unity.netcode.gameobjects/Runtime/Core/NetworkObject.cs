@@ -102,6 +102,14 @@ namespace Unity.Netcode
         private const int k_SceneObjectType = 2;
         private const int k_SourceAssetObjectType = 3;
 
+        // Used to track any InContext or InIsolation prefab being edited
+        private static PrefabStage s_PrefabStage;
+        // The network prefab asset that the edit mode scene has created an instance of (s_PrefabInstance)
+        private static NetworkObject s_PrefabAsset;
+        // The InContext or InIsolation edit mode network prefab scene instance of the prefab asset (s_PrefabAsset)
+        private static NetworkObject s_PrefabInstance;
+
+
         [ContextMenu("Refresh In-Scene Prefab Instances")]
         internal void RefreshAllPrefabInstances()
         {
@@ -134,8 +142,124 @@ namespace Unity.Netcode
             NetworkObjectRefreshTool.ProcessScenes();
         }
 
+        /// <summary>
+        /// Register for <see cref="PrefabStage"/> opened and closing event notifications
+        /// </summary>
+        [InitializeOnLoadMethod]
+        private static void OnApplicationStart()
+        {
+            PrefabStage.prefabStageOpened -= PrefabStageOpened;
+            PrefabStage.prefabStageOpened += PrefabStageOpened;
+            PrefabStage.prefabStageClosing -= PrefabStageClosing;
+            PrefabStage.prefabStageClosing += PrefabStageClosing;
+        }
+
+        private static void PrefabStageClosing(PrefabStage prefabStage)
+        {
+            // If domain reloading is enabled, then this will be null when we return from playmode.
+            if (s_PrefabStage == null)
+            {
+                // Determine if we have a network prefab opened in edit mode or not
+                CheckPrefabStage(prefabStage);
+            }
+
+            // TODO: Remove before merging PR
+            // If we had a prefab opened in isolation mode, then notify we are closing the prefab
+            if (s_PrefabStage && s_PrefabAsset)
+            {
+                Debug.Log($"Prefab {s_PrefabAsset.name} is exiting prefab {s_PrefabStage.mode} edit mode.");
+            }
+
+            s_PrefabStage = null;
+            s_PrefabInstance = null;
+            s_PrefabAsset = null;
+        }
+
+        private static void PrefabStageOpened(PrefabStage prefabStage)
+        {
+            // Determine if we have a network prefab opened in edit mode or not
+            CheckPrefabStage(prefabStage);
+        }
+
+        /// <summary>
+        /// Determines if we have opened a network prefab in edit mode (InContext or InIsolation)
+        /// </summary>
+        /// <remarks>
+        /// InContext: Typically means a are in prefab edit mode for an in-scene placed network prefab instance.
+        /// (currently no such thing as a network prefab with nested network prefab instances)
+        /// 
+        /// InIsolation: Typically means we are in prefb edit mode for a prefab asset.
+        /// </remarks>
+        /// <param name="prefabStage"></param>
+        private static void CheckPrefabStage(PrefabStage prefabStage)
+        {
+            s_PrefabStage = prefabStage;
+            s_PrefabInstance = prefabStage.prefabContentsRoot?.GetComponent<NetworkObject>();
+            if (s_PrefabInstance)
+            {
+                Debug.Log($"[{s_PrefabStage.mode} Mode] NetworkPrefab {s_PrefabInstance.name} ({s_PrefabInstance.GlobalObjectIdHash}) was opened in edit mode.");
+
+                if (s_PrefabStage.mode == PrefabStage.Mode.InContext && s_PrefabStage.openedFromInstanceRoot != null)
+                {
+                    // This is needed to handle the scenario where a user completely loads a new scene while in an InContext prefab edit mode.
+                    try
+                    {
+                        s_PrefabAsset = s_PrefabStage.openedFromInstanceRoot?.GetComponent<NetworkObject>();
+                    }
+                    catch
+                    {
+                        s_PrefabAsset = null;
+                    }
+                }
+                else
+                {
+                    // When editing in InIsolation mode, load the original prefab asset
+                    s_PrefabAsset = AssetDatabase.LoadAssetAtPath<NetworkObject>(s_PrefabStage.assetPath);
+                }
+
+                if (s_PrefabAsset)
+                {
+                    Debug.Log($"NetworkPrefab {s_PrefabAsset.name} ({s_PrefabAsset.GlobalObjectIdHash}) is the {nameof(SceneAsset)} opened in {s_PrefabStage.mode} edit mode.");
+                }
+                if (s_PrefabInstance.GlobalObjectIdHash != s_PrefabAsset.GlobalObjectIdHash)
+                {
+                    s_PrefabInstance.GlobalObjectIdHash = s_PrefabAsset.GlobalObjectIdHash;
+                    // For InContext mode, we don't want to record these modifications (the in-scene GlobalObjectIdHash is serialized with the scene)
+                    if (s_PrefabStage.mode == PrefabStage.Mode.InIsolation)
+                    {
+                        PrefabUtility.RecordPrefabInstancePropertyModifications(s_PrefabAsset);
+                    }
+                }
+            }
+            else
+            {
+                s_PrefabStage = null;
+                s_PrefabInstance = null;
+                s_PrefabAsset = null;
+            }
+        }
+
+        /// <summary>
+        /// Returns if the current NetworkObject being validated is a component of an edit mode instance or not
+        /// </summary>
+        /// <returns></returns>
+        private bool IsPrefabOpenedForEditing()
+        {
+            if (!s_PrefabStage)
+            {
+                return false;
+            }
+            return s_PrefabInstance == this;
+        }
+
         internal void OnValidate()
         {
+            // Always exit early if we are in prefab edit mode.
+            if (IsPrefabOpenedForEditing())
+            {
+                return;
+            }
+
             // do NOT regenerate GlobalObjectIdHash for NetworkPrefabs while Editor is in PlayMode
             if (EditorApplication.isPlaying && !string.IsNullOrEmpty(gameObject.scene.name))
             {
@@ -149,8 +273,7 @@ namespace Unity.Netcode
             }
 
             // Get a global object identifier for this network prefab
-            var globalId = GetGlobalId();
-
+            var globalId = GlobalObjectId.GetGlobalObjectIdSlow(this);
 
             // if the identifier type is 0, then don't update the GlobalObjectIdHash
             if (globalId.identifierType == k_NullObjectType)
@@ -161,11 +284,14 @@ namespace Unity.Netcode
             var oldValue = GlobalObjectIdHash;
             GlobalObjectIdHash = globalId.ToString().Hash32();
 
+            // Always check for in-scene placed to assure any previous version scene assets with in-scene place NetworkObjects gets updated
+            CheckForInScenePlaced();
+
             // If the GlobalObjectIdHash value changed, then mark the asset dirty
             if (GlobalObjectIdHash != oldValue)
             {
                 // Check if this is an in-scnee placed NetworkObject (Special Case for In-Scene Placed)
-                if (!IsEditingPrefab() && gameObject.scene.name != null && gameObject.scene.name != gameObject.name)
+                if (IsSceneObject.Value)
                 {
                     // Sanity check to make sure this is a scene placed object
                     if (globalId.identifierType != k_SceneObjectType)
@@ -186,9 +312,6 @@ namespace Unity.Netcode
                     EditorUtility.SetDirty(this);
                 }
             }
-
-            // Always check for in-scene placed to assure any previous version scene assets with in-scene place NetworkObjects gets updated
-            CheckForInScenePlaced();
         }
 
         private bool IsEditingPrefab()
@@ -201,6 +324,7 @@ namespace Unity.Netcode
             {
                 return false;
             }
+            Debug.LogWarning($"{name} is returning true for the legacy IsEditingPrefab method!");
             return true;
         }
 
@@ -218,7 +342,7 @@ namespace Unity.Netcode
         /// </remarks>
         private void CheckForInScenePlaced()
         {
-            if (PrefabUtility.IsPartOfAnyPrefab(this) && !IsEditingPrefab() && gameObject.scene.IsValid() && gameObject.scene.isLoaded && gameObject.scene.buildIndex >= 0)
+            if (PrefabUtility.IsPartOfAnyPrefab(this) && gameObject.scene.IsValid() && gameObject.scene.isLoaded && gameObject.scene.buildIndex >= 0)
             {
                 var prefab = PrefabUtility.GetCorrespondingObjectFromSource(gameObject);
                 var assetPath = AssetDatabase.GetAssetPath(prefab);
