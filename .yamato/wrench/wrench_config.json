@@ -33,5 +33,5 @@
   "branch_pattern": "ReleaseSlash",
   "wrench_version": "0.10.31.0",
   "pvp_exemption_path": ".yamato/wrench/pvp-exemptions.json",
-  "cs_project_path": "\\Tools\\CI\\NGO.Cookbook.csproj"
+  "cs_project_path": "Tools\\CI\\NGO.Cookbook.csproj"
 }
