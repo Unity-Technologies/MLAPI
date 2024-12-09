@@ -15,12 +15,14 @@ This example uses an additive client synchronization mode in order to use alread
 
 ## The Bootstrap Loading Process
 ![image](https://github.com/user-attachments/assets/fe04e058-3c5f-42dd-b55f-b0caea2d7f84)
+
 ### BootstrapScene
 The first scene loaded. Contains the `NetworkManagerBootstrapper` in-scene placed `GameObject`.
 ![image](https://github.com/user-attachments/assets/061d5c60-0fea-4209-a2d0-2e2ec425eb60)
 
 #### Scene Bootstrap Loader (component)
 ![image](https://github.com/user-attachments/assets/24d37c38-75a7-42cb-a42f-13e5ce856a63)
+
 This component handles preloading scenes for both the client(s) and server. The `NetworkManagerBootstrapper` is an extended `NetworkManager` that requires the `SceneBootstrapLoader` component which upon being started will invoke `SceneBootstrapLoader.LoadMainMenu`. 
 - **Default Active Scene Asset:** There is always an active scene. For this example, the default active scene is the same on both the client and server relative properties.
   - This could represent a lobby or network session main menu (i.e. create or join session).
@@ -44,10 +46,12 @@ The `NetworkManagerBootstrapper` uses the `SceneBootstrapLoader` component to st
 
 #### NetworkManager Bootstrapper (component)
 ![image](https://github.com/user-attachments/assets/54d0695f-87d2-4626-bdf6-9cf72b82d7f8)
+
 Handles the pre-network session menu interface along with connect and disconnect events. Since it is derived from `NetworkManager`, it also defines the network session configuration (i.e. `NetworkConfig`).
 
 #### Network Prefab Override Handler (component)
 ![image](https://github.com/user-attachments/assets/c382c3ff-bc72-4a6f-b2f2-04e0e70b1fa8)
+
 This prefab handler determines at runtime where the local `NetworkManager` instance is a client/host or server and will spawn either the ClientPlayer or ServerPlayer prefab. The `NetworkPrefabOverrideHandler` does not need to be a `NetworkBehaviour` and sometimes (especially for overriding the player prefab) it is better to handle prefab handlers prior to starting the `NetworkManager`.
 
 
