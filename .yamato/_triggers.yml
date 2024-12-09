@@ -4,7 +4,7 @@ develop_nightly:
   name: "\U0001F319 [Nightly] Run All Tests"
   triggers:
     recurring:
-    - branch: develop
+    - branch: develop-2.0.0
       frequency: daily
       rerun: always
   dependencies:
@@ -19,7 +19,7 @@ develop_weekly_trunk:
   name: "\U0001F319 [Weekly] Run All Tests [Trunk]"
   triggers:
     recurring:
-    - branch: develop
+    - branch: develop-2.0.0
       frequency: weekly
       rerun: always
   dependencies:
@@ -29,7 +29,7 @@ multiprocess_nightly:
   name: "\U0001F319 [Nightly] Run Multiprocess Tests"
   triggers:
     recurring:
-    - branch: develop
+    - branch: develop-2.0.0
       frequency: daily
       rerun: always
   dependencies:
@@ -39,7 +39,7 @@ multiprocess_nightly:
 # branch is created or updated. Currently only netcode package tests are
 # enabled, since the others are missing test coverage and will fail CI.
 pull_request_trigger:
-  name: Pull Request Trigger (master, develop, & release branches)
+  name: Pull Request Trigger (master, develop, develop-2.0.0, & release branches)
   dependencies:
     - .yamato/project-standards.yml#standards_{{ projects.first.name }}
 {% for project in projects -%}
