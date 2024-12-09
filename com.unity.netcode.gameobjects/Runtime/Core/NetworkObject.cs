@@ -3287,14 +3287,15 @@ namespace Unity.Netcode
         }
 
         /// <summary>
-        /// Only applies to Hosts or session owners (for now)
+        /// Client-Server: Only applies to spawn authority (i.e. Server)
+        /// Distributed Authority: Applies to all clients since they all have spawn authority.
         /// Will return the registered source NetworkPrefab's GlobalObjectIdHash if one exists.
         /// Server and Clients will always return the NetworkObject's GlobalObjectIdHash.
         /// </summary>
         /// <returns>appropriate hash value</returns>
         internal uint CheckForGlobalObjectIdHashOverride()
         {
-            if (NetworkManager.IsServer || (NetworkManager.DistributedAuthorityMode && NetworkManager.LocalClient.IsSessionOwner))
+            if (NetworkManager.IsServer || NetworkManager.DistributedAuthorityMode)
             {
                 if (NetworkManager.PrefabHandler.ContainsHandler(this))
                 {
