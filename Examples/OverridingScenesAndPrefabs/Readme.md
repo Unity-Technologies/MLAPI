@@ -1,9 +1,9 @@
 # Netcode for GameObjects <br /> Overriding Scenes and NetworkPrefabs
 This example, based on the [Netcode for GameObjects Smooth Transform Space Transitions](https://github.com/Unity-Technologies/com.unity.netcode.gameobjects/tree/example/server-client-unique-scenes-and-prefabs/Examples/CharacterControllerMovingBodies), provides examples of using:
-- `NetworkPrefabHandler` to be able to dynamically control prefab overrides.
+- [`NetworkPrefabHandler`](https://docs.unity3d.com/Packages/com.unity.netcode.gameobjects@2.0/api/Unity.Netcode.NetworkPrefabHandler.html) to be able to dynamically control prefab overrides.
   - For this example, the prefab handler is overriding the player prefab. You will only see the end result of this portion of the example by running a pure server instance as this is the only instance that will create instances of the ServerPlayer network prefab instead of the ClientPlayer prefab.
-- `NetworkSceneManager.ClientSynchronizationMode` to use existing preloaded scenes for synchronization.
-- `NetworkSceneManager.VerifySceneBeforeLoading` to control which scenes are used to synchronize with newly connected clients.
+- [`NetworkSceneManager.SetClientSynchronizationMode`](https://docs.unity3d.com/Packages/com.unity.netcode.gameobjects@2.0/api/Unity.Netcode.NetworkSceneManager.html#Unity_Netcode_NetworkSceneManager_SetClientSynchronizationMode_UnityEngine_SceneManagement_LoadSceneMode_) to use existing preloaded scenes for synchronization.
+- [`NetworkSceneManager.VerifySceneBeforeLoading`](https://docs.unity3d.com/Packages/com.unity.netcode.gameobjects@2.0/api/Unity.Netcode.NetworkSceneManager.html#Unity_Netcode_NetworkSceneManager_VerifySceneBeforeLoading) to control which scenes are used to synchronize with newly connected clients.
   - This includes the exclusion of scenes already loaded for both clients and/or server.
 
 _This example supports using the client-server and distributed authority network topologies._
