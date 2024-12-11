@@ -1,6 +1,5 @@
 {
-  "project_path": "Tools\\CI",
-  "schema_version": 0.6,
+  "schema_version": 0.7,
   "packages": {
     "com.unity.netcode.gameobjects": {
       "directory": "com.unity.netcode.gameobjects/",
@@ -32,6 +31,7 @@
   },
   "publishing_job": ".yamato/wrench/promotion-jobs.yml#publish_netcode_gameobjects",
   "branch_pattern": "ReleaseSlash",
-  "wrench_version": "0.10.25.0",
-  "pvp_exemption_path": ".yamato/wrench/pvp-exemptions.json"
+  "wrench_version": "0.10.31.0",
+  "pvp_exemption_path": ".yamato/wrench/pvp-exemptions.json",
+  "cs_project_path": "Tools\\CI\\NGO.Cookbook.csproj"
 }
