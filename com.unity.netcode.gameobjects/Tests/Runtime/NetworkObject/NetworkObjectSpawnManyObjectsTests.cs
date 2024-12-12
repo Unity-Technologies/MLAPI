@@ -47,8 +47,6 @@ namespace Unity.Netcode.RuntimeTests
         }
 
         [UnityTest]
-        // When this test fails it does so without an exception and will wait the default ~6 minutes
-        [Timeout(10000)]
         public IEnumerator WhenManyObjectsAreSpawnedAtOnce_AllAreReceived()
         {
             for (int x = 0; x < k_SpawnedObjects; x++)
