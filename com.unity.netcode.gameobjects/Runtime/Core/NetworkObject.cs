@@ -438,7 +438,6 @@ namespace Unity.Netcode
         /// - If the <see cref="NetworkObject"/> has an ownership request in progress but the target client is no longer connected, then it will be redistributed.
         /// </remarks>
         public bool IsOwnershipDistributable => Ownership.HasFlag(OwnershipStatus.Distributable);
-        public bool IsOwnershipSessionOwner => Ownership.HasFlag(OwnershipStatus.SessionOwner);
 
         /// <summary>
         /// When true, the <see cref="NetworkObject"/> can only be owned by the current Session Owner.
