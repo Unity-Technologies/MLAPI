@@ -182,7 +182,7 @@ namespace Unity.Netcode
         /// <remarks>
         /// InContext: Typically means a are in prefab edit mode for an in-scene placed network prefab instance.
         /// (currently no such thing as a network prefab with nested network prefab instances)
-        /// 
+        ///
         /// InIsolation: Typically means we are in prefb edit mode for a prefab asset.
         /// </remarks>
         /// <param name="prefabStage"></param>
@@ -438,6 +438,7 @@ namespace Unity.Netcode
         /// - If the <see cref="NetworkObject"/> has an ownership request in progress but the target client is no longer connected, then it will be redistributed.
         /// </remarks>
         public bool IsOwnershipDistributable => Ownership.HasFlag(OwnershipStatus.Distributable);
+        public bool IsOwnershipSessionOwner => Ownership.HasFlag(OwnershipStatus.SessionOwner);
 
         /// <summary>
         /// Returns true if the <see cref="NetworkObject"/> is has ownership locked.
@@ -482,6 +483,7 @@ namespace Unity.Netcode
         /// <see cref="Distributable"/>: When set, this instance will be automatically redistributed when a client joins (if not locked or no request is pending) or leaves.
         /// <see cref="Transferable"/>: When set, a non-owner can obtain ownership immediately (without requesting and as long as it is not locked).
         /// <see cref="RequestRequired"/>: When set, When set, a non-owner must request ownership from the owner (will always get locked once ownership is transferred).
+        /// <see cref="RequestRequired"/>: When set, When set, a non-owner must request ownership from the owner (will always get locked once ownership is transferred).
         /// </summary>
         // Ranges from 1 to 8 bits
         [Flags]
@@ -491,6 +493,7 @@ namespace Unity.Netcode
             Distributable = 1 << 0,
             Transferable = 1 << 1,
             RequestRequired = 1 << 2,
+            SessionOwner = 1 << 3,
         }
 
         /// <summary>
@@ -588,7 +591,8 @@ namespace Unity.Netcode
             Locked,
             RequestRequired,
             RequestInProgress,
-            NotTransferrable
+            NotTransferrable,
+            SessionOwnerOnly
         }
 
         /// <summary>
@@ -716,7 +720,7 @@ namespace Unity.Netcode
             {
                 response = OwnershipRequestResponseStatus.RequestInProgress;
             }
-            else if (!IsOwnershipRequestRequired && !IsOwnershipTransferable)
+            else if (!(IsOwnershipRequestRequired || IsOwnershipTransferable) || IsOwnershipSessionOwner)
             {
                 response = OwnershipRequestResponseStatus.CannotRequest;
             }
@@ -836,6 +840,12 @@ namespace Unity.Netcode
         /// </remarks>
         public bool SetOwnershipStatus(OwnershipStatus status, bool clearAndSet = false, OwnershipLockActions lockAction = OwnershipLockActions.None)
         {
+            if (status.HasFlag(OwnershipStatus.SessionOwner) && !NetworkManager.LocalClient.IsSessionOwner)
+            {
+                NetworkLog.LogWarning("Only the session owner is allowed to set the ownership status to session owner only.");
+                return false;
+            }
+
             // If it already has the flag do nothing
             if (!clearAndSet && Ownership.HasFlag(status))
             {
@@ -847,13 +857,21 @@ namespace Unity.Netcode
                 Ownership = OwnershipStatus.None;
             }
 
-            // Faster to just OR a None status than to check
-            // if it is !None before "OR'ing".
-            Ownership |= status;
-
-            if (lockAction != OwnershipLockActions.None)
+            if (status.HasFlag(OwnershipStatus.SessionOwner))
             {
-                SetOwnershipLock(lockAction == OwnershipLockActions.SetAndLock);
+
+                Ownership = OwnershipStatus.SessionOwner;
+            }
+            else
+            {
+                // Faster to just OR a None status than to check
+                // if it is !None before "OR'ing".
+                Ownership |= status;
+
+                if (lockAction != OwnershipLockActions.None)
+                {
+                    SetOwnershipLock(lockAction == OwnershipLockActions.SetAndLock);
+                }
             }
 
             SendOwnershipStatusUpdate();
@@ -1629,7 +1647,7 @@ namespace Unity.Netcode
                     // DANGO-TODO: Review over don't destroy with owner being set but DistributeOwnership not being set
                     if (NetworkManager.LogLevel == LogLevel.Developer)
                     {
-                        NetworkLog.LogWarning("DANGO-TODO: Review over don't destroy with owner being set but DistributeOwnership not being set. For now, if the NetworkObject does not destroy with the owner it will automatically set DistributeOwnership.");
+                        NetworkLog.LogWarning("DANGO-TODO: Review over don't destroy with owner being set but DistributeOwnership not being set. For now, if the NetworkObject does not destroy with the owner it will set ownership to SessionOwner.");
                     }
                 }
             }
