@@ -182,7 +182,7 @@ namespace Unity.Netcode
         /// <remarks>
         /// InContext: Typically means a are in prefab edit mode for an in-scene placed network prefab instance.
         /// (currently no such thing as a network prefab with nested network prefab instances)
-        /// 
+        ///
         /// InIsolation: Typically means we are in prefb edit mode for a prefab asset.
         /// </remarks>
         /// <param name="prefabStage"></param>
@@ -440,6 +440,13 @@ namespace Unity.Netcode
         public bool IsOwnershipDistributable => Ownership.HasFlag(OwnershipStatus.Distributable);
 
         /// <summary>
+        /// When true, the <see cref="NetworkObject"/> can only be owned by the current Session Owner.
+        /// To set <see cref="OwnershipStatus.SessionOwner"/> during runtime, use  <see cref="ChangeOwnership(ulong)"/> to ensure the session owner owns the object.
+        /// Once the session owner owns the object, then use <see cref="SetOwnershipStatus(OwnershipStatus, bool, OwnershipLockActions)"/>.
+        /// </summary>
+        public bool IsOwnershipSessionOwner => Ownership.HasFlag(OwnershipStatus.SessionOwner);
+
+        /// <summary>
         /// Returns true if the <see cref="NetworkObject"/> is has ownership locked.
         /// When locked, the <see cref="NetworkObject"/> cannot be redistributed nor can it be transferred by another client.
         /// To toggle the ownership loked status during runtime, use <see cref="SetOwnershipLock(bool)"/>.
@@ -482,6 +489,7 @@ namespace Unity.Netcode
         /// <see cref="Distributable"/>: When set, this instance will be automatically redistributed when a client joins (if not locked or no request is pending) or leaves.
         /// <see cref="Transferable"/>: When set, a non-owner can obtain ownership immediately (without requesting and as long as it is not locked).
         /// <see cref="RequestRequired"/>: When set, When set, a non-owner must request ownership from the owner (will always get locked once ownership is transferred).
+        /// <see cref="SessionOwner"/>: When set, only the current session owner may have ownership over this object.
         /// </summary>
         // Ranges from 1 to 8 bits
         [Flags]
@@ -491,6 +499,7 @@ namespace Unity.Netcode
             Distributable = 1 << 0,
             Transferable = 1 << 1,
             RequestRequired = 1 << 2,
+            SessionOwner = 1 << 3,
         }
 
         /// <summary>
@@ -549,7 +558,7 @@ namespace Unity.Netcode
             }
 
             // If we don't have the Transferable flag set and it is not a player object, then it is the same as having a static lock on ownership
-            if (!IsOwnershipTransferable && !IsPlayerObject)
+            if (!(IsOwnershipTransferable || IsPlayerObject) || IsOwnershipSessionOwner)
             {
                 NetworkLog.LogWarning($"Trying to add or remove ownership lock on [{name}] which does not have the {nameof(OwnershipStatus.Transferable)} flag set!");
                 return false;
@@ -582,13 +591,15 @@ namespace Unity.Netcode
         /// <see cref="RequestRequired"/>: The <see cref="NetworkObject"/> requires an ownership request via <see cref="RequestOwnership"/>.
         /// <see cref="RequestInProgress"/>: The <see cref="NetworkObject"/> is already processing an ownership request and ownership cannot be acquired at this time.
         /// <see cref="NotTransferrable"/>: The <see cref="NetworkObject"/> does not have the <see cref="OwnershipStatus.Transferable"/> flag set and ownership cannot be acquired.
+        /// <see cref="SessionOwnerOnly"/>: The <see cref="NetworkObject"/> has the  <see cref="OwnershipStatus.SessionOwner"/> flag set and ownership cannot be acquired.
         /// </summary>
         public enum OwnershipPermissionsFailureStatus
         {
             Locked,
             RequestRequired,
             RequestInProgress,
-            NotTransferrable
+            NotTransferrable,
+            SessionOwnerOnly
         }
 
         /// <summary>
@@ -610,6 +621,7 @@ namespace Unity.Netcode
         /// <see cref="RequestRequiredNotSet"/>: The <see cref="OwnershipStatus.RequestRequired"/> flag is not set on this <see cref="NetworkObject"/>
         /// <see cref="Locked"/>: The current owner has locked ownership which means requests are not available at this time.
         /// <see cref="RequestInProgress"/>: There is already a known request in progress. You can scan for ownership changes and try upon
+        /// <see cref="SessionOwnerOnly"/>: This object is marked as SessionOwnerOnly and therefore cannot be requested
         /// a change in ownership or just try again after a specific period of time or no longer attempt to request ownership.
         /// </summary>
         public enum OwnershipRequestStatus
@@ -619,6 +631,7 @@ namespace Unity.Netcode
             RequestRequiredNotSet,
             Locked,
             RequestInProgress,
+            SessionOwnerOnly,
         }
 
         /// <summary>
@@ -631,6 +644,7 @@ namespace Unity.Netcode
         /// <see cref="OwnershipRequestStatus.RequestRequiredNotSet"/>: The <see cref="OwnershipStatus.RequestRequired"/> flag is not set on this <see cref="NetworkObject"/>
         /// <see cref="OwnershipRequestStatus.Locked"/>: The current owner has locked ownership which means requests are not available at this time.
         /// <see cref="OwnershipRequestStatus.RequestInProgress"/>: There is already a known request in progress. You can scan for ownership changes and try upon
+        /// <see cref="OwnershipRequestStatus.SessionOwnerOnly"/>: This object can only belong the the session owner and so cannot be requested
         /// a change in ownership or just try again after a specific period of time or no longer attempt to request ownership.
         /// </remarks>
         /// <returns><see cref="OwnershipRequestStatus"/></returns>
@@ -643,7 +657,7 @@ namespace Unity.Netcode
             }
 
             // Exit early if it doesn't have the RequestRequired flag
-            if (!IsOwnershipRequestRequired)
+            if (!IsOwnershipRequestRequired || IsOwnershipSessionOwner)
             {
                 return OwnershipRequestStatus.RequestRequiredNotSet;
             }
@@ -658,6 +672,12 @@ namespace Unity.Netcode
             if (IsRequestInProgress)
             {
                 return OwnershipRequestStatus.RequestInProgress;
+            }
+
+            // Exit early if it has the SessionOwner flag
+            if (IsOwnershipSessionOwner)
+            {
+                return OwnershipRequestStatus.SessionOwnerOnly;
             }
 
             // Otherwise, send the request ownership message
@@ -716,7 +736,7 @@ namespace Unity.Netcode
             {
                 response = OwnershipRequestResponseStatus.RequestInProgress;
             }
-            else if (!IsOwnershipRequestRequired && !IsOwnershipTransferable)
+            else if (!(IsOwnershipRequestRequired || IsOwnershipTransferable) || IsOwnershipSessionOwner)
             {
                 response = OwnershipRequestResponseStatus.CannotRequest;
             }
@@ -836,6 +856,12 @@ namespace Unity.Netcode
         /// </remarks>
         public bool SetOwnershipStatus(OwnershipStatus status, bool clearAndSet = false, OwnershipLockActions lockAction = OwnershipLockActions.None)
         {
+            if (status.HasFlag(OwnershipStatus.SessionOwner) && !NetworkManager.LocalClient.IsSessionOwner)
+            {
+                NetworkLog.LogWarning("Only the session owner is allowed to set the ownership status to session owner only.");
+                return false;
+            }
+
             // If it already has the flag do nothing
             if (!clearAndSet && Ownership.HasFlag(status))
             {
@@ -847,13 +873,21 @@ namespace Unity.Netcode
                 Ownership = OwnershipStatus.None;
             }
 
-            // Faster to just OR a None status than to check
-            // if it is !None before "OR'ing".
-            Ownership |= status;
-
-            if (lockAction != OwnershipLockActions.None)
+            if (status.HasFlag(OwnershipStatus.SessionOwner))
             {
-                SetOwnershipLock(lockAction == OwnershipLockActions.SetAndLock);
+
+                Ownership = OwnershipStatus.SessionOwner;
+            }
+            else
+            {
+                // Faster to just OR a None status than to check
+                // if it is !None before "OR'ing".
+                Ownership |= status;
+
+                if (lockAction != OwnershipLockActions.None)
+                {
+                    SetOwnershipLock(lockAction == OwnershipLockActions.SetAndLock);
+                }
             }
 
             SendOwnershipStatusUpdate();

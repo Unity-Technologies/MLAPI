@@ -225,11 +225,7 @@ namespace Unity.Netcode
                 foreach (var networkObjectEntry in SpawnManager.SpawnedObjects)
                 {
                     var networkObject = networkObjectEntry.Value;
-                    if (networkObject.IsSceneObject == null || !networkObject.IsSceneObject.Value)
-                    {
-                        continue;
-                    }
-                    if (networkObject.OwnerClientId != LocalClientId)
+                    if (networkObject.IsOwnershipSessionOwner && networkObject.OwnerClientId != LocalClientId)
                     {
                         SpawnManager.ChangeOwnership(networkObject, LocalClientId, true);
                     }
@@ -416,7 +412,7 @@ namespace Unity.Netcode
                         // Metrics update needs to be driven by NetworkConnectionManager's update to assure metrics are dispatched after the send queue is processed.
                         MetricsManager.UpdateMetrics();
 
-                        // Handle sending any pending transport messages 
+                        // Handle sending any pending transport messages
                         NetworkConfig.NetworkTransport.PostLateUpdate();
 
                         // TODO: Determine a better way to handle this

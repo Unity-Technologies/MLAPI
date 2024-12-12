@@ -11,7 +11,7 @@ using UnityEngine;
 namespace Unity.Netcode
 {
     /// <summary>
-    /// The connection event type set within <see cref="ConnectionEventData"/> to signify the type of connection event notification received.   
+    /// The connection event type set within <see cref="ConnectionEventData"/> to signify the type of connection event notification received.
     /// </summary>
     /// <remarks>
     /// <see cref="ConnectionEventData"/> is returned as a parameter of the <see cref="NetworkManager.OnConnectionEvent"/> event notification.
@@ -1212,7 +1212,7 @@ namespace Unity.Netcode
                                 {
                                     // Only NetworkObjects that have the OwnershipStatus.Distributable flag set and no parent
                                     // (ownership is transferred to all children) will have their ownership redistributed.
-                                    if (ownedObject.IsOwnershipDistributable && ownedObject.GetCachedParent() == null)
+                                    if (ownedObject.IsOwnershipDistributable && ownedObject.GetCachedParent() == null && !ownedObject.IsOwnershipSessionOwner)
                                     {
                                         if (ownedObject.IsOwnershipLocked)
                                         {

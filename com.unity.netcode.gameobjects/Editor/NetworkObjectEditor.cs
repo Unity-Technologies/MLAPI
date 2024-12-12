@@ -115,6 +115,10 @@ namespace Unity.Netcode.Editor
                 EditorGUI.BeginChangeCheck();
                 serializedObject.UpdateIfRequiredOrScript();
                 DrawPropertiesExcluding(serializedObject, k_HiddenFields);
+                if (m_NetworkObject.IsOwnershipSessionOwner)
+                {
+                    m_NetworkObject.Ownership = NetworkObject.OwnershipStatus.SessionOwner;
+                }
                 serializedObject.ApplyModifiedProperties();
                 EditorGUI.EndChangeCheck();
 
@@ -193,7 +197,7 @@ namespace Unity.Netcode.Editor
 
             // The below can cause visual anomalies and/or throws an exception within the EditorGUI itself (index out of bounds of the array). and has
             // The visual anomaly is when you select one field it is set in the drop down but then the flags selection in the popup menu selects more items
-            // even though if you exit the popup menu the flag setting is correct. 
+            // even though if you exit the popup menu the flag setting is correct.
             //var ownership = (NetworkObject.OwnershipStatus)EditorGUI.EnumFlagsField(position, label, (NetworkObject.OwnershipStatus)property.enumValueFlag);
             //property.enumValueFlag = (int)ownership;
             EditorGUI.EndDisabledGroup();
