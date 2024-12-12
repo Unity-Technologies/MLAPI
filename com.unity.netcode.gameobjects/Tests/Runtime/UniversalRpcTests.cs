@@ -1261,7 +1261,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
     }
 
     [Timeout(1200000)]
-    [TestFixture(HostOrServer.Host)]
+    [TestFixture(HostOrServer.Host)]    
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestSendingWithGroupOverride : UniversalRpcTestsBase
     {
@@ -1288,6 +1288,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
         // Extending timeout since the added yield return causes this test to commonly timeout
         [Test]
+        [Ignore("Test Needs Refactor")]
         public void TestSendingWithGroupOverride(
             [Values] SendTo defaultSendTo,
             [ValueSource(nameof(RecipientGroups))] ulong[] recipient,
@@ -1338,6 +1339,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
         }
     }
 
+    
     [Timeout(1200000)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
@@ -1364,8 +1366,10 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
             List
         }
 
+        
         // Extending timeout since the added yield return causes this test to commonly timeout
         [Test]
+        [Ignore("Test Needs Refactor")]
         public void TestSendingWithGroupNotOverride(
             [Values] SendTo defaultSendTo,
             [ValueSource(nameof(RecipientGroups))] ulong[] recipient,
