@@ -140,7 +140,7 @@ namespace Unity.Netcode
         /// The amount of time a message will be held (deferred) if the destination NetworkObject needed to process the message doesn't exist yet. If the NetworkObject is not spawned within this time period, all deferred messages for that NetworkObject will be dropped.
         /// </summary>
         [Tooltip("The amount of time a message will be held (deferred) if the destination NetworkObject needed to process the message doesn't exist yet. If the NetworkObject is not spawned within this time period, all deferred messages for that NetworkObject will be dropped.")]
-        
+
         [Range(MinSpawnTimeout, MaxSpawnTimeout)]
         public float SpawnTimeout = 10f;
 
