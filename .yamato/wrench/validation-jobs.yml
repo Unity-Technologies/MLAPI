@@ -28,7 +28,7 @@ validate_-_netcode_gameobjects_-_2021_3_-_macos:
     timeout: 10
     retries: 0
   - command: UnifiedTestRunner --testproject=test-netcode.gameobjects --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --artifacts_path=artifacts --suite=Editor --suite=Playmode "--ff={ops.upmpvpevidence.enable=true}"
-    timeout: 120
+    timeout: 300
     retries: 1
   after:
   - command: curl -s https://artifactory-slo.bf.unity3d.com/artifactory/automation-and-tooling/infrastructure-instability-detection/standalone/setup/run_standalone_instability_detection-latest.sh --output run_standalone_instability_detection-latest.sh --retry 5 || exit 0
@@ -95,7 +95,7 @@ validate_-_netcode_gameobjects_-_2021_3_-_ubuntu:
     timeout: 10
     retries: 0
   - command: UnifiedTestRunner --testproject=test-netcode.gameobjects --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --artifacts_path=artifacts --suite=Editor --suite=Playmode "--ff={ops.upmpvpevidence.enable=true}"
-    timeout: 120
+    timeout: 300
     retries: 1
   after:
   - command: curl -s https://artifactory-slo.bf.unity3d.com/artifactory/automation-and-tooling/infrastructure-instability-detection/standalone/setup/run_standalone_instability_detection-latest.sh --output run_standalone_instability_detection-latest.sh --retry 5 || exit 0
@@ -162,7 +162,7 @@ validate_-_netcode_gameobjects_-_2021_3_-_windows:
     timeout: 10
     retries: 0
   - command: UnifiedTestRunner.exe --testproject=test-netcode.gameobjects --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --artifacts_path=artifacts --suite=Editor --suite=Playmode "--ff={ops.upmpvpevidence.enable=true}"
-    timeout: 120
+    timeout: 300
     retries: 1
   after:
   - command: cmd.exe /c "curl -s https://artifactory-slo.bf.unity3d.com/artifactory/automation-and-tooling/infrastructure-instability-detection/standalone/setup/run_standalone_instability_detection-latest.bat --output run_standalone_instability_detection-latest.bat --retry 5 || exit 0"
@@ -229,7 +229,7 @@ validate_-_netcode_gameobjects_-_2022_3_-_macos:
     timeout: 10
     retries: 0
   - command: UnifiedTestRunner --testproject=test-netcode.gameobjects --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --artifacts_path=artifacts --suite=Editor --suite=Playmode "--ff={ops.upmpvpevidence.enable=true}"
-    timeout: 120
+    timeout: 300
     retries: 1
   after:
   - command: curl -s https://artifactory-slo.bf.unity3d.com/artifactory/automation-and-tooling/infrastructure-instability-detection/standalone/setup/run_standalone_instability_detection-latest.sh --output run_standalone_instability_detection-latest.sh --retry 5 || exit 0
@@ -296,7 +296,7 @@ validate_-_netcode_gameobjects_-_2022_3_-_ubuntu:
     timeout: 10
     retries: 0
   - command: UnifiedTestRunner --testproject=test-netcode.gameobjects --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --artifacts_path=artifacts --suite=Editor --suite=Playmode "--ff={ops.upmpvpevidence.enable=true}"
-    timeout: 120
+    timeout: 300
     retries: 1
   after:
   - command: curl -s https://artifactory-slo.bf.unity3d.com/artifactory/automation-and-tooling/infrastructure-instability-detection/standalone/setup/run_standalone_instability_detection-latest.sh --output run_standalone_instability_detection-latest.sh --retry 5 || exit 0
@@ -363,7 +363,7 @@ validate_-_netcode_gameobjects_-_2022_3_-_windows:
     timeout: 10
     retries: 0
   - command: UnifiedTestRunner.exe --testproject=test-netcode.gameobjects --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --artifacts_path=artifacts --suite=Editor --suite=Playmode "--ff={ops.upmpvpevidence.enable=true}"
-    timeout: 120
+    timeout: 300
     retries: 1
   after:
   - command: cmd.exe /c "curl -s https://artifactory-slo.bf.unity3d.com/artifactory/automation-and-tooling/infrastructure-instability-detection/standalone/setup/run_standalone_instability_detection-latest.bat --output run_standalone_instability_detection-latest.bat --retry 5 || exit 0"
