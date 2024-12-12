@@ -955,6 +955,9 @@ namespace Unity.Netcode
                 return; // May occur when the component is added
             }
 
+            // Do a validation pass on NetworkConfig properties
+            NetworkConfig.OnValidate();
+
             if (GetComponentInChildren<NetworkObject>() != null)
             {
                 if (NetworkLog.CurrentLogLevel <= LogLevel.Normal)

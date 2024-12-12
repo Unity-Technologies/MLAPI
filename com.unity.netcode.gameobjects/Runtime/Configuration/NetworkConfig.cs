@@ -13,6 +13,14 @@ namespace Unity.Netcode
     [Serializable]
     public class NetworkConfig
     {
+        // Clamp spawn time outs to prevent dropping messages during scene events
+        // Note: The legacy versions of NGO defaulted to 1s which was too low. As
+        // well, the SpawnTimeOut is now being clamped to within this recommended
+        // range both via UI and when NetworkManager is validated.
+        internal const float MinSpawnTimeout = 10.0f;
+        // Clamp spawn time outs to no more than 1 hour (really that is a bit high)
+        internal const float MaxSpawnTimeout = 3600.0f;
+
         /// <summary>
         /// The protocol version. Different versions doesn't talk to each other.
         /// </summary>
@@ -132,6 +140,8 @@ namespace Unity.Netcode
         /// The amount of time a message will be held (deferred) if the destination NetworkObject needed to process the message doesn't exist yet. If the NetworkObject is not spawned within this time period, all deferred messages for that NetworkObject will be dropped.
         /// </summary>
         [Tooltip("The amount of time a message will be held (deferred) if the destination NetworkObject needed to process the message doesn't exist yet. If the NetworkObject is not spawned within this time period, all deferred messages for that NetworkObject will be dropped.")]
+        
+        [Range(MinSpawnTimeout, MaxSpawnTimeout)]
         public float SpawnTimeout = 10f;
 
         /// <summary>
@@ -175,6 +185,21 @@ namespace Unity.Netcode
         /// </summary>
         [Tooltip("Enable (default) if you want to profile network messages with development builds and defaults to being disabled in release builds. When disabled, network messaging profiling will be disabled in development builds.")]
         public bool NetworkProfilingMetrics = true;
+
+        /// <summary>
+        /// Invoked by <see cref="NetworkManager"/> when it is validated.
+        /// </summary>
+        /// <remarks>
+        /// Used to check for potential legacy values that have already been serialized and/or
+        /// runtime modifications to a property outside of the recommended range.
+        /// For each property checked below, provide a brief description of the reason.
+        /// </remarks>
+        internal void OnValidate()
+        {
+            // Legacy NGO versions defaulted this value to 1 second that has since been determiend
+            // any range less than 10 seconds can lead to dropped messages during scene events.
+            SpawnTimeout = Mathf.Clamp(SpawnTimeout, MinSpawnTimeout, MaxSpawnTimeout);
+        }
 
         /// <summary>
         /// Returns a base64 encoded version of the configuration
