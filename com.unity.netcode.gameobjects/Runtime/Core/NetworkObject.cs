@@ -2045,12 +2045,14 @@ namespace Unity.Netcode
 
         internal bool InternalTrySetParent(NetworkObject parent, bool worldPositionStays = true)
         {
-            if (parent != null && (IsSpawned ^ parent.IsSpawned))
+            if (parent != null && (IsSpawned ^ parent.IsSpawned) && NetworkManager != null && !NetworkManager.ShutdownInProgress)
             {
-                if (NetworkManager != null && !NetworkManager.ShutdownInProgress)
+                if (NetworkManager.LogLevel <= LogLevel.Developer)
                 {
-                    return false;
+                    var nameOfNotSpawnedObject = IsSpawned ? $" the parent ({parent.name})" : $"the child ({name})";
+                    NetworkLog.LogWarning($"Parenting failed because {nameOfNotSpawnedObject} is not spawned!");
                 }
+                return false;
             }
 
             m_CachedWorldPositionStays = worldPositionStays;

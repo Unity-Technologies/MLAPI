@@ -472,7 +472,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 - Fixed issue where invalid endpoint addresses were not being detected and returning false from NGO UnityTransport. (#2496)
 - Fixed some errors that could occur if a connection is lost and the loss is detected when attempting to write to the socket. (#2495)
 
-## Changed
+### Changed
 
 - Adding network prefabs before NetworkManager initialization is now supported. (#2565)
 - Connecting clients being synchronized now switch to the server's active scene before spawning and synchronizing NetworkObjects. (#2532)
