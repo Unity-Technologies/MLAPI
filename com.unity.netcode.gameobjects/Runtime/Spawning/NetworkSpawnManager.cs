@@ -1753,12 +1753,15 @@ namespace Unity.Netcode
                     {
                         continue;
                     }
+                    // We have to check if it is an in-scene placed NetworkObject and if it is get the source prefab asset GlobalObjectIdHash value of the in-scene placed instance
+                    // since all in-scene placed instances use unique GlobalObjectIdHash values.
+                    var globalOjectIdHash = networkObject.IsSceneObject.HasValue && networkObject.IsSceneObject.Value ? networkObject.InScenePlacedSourceGlobalObjectIdHash : networkObject.GlobalObjectIdHash;
 
-                    if (!objectTypeCount.ContainsKey(networkObject.GlobalObjectIdHash))
+                    if (!objectTypeCount.ContainsKey(globalOjectIdHash))
                     {
-                        objectTypeCount.Add(networkObject.GlobalObjectIdHash, 0);
+                        objectTypeCount.Add(globalOjectIdHash, 0);
                     }
-                    objectTypeCount[networkObject.GlobalObjectIdHash] += 1;
+                    objectTypeCount[globalOjectIdHash] += 1;
 
                     // DANGO-TODO-MVP: Remove this once the service handles object distribution
                     if (onlyIncludeOwnedObjects && !networkObject.IsOwner)
@@ -1766,20 +1769,21 @@ namespace Unity.Netcode
                         continue;
                     }
 
+
                     // Divide up by prefab type (GlobalObjectIdHash) to get a better distribution of object types
-                    if (!objectByTypeAndOwner.ContainsKey(networkObject.GlobalObjectIdHash))
+                    if (!objectByTypeAndOwner.ContainsKey(globalOjectIdHash))
                     {
-                        objectByTypeAndOwner.Add(networkObject.GlobalObjectIdHash, new Dictionary<ulong, List<NetworkObject>>());
+                        objectByTypeAndOwner.Add(globalOjectIdHash, new Dictionary<ulong, List<NetworkObject>>());
                     }
 
                     // Sub-divide each type by owner
-                    if (!objectByTypeAndOwner[networkObject.GlobalObjectIdHash].ContainsKey(networkObject.OwnerClientId))
+                    if (!objectByTypeAndOwner[globalOjectIdHash].ContainsKey(networkObject.OwnerClientId))
                     {
-                        objectByTypeAndOwner[networkObject.GlobalObjectIdHash].Add(networkObject.OwnerClientId, new List<NetworkObject>());
+                        objectByTypeAndOwner[globalOjectIdHash].Add(networkObject.OwnerClientId, new List<NetworkObject>());
                     }
 
                     // Add to the client's spawned object list
-                    objectByTypeAndOwner[networkObject.GlobalObjectIdHash][networkObject.OwnerClientId].Add(networkObject);
+                    objectByTypeAndOwner[globalOjectIdHash][networkObject.OwnerClientId].Add(networkObject);
                 }
             }
         }
@@ -1864,7 +1868,7 @@ namespace Unity.Netcode
                         if ((i % offsetCount) == 0)
                         {
                             ChangeOwnership(ownerList.Value[i], clientId, true);
-                            if (EnableDistributeLogging)
+                            //if (EnableDistributeLogging)
                             {
                                 Debug.Log($"[Client-{ownerList.Key}][NetworkObjectId-{ownerList.Value[i].NetworkObjectId} Distributed to Client-{clientId}");
                             }
