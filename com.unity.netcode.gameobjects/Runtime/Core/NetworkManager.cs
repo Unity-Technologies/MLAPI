@@ -225,11 +225,7 @@ namespace Unity.Netcode
                 foreach (var networkObjectEntry in SpawnManager.SpawnedObjects)
                 {
                     var networkObject = networkObjectEntry.Value;
-                    if (networkObject.IsSceneObject == null || !networkObject.IsSceneObject.Value)
-                    {
-                        continue;
-                    }
-                    if (networkObject.OwnerClientId != LocalClientId)
+                    if (networkObject.IsOwnershipSessionOwner && LocalClient.IsSessionOwner)
                     {
                         SpawnManager.ChangeOwnership(networkObject, LocalClientId, true);
                     }

@@ -115,6 +115,10 @@ namespace Unity.Netcode.Editor
                 EditorGUI.BeginChangeCheck();
                 serializedObject.UpdateIfRequiredOrScript();
                 DrawPropertiesExcluding(serializedObject, k_HiddenFields);
+                if (m_NetworkObject.IsOwnershipSessionOwner)
+                {
+                    m_NetworkObject.Ownership = NetworkObject.OwnershipStatus.SessionOwner;
+                }
                 serializedObject.ApplyModifiedProperties();
                 EditorGUI.EndChangeCheck();
 

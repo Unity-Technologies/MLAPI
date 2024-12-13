@@ -422,27 +422,8 @@ namespace Unity.Netcode
         {
             if (NetworkManager.DistributedAuthorityMode && !NetworkManager.ShutdownInProgress)
             {
-                if (networkObject.IsOwnershipDistributable || networkObject.IsOwnershipTransferable)
-                {
-                    if (networkObject.IsOwner || NetworkManager.DAHost)
-                    {
-                        NetworkLog.LogWarning("DANGO-TODO: Determine if removing ownership should make the CMB Service redistribute ownership or if this just isn't a valid thing in DAMode.");
-                        return;
-                    }
-                    else
-                    {
-                        NetworkLog.LogError($"Only the owner is allowed to remove ownership in distributed authority mode!");
-                        return;
-                    }
-                }
-                else
-                {
-                    if (!NetworkManager.DAHost)
-                    {
-                        Debug.LogError($"Only {nameof(NetworkObject)}s with {nameof(NetworkObject.IsOwnershipDistributable)} or {nameof(NetworkObject.IsOwnershipTransferable)} set can perform ownership changes!");
-                    }
-                    return;
-                }
+                Debug.LogError($"Removing ownership is invalid in Distributed Authority Mode. Use {nameof(ChangeOwnership)} instead.");
+                return;
             }
             ChangeOwnership(networkObject, NetworkManager.ServerClientId, true);
         }
@@ -474,6 +455,18 @@ namespace Unity.Netcode
 
             if (NetworkManager.DistributedAuthorityMode)
             {
+                // Ensure only the session owner can change ownership (i.e. acquire) and that the session owner is not trying to assign a non-session owner client
+                // ownership of a NetworkObject with SessionOwner permissions.
+                if (networkObject.IsOwnershipSessionOwner && (!NetworkManager.LocalClient.IsSessionOwner || clientId != NetworkManager.CurrentSessionOwner))
+                {
+                    if (NetworkManager.LogLevel <= LogLevel.Developer)
+                    {
+                        NetworkLog.LogErrorServer($"[{networkObject.name}][Session Owner Only] You cannot change ownership of a {nameof(NetworkObject)} that has the {NetworkObject.OwnershipStatus.SessionOwner} flag set!");
+                    }
+                    networkObject.OnOwnershipPermissionsFailure?.Invoke(NetworkObject.OwnershipPermissionsFailureStatus.SessionOwnerOnly);
+                    return;
+                }
+
                 // If are not authorized and this is not an approved ownership change, then check to see if we can change ownership
                 if (!isAuthorized && !isRequestApproval)
                 {
@@ -1746,6 +1739,11 @@ namespace Unity.Netcode
 
             foreach (var networkObject in NetworkManager.SpawnManager.SpawnedObjectsList)
             {
+                if (networkObject.IsOwnershipSessionOwner)
+                {
+                    continue;
+                }
+
                 if (networkObject.IsOwnershipDistributable && !networkObject.IsOwnershipLocked)
                 {
                     if (networkObject.transform.parent != null)
@@ -1756,17 +1754,15 @@ namespace Unity.Netcode
                             continue;
                         }
                     }
+                    // We have to check if it is an in-scene placed NetworkObject and if it is get the source prefab asset GlobalObjectIdHash value of the in-scene placed instance
+                    // since all in-scene placed instances use unique GlobalObjectIdHash values.
+                    var globalOjectIdHash = networkObject.IsSceneObject.HasValue && networkObject.IsSceneObject.Value ? networkObject.InScenePlacedSourceGlobalObjectIdHash : networkObject.GlobalObjectIdHash;
 
-                    if (networkObject.IsSceneObject.Value)
+                    if (!objectTypeCount.ContainsKey(globalOjectIdHash))
                     {
-                        continue;
+                        objectTypeCount.Add(globalOjectIdHash, 0);
                     }
-
-                    if (!objectTypeCount.ContainsKey(networkObject.GlobalObjectIdHash))
-                    {
-                        objectTypeCount.Add(networkObject.GlobalObjectIdHash, 0);
-                    }
-                    objectTypeCount[networkObject.GlobalObjectIdHash] += 1;
+                    objectTypeCount[globalOjectIdHash] += 1;
 
                     // DANGO-TODO-MVP: Remove this once the service handles object distribution
                     if (onlyIncludeOwnedObjects && !networkObject.IsOwner)
@@ -1774,20 +1770,21 @@ namespace Unity.Netcode
                         continue;
                     }
 
+
                     // Divide up by prefab type (GlobalObjectIdHash) to get a better distribution of object types
-                    if (!objectByTypeAndOwner.ContainsKey(networkObject.GlobalObjectIdHash))
+                    if (!objectByTypeAndOwner.ContainsKey(globalOjectIdHash))
                     {
-                        objectByTypeAndOwner.Add(networkObject.GlobalObjectIdHash, new Dictionary<ulong, List<NetworkObject>>());
+                        objectByTypeAndOwner.Add(globalOjectIdHash, new Dictionary<ulong, List<NetworkObject>>());
                     }
 
                     // Sub-divide each type by owner
-                    if (!objectByTypeAndOwner[networkObject.GlobalObjectIdHash].ContainsKey(networkObject.OwnerClientId))
+                    if (!objectByTypeAndOwner[globalOjectIdHash].ContainsKey(networkObject.OwnerClientId))
                     {
-                        objectByTypeAndOwner[networkObject.GlobalObjectIdHash].Add(networkObject.OwnerClientId, new List<NetworkObject>());
+                        objectByTypeAndOwner[globalOjectIdHash].Add(networkObject.OwnerClientId, new List<NetworkObject>());
                     }
 
                     // Add to the client's spawned object list
-                    objectByTypeAndOwner[networkObject.GlobalObjectIdHash][networkObject.OwnerClientId].Add(networkObject);
+                    objectByTypeAndOwner[globalOjectIdHash][networkObject.OwnerClientId].Add(networkObject);
                 }
             }
         }
@@ -1872,7 +1869,7 @@ namespace Unity.Netcode
                         if ((i % offsetCount) == 0)
                         {
                             ChangeOwnership(ownerList.Value[i], clientId, true);
-                            if (EnableDistributeLogging)
+                            //if (EnableDistributeLogging)
                             {
                                 Debug.Log($"[Client-{ownerList.Key}][NetworkObjectId-{ownerList.Value[i].NetworkObjectId} Distributed to Client-{clientId}");
                             }

@@ -1212,7 +1212,7 @@ namespace Unity.Netcode
                                 {
                                     // Only NetworkObjects that have the OwnershipStatus.Distributable flag set and no parent
                                     // (ownership is transferred to all children) will have their ownership redistributed.
-                                    if (ownedObject.IsOwnershipDistributable && ownedObject.GetCachedParent() == null)
+                                    if (ownedObject.IsOwnershipDistributable && ownedObject.GetCachedParent() == null && !ownedObject.IsOwnershipSessionOwner)
                                     {
                                         if (ownedObject.IsOwnershipLocked)
                                         {
@@ -1249,6 +1249,11 @@ namespace Unity.Netcode
                                                 childObject.SetOwnershipLock(false);
                                             }
 
+                                            // Ignore session owner marked objects
+                                            if (childObject.IsOwnershipSessionOwner)
+                                            {
+                                                continue;
+                                            }
                                             NetworkManager.SpawnManager.ChangeOwnership(childObject, targetOwner, true);
                                             if (EnableDistributeLogging)
                                             {
