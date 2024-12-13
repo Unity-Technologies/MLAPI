@@ -455,18 +455,20 @@ namespace Unity.Netcode
 
             if (NetworkManager.DistributedAuthorityMode)
             {
+                // Ensure we are not changing the ownership of an object marked as IsSessionOwner
+                if (networkObject.IsOwnershipSessionOwner)
+                {
+                    if (NetworkManager.LogLevel <= LogLevel.Developer)
+                    {
+                        NetworkLog.LogErrorServer($"[{networkObject.name}][Session Owner Only] You cannot change ownership of a {nameof(NetworkObject)} that has the {NetworkObject.OwnershipStatus.SessionOwner} flag set!");
+                    }
+                    networkObject.OnOwnershipPermissionsFailure?.Invoke(NetworkObject.OwnershipPermissionsFailureStatus.SessionOwnerOnly);
+                    return;
+                }
+
                 // If are not authorized and this is not an approved ownership change, then check to see if we can change ownership
                 if (!isAuthorized && !isRequestApproval)
                 {
-                    if (networkObject.IsOwnershipSessionOwner)
-                    {
-                        if (NetworkManager.LogLevel <= LogLevel.Developer)
-                        {
-                            NetworkLog.LogErrorServer($"[{networkObject.name}][Session Owner Only] You cannot change ownership of a {nameof(NetworkObject)} that has the {NetworkObject.OwnershipStatus.SessionOwner} flag set!");
-                        }
-                        networkObject.OnOwnershipPermissionsFailure?.Invoke(NetworkObject.OwnershipPermissionsFailureStatus.SessionOwnerOnly);
-                        return;
-                    }
                     if (networkObject.IsOwnershipLocked)
                     {
                         if (NetworkManager.LogLevel <= LogLevel.Developer)

@@ -657,7 +657,7 @@ namespace Unity.Netcode
             }
 
             // Exit early if it doesn't have the RequestRequired flag
-            if (!IsOwnershipRequestRequired || IsOwnershipSessionOwner)
+            if (!IsOwnershipRequestRequired)
             {
                 return OwnershipRequestStatus.RequestRequiredNotSet;
             }
@@ -875,8 +875,12 @@ namespace Unity.Netcode
 
             if (status.HasFlag(OwnershipStatus.SessionOwner))
             {
-
                 Ownership = OwnershipStatus.SessionOwner;
+            }
+            else if (Ownership.HasFlag(OwnershipStatus.SessionOwner))
+            {
+                NetworkLog.LogWarning("No other ownership statuses may be set while SessionOwner is set.");
+                return false;
             }
             else
             {
