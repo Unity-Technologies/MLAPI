@@ -1738,6 +1738,11 @@ namespace Unity.Netcode
 
             foreach (var networkObject in NetworkManager.SpawnManager.SpawnedObjectsList)
             {
+                if (networkObject.IsOwnershipSessionOwner)
+                {
+                    continue;
+                }
+
                 if (networkObject.IsOwnershipDistributable && !networkObject.IsOwnershipLocked)
                 {
                     if (networkObject.transform.parent != null)
@@ -1747,11 +1752,6 @@ namespace Unity.Netcode
                         {
                             continue;
                         }
-                    }
-
-                    if (networkObject.IsOwnershipSessionOwner)
-                    {
-                        continue;
                     }
                     // We have to check if it is an in-scene placed NetworkObject and if it is get the source prefab asset GlobalObjectIdHash value of the in-scene placed instance
                     // since all in-scene placed instances use unique GlobalObjectIdHash values.
