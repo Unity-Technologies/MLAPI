@@ -235,7 +235,7 @@ namespace Unity.Netcode
             OnSessionOwnerPromoted?.Invoke(sessionOwner);
         }
 
-        internal void PromoteSessionOwner(ulong clientId)
+        public void PromoteSessionOwner(ulong clientId)
         {
             if (!DistributedAuthorityMode)
             {
