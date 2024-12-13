@@ -31,7 +31,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Changed
 
-- Changed object distribution when new clients join to distribute in-scene placed `NetworkObject`s. (#3175)
+- In-scene placed `NetworkObject`s have been made distributable when balancing object distribution after a connection event. (#3175)
 - Optimised `NetworkVariable` and `NetworkTransform` related packets when in Distributed Authority mode.
 - The Debug Simulator section of the Unity Transport component was removed. This section was not functional anymore and users are now recommended to use the more featureful [Network Simulator](https://docs-multiplayer.unity3d.com/tools/current/tools-network-simulator/) tool from the Multiplayer Tools package instead. (#3121)
 
