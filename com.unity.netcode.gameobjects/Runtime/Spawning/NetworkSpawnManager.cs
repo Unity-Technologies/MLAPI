@@ -456,7 +456,7 @@ namespace Unity.Netcode
             if (NetworkManager.DistributedAuthorityMode)
             {
                 // Ensure we are not changing the ownership of an object marked as IsSessionOwner
-                if (networkObject.IsOwnershipSessionOwner)
+                if (networkObject.IsOwnershipSessionOwner && !NetworkManager.LocalClient.IsSessionOwner)
                 {
                     if (NetworkManager.LogLevel <= LogLevel.Developer)
                     {

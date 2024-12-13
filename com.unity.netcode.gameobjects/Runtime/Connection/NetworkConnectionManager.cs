@@ -1249,6 +1249,11 @@ namespace Unity.Netcode
                                                 childObject.SetOwnershipLock(false);
                                             }
 
+                                            // Ignore session owner marked objects
+                                            if (childObject.IsOwnershipSessionOwner)
+                                            {
+                                                continue;
+                                            }
                                             NetworkManager.SpawnManager.ChangeOwnership(childObject, targetOwner, true);
                                             if (EnableDistributeLogging)
                                             {
