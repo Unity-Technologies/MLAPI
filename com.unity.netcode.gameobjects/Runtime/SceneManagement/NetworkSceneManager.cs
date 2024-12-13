@@ -1903,10 +1903,12 @@ namespace Unity.Netcode
             SendSceneEventData(sceneEventData.SceneEventId, NetworkManager.ConnectedClientsIds.Where(c => c != sessionOwner).ToArray());
 
             m_IsSceneEventActive = false;
+
+            sceneEventData.SceneEventType = SceneEventType.LoadComplete;
             //First, notify local server that the scene was loaded
             OnSceneEvent?.Invoke(new SceneEvent()
             {
-                SceneEventType = SceneEventType.LoadComplete,
+                SceneEventType = sceneEventData.SceneEventType,
                 LoadSceneMode = sceneEventData.LoadSceneMode,
                 SceneName = SceneNameFromHash(sceneEventData.SceneHash),
                 ClientId = NetworkManager.LocalClientId,
