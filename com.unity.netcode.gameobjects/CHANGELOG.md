@@ -10,6 +10,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Added
 
+- Added `NetworkObject.OwnershipStatus.SessionOwner` to allow Network Objects to be distributable and only owned by the Session Owner. This flag will override all other `OwnershipStatus` flags. (#3175)
 - Added `UnityTransport.GetEndpoint` method to provide a way to obtain `NetworkEndpoint` information of a connection via client identifier. (#3130)
 - Added `NetworkTransport.OnEarlyUpdate` and `NetworkTransport.OnPostLateUpdate` methods to provide more control over handling transport related events at the start and end of each frame. (#3113)
 
@@ -30,6 +31,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Changed
 
+- In-scene placed `NetworkObject`s have been made distributable when balancing object distribution after a connection event. (#3175)
 - Optimised `NetworkVariable` and `NetworkTransform` related packets when in Distributed Authority mode.
 - The Debug Simulator section of the Unity Transport component was removed. This section was not functional anymore and users are now recommended to use the more featureful [Network Simulator](https://docs-multiplayer.unity3d.com/tools/current/tools-network-simulator/) tool from the Multiplayer Tools package instead. (#3121)
 
