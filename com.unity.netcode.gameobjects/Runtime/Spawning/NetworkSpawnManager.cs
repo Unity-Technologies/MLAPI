@@ -1738,6 +1738,11 @@ namespace Unity.Netcode
 
             foreach (var networkObject in NetworkManager.SpawnManager.SpawnedObjectsList)
             {
+                if (networkObject.IsOwnershipSessionOwner)
+                {
+                    continue;
+                }
+
                 if (networkObject.IsOwnershipDistributable && !networkObject.IsOwnershipLocked)
                 {
                     if (networkObject.transform.parent != null)
@@ -1747,11 +1752,6 @@ namespace Unity.Netcode
                         {
                             continue;
                         }
-                    }
-
-                    if (networkObject.IsOwnershipSessionOwner)
-                    {
-                        continue;
                     }
 
                     if (!objectTypeCount.ContainsKey(networkObject.GlobalObjectIdHash))
