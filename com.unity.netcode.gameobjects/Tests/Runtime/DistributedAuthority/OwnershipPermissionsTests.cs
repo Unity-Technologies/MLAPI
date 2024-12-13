@@ -371,7 +371,24 @@ namespace Unity.Netcode.RuntimeTests
             AssertOnTimeout($"[Targeted Owner] Client-{firstInstance.NetworkManager.LocalClientId} did not get the right request response: {daHostInstanceHelper.OwnershipRequestResponseStatus} Expecting: {NetworkObject.OwnershipRequestResponseStatus.CannotRequest}!");
 
             // Try changing the ownership explicitly
-            daHostInstance.ChangeOwnership(m_ClientNetworkManagers[0].LocalClientId);
+            // Get the cloned daHostInstance instance on a client side
+            var clientInstance = m_ClientNetworkManagers[2].SpawnManager.SpawnedObjects[daHostInstance.NetworkObjectId];
+
+            // Get the client instance of the OwnershipPermissionsTestHelper component
+            var clientInstanceHelper = clientInstance.GetComponent<OwnershipPermissionsTestHelper>();
+
+            // Have the client attempt to change ownership
+            clientInstance.ChangeOwnership(m_ClientNetworkManagers[2].LocalClientId);
+
+            // Verify the client side gets a permission failure status of NetworkObject.OwnershipPermissionsFailureStatus.SessionOwnerOnly
+            Assert.IsTrue(clientInstanceHelper.OwnershipPermissionsFailureStatus == NetworkObject.OwnershipPermissionsFailureStatus.SessionOwnerOnly,
+                $"Expected {clientInstance.name} to return {NetworkObject.OwnershipPermissionsFailureStatus.SessionOwnerOnly} but its permission failure" +
+                $" status is {clientInstanceHelper.OwnershipPermissionsFailureStatus}!");
+
+            // Have the session owner attempt to change ownership to a non-session owner
+            daHostInstance.ChangeOwnership(m_ClientNetworkManagers[2].LocalClientId);
+
+            // Verify the session owner cannot assign a SessionOwner permission NetworkObject to a non-sessionowner client
             Assert.IsTrue(daHostInstanceHelper.OwnershipPermissionsFailureStatus == NetworkObject.OwnershipPermissionsFailureStatus.SessionOwnerOnly,
                 $"Expected {daHostInstance.name} to return {NetworkObject.OwnershipPermissionsFailureStatus.SessionOwnerOnly} but its permission failure" +
                 $" status is {daHostInstanceHelper.OwnershipPermissionsFailureStatus}!");
