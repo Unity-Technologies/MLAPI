@@ -1,7 +1,7 @@
+using NUnit.Framework;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using NUnit.Framework;
 using Unity.Netcode.TestHelpers.Runtime;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -127,7 +127,11 @@ namespace Unity.Netcode.RuntimeTests
             }
 
             // Verifies that removing the ownership when the default (server) is already set does not cause a Key Not Found Exception
-            m_ServerNetworkManager.SpawnManager.RemoveOwnership(m_OwnershipNetworkObject);
+            // Distributed authority does not allow remove ownership (users are instructed to use change ownership)
+            if (!m_DistributedAuthority)
+            {
+                m_ServerNetworkManager.SpawnManager.RemoveOwnership(m_OwnershipNetworkObject);
+            }
 
             var serverObject = m_ServerNetworkManager.SpawnManager.SpawnedObjects[ownershipNetworkObjectId];
             var clientObject = m_ClientNetworkManagers[0].SpawnManager.SpawnedObjects[ownershipNetworkObjectId];
@@ -237,7 +241,12 @@ namespace Unity.Netcode.RuntimeTests
             Assert.False(s_GlobalTimeoutHelper.TimedOut, "Timed out waiting for all clients to change ownership!");
 
             // Verifies that removing the ownership when the default (server) is already set does not cause a Key Not Found Exception
-            m_ServerNetworkManager.SpawnManager.RemoveOwnership(m_OwnershipNetworkObject);
+            // Distributed authority does not allow remove ownership (users are instructed to use change ownership)
+            if (!m_DistributedAuthority)
+            {
+                m_ServerNetworkManager.SpawnManager.RemoveOwnership(m_OwnershipNetworkObject);
+            }
+
             var serverObject = m_ServerNetworkManager.SpawnManager.SpawnedObjects[ownershipNetworkObjectId];
             Assert.That(serverObject, Is.Not.Null);
             var clientObject = (NetworkObject)null;
