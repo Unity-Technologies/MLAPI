@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class PlayerColor : NetworkBehaviour
 {
-    private static Color[] s_Colors = { Color.red, Color.green, Color.blue, Color.cyan, Color.magenta, Color.yellow};
+    private static Color[] s_Colors = { Color.red, Color.green, Color.blue, Color.cyan, Color.magenta, Color.yellow };
     public bool ApplyColorToChildren;
     public Color Color { get; private set; }
     public List<GameObject> IgnoreChildren;

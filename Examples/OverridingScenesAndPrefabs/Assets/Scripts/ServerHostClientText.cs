@@ -39,6 +39,11 @@ public class ServerHostClientText : NetworkBehaviour
             if (NetworkManager.IsServer)
             {
                 m_DisplayText.text = NetworkManager.IsHost ? "Host" : "Server";
+                if (!NetworkManager.IsHost)
+                {
+                    SetColor(Color.white);
+                    m_ColorAlpha.a = 0.65f;
+                }
             }
             else if (NetworkManager.IsClient)
             {

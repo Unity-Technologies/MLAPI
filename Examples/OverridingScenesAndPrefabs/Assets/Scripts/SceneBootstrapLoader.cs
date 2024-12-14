@@ -82,7 +82,7 @@ public class SceneBootstrapLoader : MonoBehaviour
         if (networkManager.NetworkConfig.NetworkTopology == NetworkTopologyTypes.ClientServer)
         {
             ServerSceneDefines.Validate();
-        }        
+        }
         ClientSceneDefines.Validate();
     }
 #endif

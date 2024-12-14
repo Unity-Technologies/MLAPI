@@ -229,6 +229,7 @@ MonoBehaviour:
   TargetFrameRate: 100
   EnableVSync: 0
   m_OriginalVSyncCount: 1
+  m_ServicesRegistered: 1
 --- !u!114 &455857873
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -272,8 +273,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c472ff64b067344893ed2e632d0f9f1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ClientNetworkPrefab: {fileID: 6472733969592893139, guid: 3e5167b6e6bcb5645abb2dbc0078091e, type: 3}
-  ServerNetworkPrefab: {fileID: 4710599683293591777, guid: 90bfa3cd2cce8f14ead59b4dbdae92bb, type: 3}
+  NetworkPrefab: {fileID: 4710599683293591777, guid: 90bfa3cd2cce8f14ead59b4dbdae92bb, type: 3}
+  NetworkPrefabOverride: {fileID: 6472733969592893139, guid: 3e5167b6e6bcb5645abb2dbc0078091e, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

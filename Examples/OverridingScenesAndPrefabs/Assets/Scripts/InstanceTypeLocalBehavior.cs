@@ -9,7 +9,7 @@ using UnityEngine;
 /// </summary>
 public class InstanceTypeLocalBehavior : MonoBehaviour, INetworkUpdateSystem
 {
-    [Tooltip("When enabled, this will run only on a server or host.")]
+    [Tooltip("When enabled, this will run only on a server or host. When disabled, this will only run on the owner of the local client player (including host).")]
     public bool ServerOnly;
 
     [Tooltip("This is the unique message example text displayed when running locally.")]
@@ -26,6 +26,38 @@ public class InstanceTypeLocalBehavior : MonoBehaviour, INetworkUpdateSystem
     }
 
     /// <summary>
+    /// Adjust this logic to fit your needs.
+    /// This example makes the InstanceTypeLocalBehavior only update if:
+    /// - It is a server (including host) and is marked for ServerOnly
+    /// - It is a client (including host), is not marked for ServerOnly, and the local client is the owner of MoverScriptNoRigidbody.
+    /// - It is in distributed authority mode, is not marked for ServerOnly, and the local client has authority of the MoverScriptNoRigidbody.
+    /// </summary>
+    private bool HasAuthority()
+    {
+        if (m_NetworkManager == null)
+        {
+            return false;
+        }
+
+        if (!ServerOnly && m_NetworkManager.DistributedAuthorityMode && m_MoverScriptNoRigidbody.HasAuthority)
+        {
+            return true;
+        }
+        else
+        {
+            if (ServerOnly && m_NetworkManager.IsServer)
+            {
+                return true;
+            }
+            else if (!ServerOnly && m_MoverScriptNoRigidbody.IsOwner)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
     ///  <see cref="MoverScriptNoRigidbody.NotifySpawnStatusChanged"/>
     ///  Isolate the spawning status to the <see cref="NetworkBehaviour"/> and just
     ///  use actions, ecents, or delegates to notify non-shared behaviors that are
@@ -37,18 +69,24 @@ public class InstanceTypeLocalBehavior : MonoBehaviour, INetworkUpdateSystem
         if (spawned)
         {
             m_NetworkManager = m_MoverScriptNoRigidbody.NetworkManager;
-            if (ServerOnly && m_NetworkManager.IsServer)
+            if (HasAuthority())
             {
                 NetworkUpdateLoop.RegisterNetworkUpdate(this, NetworkUpdateStage.Update);
             }
         }
         else
         {
+            // Whether registered or not, it is easier to just unregister always.
             NetworkUpdateLoop.UnregisterAllNetworkUpdates(this);
             m_NetworkManager = null;
         }
     }
 
+    /// <summary>
+    /// Invoked only on the instance(s) that have authority to update.
+    /// <see cref="HasAuthority"/>
+    /// </summary>
+    /// <param name="updateStage"></param>
     public void NetworkUpdate(NetworkUpdateStage updateStage)
     {
         if (updateStage == NetworkUpdateStage.Update)

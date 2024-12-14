@@ -14,28 +14,27 @@ using UnityEngine;
 [RequireComponent(typeof(NetworkPrefabOverrideHandler))]
 public class NetworkPrefabOverrideHandler : MonoBehaviour, INetworkPrefabInstanceHandler
 {
-    public GameObject ClientNetworkPrefab;
+    public GameObject NetworkPrefab;
+    public GameObject NetworkPrefabOverride;
 
-    public GameObject ServerNetworkPrefab;
-
-    private NetworkManager m_NetworkManager;
+    private NetworkManagerBootstrapper m_NetworkManager;
 
     private void Start()
     {
-        m_NetworkManager = GetComponent<NetworkManager>();
-        m_NetworkManager.PrefabHandler.AddHandler(ServerNetworkPrefab, this);
+        m_NetworkManager = GetComponent<NetworkManagerBootstrapper>();
+        m_NetworkManager.PrefabHandler.AddHandler(NetworkPrefab, this);
         NetworkManager.OnDestroying += NetworkManager_OnDestroying;
     }
 
     private void NetworkManager_OnDestroying(NetworkManager obj)
     {
-        m_NetworkManager.PrefabHandler.RemoveHandler(ServerNetworkPrefab);
+        m_NetworkManager.PrefabHandler.RemoveHandler(NetworkPrefab);
     }
 
     /// <summary>
     /// Invoked on both server and clients when the prefab is spawned.
-    /// Server-side will spawn the server version.
-    /// Client-side will spawn the client version.
+    /// Server-side will spawn the default network prefab.
+    /// Client-side will spawn the network prefab override version.
     /// </summary>
     /// <param name="ownerClientId">the client identifier that will own this network prefab instance</param>
     /// <param name="position">optional to use the position passed in</param>
@@ -43,7 +42,7 @@ public class NetworkPrefabOverrideHandler : MonoBehaviour, INetworkPrefabInstanc
     /// <returns></returns>
     public NetworkObject Instantiate(ulong ownerClientId, Vector3 position, Quaternion rotation)
     {
-        var gameObject = m_NetworkManager.IsClient ? Instantiate(ClientNetworkPrefab) : Instantiate(ServerNetworkPrefab);
+        var gameObject = m_NetworkManager.IsClient ? Instantiate(NetworkPrefabOverride) : Instantiate(NetworkPrefab);
         // You could integrate spawn locations here and on the server side apply the spawn position at
         // this stage of the spawn process.
         gameObject.transform.position = position;
@@ -53,6 +52,13 @@ public class NetworkPrefabOverrideHandler : MonoBehaviour, INetworkPrefabInstanc
 
     public void Destroy(NetworkObject networkObject)
     {
+        // Another useful thing about handling this instantiation and destruction of a NetworkObject is that you can do house cleaning
+        // prior to the object being destroyed. This handles the scenario where the server is following a player and the player disconnects.
+        // Before destroying the player object, we want to unparent the camera and reset the player being followed.
+        if (m_NetworkManager.IsServer && !m_NetworkManager.IsHost && Camera.main != null && Camera.main.transform.parent == networkObject.transform)
+        {
+            m_NetworkManager.ClearFollowPlayer();
+        }
         Destroy(networkObject.gameObject);
     }
 }

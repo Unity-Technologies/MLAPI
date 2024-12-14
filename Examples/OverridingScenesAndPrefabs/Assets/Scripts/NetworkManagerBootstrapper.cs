@@ -55,6 +55,7 @@ public class NetworkManagerBootstrapperEditor : NetworkManagerEditor
 /// </summary>
 public class NetworkManagerBootstrapper : NetworkManager
 {
+    #region Validation
 #if UNITY_EDITOR
     // Inspector view expand/collapse settings for this derived child class
     [HideInInspector]
@@ -62,10 +63,13 @@ public class NetworkManagerBootstrapper : NetworkManager
     protected override void OnValidateComponent()
     {
         m_OriginalVSyncCount = QualitySettings.vSyncCount;
+        m_ServicesRegistered = CloudProjectSettings.organizationName != string.Empty && CloudProjectSettings.organizationId != string.Empty;
         base.OnValidateComponent();
     }
 #endif
+    #endregion
 
+    #region Properties
     public static NetworkManagerBootstrapper Instance;
 
     public int TargetFrameRate = 100;
@@ -91,12 +95,17 @@ public class NetworkManagerBootstrapper : NetworkManager
     }
 
     private ConnectionStates m_ConnectionState;
+
+    [SerializeField]
     private bool m_ServicesRegistered;
     private ISession m_CurrentSession;
     private string m_SessionName;
     private string m_ProfileName;
     private Task m_SessionTask;
 
+    #endregion
+
+    #region Initialization and Destroy
     public static string GetRandomString(int length)
     {
         var r = new System.Random();
@@ -115,8 +124,6 @@ public class NetworkManagerBootstrapper : NetworkManager
         SetFrameRate(TargetFrameRate, EnableVSync);
         SetSingleton();
         m_SceneBootstrapLoader = GetComponent<SceneBootstrapLoader>();
-
-        m_ServicesRegistered = CloudProjectSettings.organizationName != string.Empty && CloudProjectSettings.organizationId != string.Empty;
     }
 
     private async void Start()
@@ -153,8 +160,9 @@ public class NetworkManagerBootstrapper : NetworkManager
         OnClientDisconnectCallback -= OnClientDisconnect;
         OnConnectionEvent -= OnClientConnectionEvent;
     }
+    #endregion
 
-
+    #region Session and Connection Event Handling
     private void OnClientConnectionEvent(NetworkManager networkManager, ConnectionEventData eventData)
     {
         LogMessage($"[{Time.realtimeSinceStartup}] Connection event {eventData.EventType} for Client-{eventData.ClientId}.");
@@ -207,6 +215,29 @@ public class NetworkManagerBootstrapper : NetworkManager
         }
     }
 
+    private async Task<ISession> ConnectThroughLiveService()
+    {
+        try
+        {
+            var options = new SessionOptions()
+            {
+                Name = m_SessionName,
+                MaxPlayers = 32
+            }.WithDistributedAuthorityNetwork();
+
+            m_CurrentSession = await MultiplayerService.Instance.CreateOrJoinSessionAsync(m_SessionName, options);
+            return m_CurrentSession;
+        }
+        catch (Exception e)
+        {
+            LogMessage($"{e.Message}");
+            Debug.LogException(e);
+        }
+        return null;
+    }
+    #endregion
+
+    #region GUI Menu
     public void StartOrConnectToDistributedAuthoritySession()
     {
         m_SessionTask = ConnectThroughLiveService();
@@ -333,37 +364,21 @@ public class NetworkManagerBootstrapper : NetworkManager
         }
         GUILayout.EndArea();
     }
+    #endregion
 
-
-    private async Task<ISession> ConnectThroughLiveService()
-    {
-        try
-        {
-            var options = new SessionOptions()
-            {
-                Name = m_SessionName,
-                MaxPlayers = 32
-            }.WithDistributedAuthorityNetwork();
-
-            m_CurrentSession = await MultiplayerService.Instance.CreateOrJoinSessionAsync(m_SessionName, options);
-            return m_CurrentSession;
-        }
-        catch (Exception e)
-        {
-            LogMessage($"{e.Message}");
-            Debug.LogException(e);
-        }
-        return null;
-    }
-
-
+    #region Server Camera Handling
     private Vector3 m_CameraOriginalPosition;
     private Quaternion m_CameraOriginalRotation;
     private int m_CurrentFollowPlayerIndex = -1;
+    private MoverScriptNoRigidbody m_CurrentPlayerFollowed;
 
     private void ResetMainCamera()
     {
         m_CurrentFollowPlayerIndex = -1;
+        SetCameraDefaults();
+    }
+    private void SetCameraDefaults()
+    {
         if (Camera.main != null && Camera.main.transform.parent != null)
         {
             Camera.main.transform.SetParent(null, false);
@@ -372,14 +387,15 @@ public class NetworkManagerBootstrapper : NetworkManager
         }
     }
 
-    #region Update Methods and Properties
-
     /// <summary>
-    /// General update for server-side
+    /// Server only (i.e. not host), follow players as they move around
     /// </summary>
-    private void ServerSideUpdate()
+    private void ServerFollowPlayerCheck()
     {
-        if (Input.GetKeyDown(KeyCode.P) && ConnectedClientsIds.Count > 0)
+        bool leftBracket = Input.GetKeyDown(KeyCode.LeftBracket);
+        bool rightBracket = Input.GetKeyDown(KeyCode.RightBracket);
+
+        if ((leftBracket || rightBracket) && ConnectedClientsIds.Count > 0)
         {
             // Capture the main camera's original position and rotation the first time the server-side
             // follows a player.
@@ -388,21 +404,53 @@ public class NetworkManagerBootstrapper : NetworkManager
                 m_CameraOriginalPosition = Camera.main.transform.position;
                 m_CameraOriginalRotation = Camera.main.transform.rotation;
             }
-            m_CurrentFollowPlayerIndex++;
+
+            if (leftBracket)
+            {
+                m_CurrentFollowPlayerIndex--;
+                if (m_CurrentFollowPlayerIndex < 0)
+                {
+                    m_CurrentFollowPlayerIndex = ConnectedClientsIds.Count - 1;
+                }
+            }
+            else
+            {
+                m_CurrentFollowPlayerIndex++;
+            }
+
             m_CurrentFollowPlayerIndex %= ConnectedClientsIds.Count;
 
             var playerId = ConnectedClientsIds[m_CurrentFollowPlayerIndex];
-            var playerObject = ConnectedClients[playerId];
-            Camera.main.transform.SetParent(playerObject.PlayerObject.transform, false);
+            var playerNetworkClient = ConnectedClients[playerId];
+            m_CurrentPlayerFollowed = playerNetworkClient.PlayerObject.GetComponent<MoverScriptNoRigidbody>();
+            Camera.main.transform.SetParent(playerNetworkClient.PlayerObject.transform, false);
         }
         else if (Input.GetKeyDown(KeyCode.Backspace))
         {
-            Camera.main.transform.SetParent(null, false);
-            Camera.main.transform.position = m_CameraOriginalPosition;
-            Camera.main.transform.rotation = m_CameraOriginalRotation;
+            ClearFollowPlayer();
         }
     }
+    public void ClearFollowPlayer()
+    {
+        if (m_CurrentPlayerFollowed != null)
+        {
+            m_CurrentPlayerFollowed = null;
+            SetCameraDefaults();
+        }
+    }
+    #endregion
 
+    #region Update Methods and Properties
+    /// <summary>
+    /// General update for server-side
+    /// </summary>
+    private void ServerSideUpdate()
+    {
+        if (!IsHost)
+        {
+            ServerFollowPlayerCheck();
+        }
+    }
 
     /// <summary>
     /// General update for client-side
@@ -441,8 +489,7 @@ public class NetworkManagerBootstrapper : NetworkManager
     }
     #endregion
 
-
-    #region Message Logging Methods and Properties
+    #region Message Logging
 
     private List<MessageLog> m_MessageLogs = new List<MessageLog>();
 

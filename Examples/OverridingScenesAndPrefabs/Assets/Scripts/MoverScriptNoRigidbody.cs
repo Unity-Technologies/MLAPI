@@ -113,7 +113,7 @@ public class MoverScriptNoRigidbody : NetworkTransform
     private CharacterController m_CharacterController;
     private PlayerBallMotion m_PlayerBallMotion;
 
-    public Action<bool> NotifySpawnStatusChanged;
+    public event Action<bool> NotifySpawnStatusChanged;
 
     protected override void Awake()
     {
@@ -150,10 +150,7 @@ public class MoverScriptNoRigidbody : NetworkTransform
     protected override void OnNetworkPostSpawn()
     {
         // Authority of this object sends local notifications to any non-networkbehaviour subscribers
-        if (HasAuthority)
-        {
-            NotifySpawnStatusChanged?.Invoke(true);
-        }
+        NotifySpawnStatusChanged?.Invoke(true);
 
         m_CharacterController.enabled = CanCommitToTransform;
         if (CanCommitToTransform)
