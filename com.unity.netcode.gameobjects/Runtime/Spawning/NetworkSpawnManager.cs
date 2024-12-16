@@ -1449,6 +1449,15 @@ namespace Unity.Netcode
                 }
             }
 
+            // Since we are spawing in-scene placed NetworkObjects for already loaded scenes,
+            // we need to add any in-scene placed NetworkObject to our tracking table 
+            var clearFirst = true;
+            foreach(var sceneLoaded in NetworkManager.SceneManager.ScenesLoaded)
+            {
+                NetworkManager.SceneManager.PopulateScenePlacedObjects(sceneLoaded.Value, clearFirst);
+                clearFirst = false;
+            }
+            
             // Notify all in-scene placed NetworkObjects have been spawned
             foreach (var networkObject in networkObjectsToSpawn)
             {
