@@ -87,7 +87,7 @@ This `MonoBehaviour` component implements the `INetworkPrefabInstanceHandler` in
 - Network Prefab: This is the network prefab that you want to override. In this example, it is what is used to spawn a server-side player prefab and is what is defined within the `NetworkManagerBootstrapper` component.
 - Network Prefab Override: This is what is used to spawn a player prefab on the client-side.
 
-At runtime the local `NetworkManager` instance is a client/host or server and will spawn either the ClientPlayer or ServerPlayer prefab. The `NetworkPrefabOverrideHandler` does not need to be a `NetworkBehaviour` and sometimes (especially for overriding the player prefab) it is better to handle prefab handlers prior to starting the `NetworkManager`.
+At runtime the local `NetworkManager` instance is a client/host or server and will spawn either the ClientPlayer or ServerPlayer prefab. The `NetworkPrefabOverrideHandler` does not need to be a `NetworkBehaviour` and sometimes (especially for overriding the player prefab) it is better to register prefab handlers prior to starting the `NetworkManager`.
 
 ## Input Controls
 The following is a list of the input controls used in this project:
