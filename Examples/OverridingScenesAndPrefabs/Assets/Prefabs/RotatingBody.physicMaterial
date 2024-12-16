@@ -1,0 +1,15 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!134 &13400000
+PhysicsMaterial:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: RotatingBody
+  serializedVersion: 2
+  m_DynamicFriction: 2.5
+  m_StaticFriction: 2
+  m_Bounciness: 0
+  m_FrictionCombine: 3
+  m_BounceCombine: 2
