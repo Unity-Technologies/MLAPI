@@ -32,7 +32,8 @@ namespace Unity.Netcode.Components
         /// </summary>
         public struct NetworkTransformState : INetworkSerializable
         {
-            private const int k_InLocalSpaceBit = 0x00000001; // Persists between state updates (authority dictates if this is set)
+            // Persists between state updates (authority dictates if this is set)
+            private const int k_InLocalSpaceBit = 0x00000001;
             private const int k_PositionXBit = 0x00000002;
             private const int k_PositionYBit = 0x00000004;
             private const int k_PositionZBit = 0x00000008;
@@ -43,18 +44,25 @@ namespace Unity.Netcode.Components
             private const int k_ScaleYBit = 0x00000100;
             private const int k_ScaleZBit = 0x00000200;
             private const int k_TeleportingBit = 0x00000400;
-            private const int k_Interpolate = 0x00000800; // Persists between state updates (authority dictates if this is set)
-            private const int k_QuaternionSync = 0x00001000; // Persists between state updates (authority dictates if this is set)
-            private const int k_QuaternionCompress = 0x00002000; // Persists between state updates (authority dictates if this is set)
-            private const int k_UseHalfFloats = 0x00004000; // Persists between state updates (authority dictates if this is set)
+            // Persists between state updates (authority dictates if this is set)
+            private const int k_Interpolate = 0x00000800;
+            // Persists between state updates (authority dictates if this is set)
+            private const int k_QuaternionSync = 0x00001000;
+            // Persists between state updates (authority dictates if this is set)
+            private const int k_QuaternionCompress = 0x00002000;
+            // Persists between state updates (authority dictates if this is set)
+            private const int k_UseHalfFloats = 0x00004000;
             private const int k_Synchronization = 0x00008000;
-            private const int k_PositionSlerp = 0x00010000; // Persists between state updates (authority dictates if this is set)
-            private const int k_IsParented = 0x00020000; // When parented and synchronizing, we need to have both lossy and local scale due to varying spawn order
+            // Persists between state updates (authority dictates if this is set)
+            private const int k_PositionSlerp = 0x00010000;
+            // When parented and synchronizing, we need to have both lossy and local scale due to varying spawn order
+            private const int k_IsParented = 0x00020000;
             private const int k_SynchBaseHalfFloat = 0x00040000;
             private const int k_ReliableSequenced = 0x00080000;
             private const int k_UseUnreliableDeltas = 0x00100000;
             private const int k_UnreliableFrameSync = 0x00200000;
-            private const int k_TrackStateId = 0x10000000; // (Internal Debugging) When set each state update will contain a state identifier
+            // (Internal Debugging) When set each state update will contain a state identifier
+            private const int k_TrackStateId = 0x10000000;
 
             // Stores persistent and state relative flags
             private uint m_Bitset;
@@ -409,8 +417,8 @@ namespace Unity.Netcode.Components
             }
 
             /// <summary>
-            /// Returns whether this state update was a frame synchronization when 
-            /// UseUnreliableDeltas is enabled. When set, the entire transform will 
+            /// Returns whether this state update was a frame synchronization when
+            /// UseUnreliableDeltas is enabled. When set, the entire transform will
             /// be or has been synchronized.
             /// </summary>
             public bool IsUnreliableFrameSync()
@@ -929,8 +937,6 @@ namespace Unity.Netcode.Components
         #endregion
 
         #region PROPERTIES AND GENERAL METHODS
-
-
         public enum AuthorityModes
         {
             Server,
@@ -1370,7 +1376,8 @@ namespace Unity.Netcode.Components
 
         private BufferedLinearInterpolatorVector3 m_PositionInterpolator;
         private BufferedLinearInterpolatorVector3 m_ScaleInterpolator;
-        private BufferedLinearInterpolatorQuaternion m_RotationInterpolator; // rotation is a single Quaternion since each Euler axis will affect the quaternion's final value
+        // rotation is a single Quaternion since each Euler axis will affect the quaternion's final value
+        private BufferedLinearInterpolatorQuaternion m_RotationInterpolator;
 
         // The previous network state
         private NetworkTransformState m_OldState = new NetworkTransformState();
@@ -1643,11 +1650,11 @@ namespace Unity.Netcode.Components
                     Debug.LogException(ex);
                 }
 
-                // The below is part of assuring we only send a frame synch, when sending unreliable deltas, if 
+                // The below is part of assuring we only send a frame synch, when sending unreliable deltas, if
                 // we have already sent at least one unreliable delta state update. At this point in the callstack,
                 // a delta state update has just been sent in the above UpdateTransformState() call and as long as
                 // we didn't send a frame synch and we are not synchronizing then we know at least one unreliable
-                // delta has been sent. Under this scenario, we should start checking for this instance's alloted 
+                // delta has been sent. Under this scenario, we should start checking for this instance's alloted
                 // frame synch "tick slot". Once we send a frame synch, if no other deltas occur after that
                 // (i.e. the object is at rest) then we will stop sending frame synch's until the object begins
                 // moving, rotating, or scaling again.
@@ -1964,7 +1971,7 @@ namespace Unity.Netcode.Components
 
                         networkState.NetworkDeltaPosition = m_HalfPositionState;
 
-                        // If ownership offset is greater or we are doing an axial synchronization then synchronize the base position 
+                        // If ownership offset is greater or we are doing an axial synchronization then synchronize the base position
                         if ((m_HalfFloatTargetTickOwnership > m_CachedNetworkManager.ServerTime.Tick || isAxisSync) && !networkState.IsTeleportingNextFrame)
                         {
                             networkState.SynchronizeBaseHalfFloat = true;
@@ -3403,7 +3410,7 @@ namespace Unity.Netcode.Components
         /// - Local space to local space (<see cref="NetworkObject"/> parent to <see cref="NetworkObject"/> parent)
         /// Will all smoothly transition while interpolation is enabled.
         /// (Does not work if using a <see cref="Rigidbody"/> or <see cref="Rigidbody2D"/> for motion)
-        /// 
+        ///
         /// When a parent changes, non-authoritative instances should:<br />
         /// - Apply the resultant position, rotation, and scale from the parenting action.<br />
         /// - Clear interpolators (even if not enabled on this frame)<br />
@@ -3575,7 +3582,7 @@ namespace Unity.Netcode.Components
 
             var transformToCommit = transform;
 
-            // Explicit set states are cumulative during a fractional tick period of time (i.e. each SetState invocation will 
+            // Explicit set states are cumulative during a fractional tick period of time (i.e. each SetState invocation will
             // update the axial deltas to whatever changes are applied). As such, we need to preserve the dirty and explicit
             // state flags.
             var stateWasDirty = m_LocalAuthoritativeNetworkState.IsDirty;
@@ -3658,7 +3665,7 @@ namespace Unity.Netcode.Components
 
                 var serverTime = m_CachedNetworkManager.ServerTime;
                 var cachedServerTime = serverTime.Time;
-                //var offset = (float)serverTime.TickOffset;
+                // var offset = (float)serverTime.TickOffset;
 #if COM_UNITY_MODULES_PHYSICS || COM_UNITY_MODULES_PHYSICS2D
                 var cachedDeltaTime = m_UseRigidbodyForMotion ? m_CachedNetworkManager.RealTimeProvider.FixedDeltaTime : m_CachedNetworkManager.RealTimeProvider.DeltaTime;
 #else
@@ -3669,7 +3676,7 @@ namespace Unity.Netcode.Components
                 // is to make their cachedRenderTime run 2 ticks behind.
 
                 // TODO: This could most likely just always be 2
-                //var ticksAgo = ((!IsServerAuthoritative() && !IsServer) || m_CachedNetworkManager.DistributedAuthorityMode) && !m_CachedNetworkManager.DAHost ? 2 : 1;
+                // var ticksAgo = ((!IsServerAuthoritative() && !IsServer) || m_CachedNetworkManager.DistributedAuthorityMode) && !m_CachedNetworkManager.DAHost ? 2 : 1;
                 var ticksAgo = 2;
 
                 var cachedRenderTime = serverTime.TimeTicksAgo(ticksAgo).Time;
@@ -3746,7 +3753,7 @@ namespace Unity.Netcode.Components
 
         /// <summary>
         /// Determines whether the <see cref="NetworkTransform"/> is <see cref="AuthorityModes.Server"/> or <see cref="AuthorityModes.Owner"/> based on the <see cref="AuthorityMode"/> property.
-        /// You can override this method to control this logic. 
+        /// You can override this method to control this logic.
         /// </summary>
         /// <returns><see cref="true"/> or <see cref="false"/></returns>
         protected virtual bool OnIsServerAuthoritative()
@@ -3772,7 +3779,6 @@ namespace Unity.Netcode.Components
                 return OnIsServerAuthoritative();
             }
         }
-
         #endregion
 
         #region MESSAGE HANDLING
@@ -3964,7 +3970,7 @@ namespace Unity.Netcode.Components
             {
                 return 2 * m_TickFrequency;
                 // TODO: We need an RTT that updates regularly and not just when the client sends packets
-                //return Mathf.Max(1.0f, TicksAgo) * m_TickFrequency;
+                // return Mathf.Max(1.0f, TicksAgo) * m_TickFrequency;
             }
 
             /// <summary>
@@ -3974,25 +3980,25 @@ namespace Unity.Netcode.Components
             private void TickUpdate()
             {
                 // TODO: We need an RTT that updates regularly and not just when the client sends packets
-                //if (m_UnityTransport != null)
-                //{
-                //    // Determine the desired ticks ago by the RTT (this really should be the combination of the
-                //    // authority and non-authority 1/2 RTT but in the end anything beyond 300ms is considered very poor
-                //    // network quality so latent interpolation is going to be expected).
-                //    var rtt = Mathf.Max(m_TickInMS, m_UnityTransport.GetCurrentRtt(NetworkManager.ServerClientId));
-                //    m_TicksAgoSamples[m_TickSampleIndex] = Mathf.Max(1, (int)(rtt * m_TickFrequency));
-                //    var tickAgoSum = 0.0f;
-                //    foreach (var tickAgo in m_TicksAgoSamples)
-                //    {
-                //        tickAgoSum += tickAgo;
-                //    }
-                //    m_PreviousTicksAgo = TicksAgo;
-                //    TicksAgo = Mathf.Lerp(m_PreviousTicksAgo, tickAgoSum / m_TickRate, m_TickFrequency);
-                //    m_TickSampleIndex = (m_TickSampleIndex + 1) % m_TickRate;
-                //    // Get the partial tick value for when this is all calculated to provide an offset for determining
-                //    // the relative starting interpolation point for the next update
-                //    Offset = m_OffsetTickFrequency * (Mathf.Max(2, TicksAgo) - (int)TicksAgo);
-                //}
+                // if (m_UnityTransport != null)
+                // {
+                //     // Determine the desired ticks ago by the RTT (this really should be the combination of the
+                //     // authority and non-authority 1/2 RTT but in the end anything beyond 300ms is considered very poor
+                //     // network quality so latent interpolation is going to be expected).
+                //     var rtt = Mathf.Max(m_TickInMS, m_UnityTransport.GetCurrentRtt(NetworkManager.ServerClientId));
+                //     m_TicksAgoSamples[m_TickSampleIndex] = Mathf.Max(1, (int)(rtt * m_TickFrequency));
+                //     var tickAgoSum = 0.0f;
+                //     foreach (var tickAgo in m_TicksAgoSamples)
+                //     {
+                //         tickAgoSum += tickAgo;
+                //     }
+                //     m_PreviousTicksAgo = TicksAgo;
+                //     TicksAgo = Mathf.Lerp(m_PreviousTicksAgo, tickAgoSum / m_TickRate, m_TickFrequency);
+                //     m_TickSampleIndex = (m_TickSampleIndex + 1) % m_TickRate;
+                //     // Get the partial tick value for when this is all calculated to provide an offset for determining
+                //     // the relative starting interpolation point for the next update
+                //     Offset = m_OffsetTickFrequency * (Mathf.Max(2, TicksAgo) - (int)TicksAgo);
+                // }
 
                 // TODO FIX: The local NetworkTickSystem can invoke with the same network tick as before
                 if (m_NetworkManager.ServerTime.Tick <= m_LastTick)
@@ -4012,13 +4018,13 @@ namespace Unity.Netcode.Components
 
             private UnityTransport m_UnityTransport;
             private float m_TickFrequency;
-            //private float m_OffsetTickFrequency;
-            //private ulong m_TickInMS;
-            //private int m_TickSampleIndex;
+            // private float m_OffsetTickFrequency;
+            // private ulong m_TickInMS;
+            // private int m_TickSampleIndex;
             private int m_TickRate;
             public float TicksAgo { get; private set; }
-            //public float Offset { get; private set; }
-            //private float m_PreviousTicksAgo;
+            // public float Offset { get; private set; }
+            // private float m_PreviousTicksAgo;
 
             private List<float> m_TicksAgoSamples = new List<float>();
 
@@ -4032,16 +4038,16 @@ namespace Unity.Netcode.Components
                 //// For the offset, it uses the fractional remainder of the tick to determine the offset.
                 //// In order to keep within tick boundaries, we increment the tick rate by 1 to assure it
                 //// will always be < the tick frequency.
-                //m_OffsetTickFrequency = 1.0f / (m_TickRate + 1);
-                //m_TickInMS = (ulong)(1000 * m_TickFrequency);
-                //m_UnityTransport = m_NetworkManager.NetworkConfig.NetworkTransport as UnityTransport;
+                // m_OffsetTickFrequency = 1.0f / (m_TickRate + 1);
+                // m_TickInMS = (ulong)(1000 * m_TickFrequency);
+                // m_UnityTransport = m_NetworkManager.NetworkConfig.NetworkTransport as UnityTransport;
                 //// Fill the sample with a starting value of 1
-                //for (int i = 0; i < m_TickRate; i++)
-                //{
-                //    m_TicksAgoSamples.Add(1f);
-                //}
+                // for (int i = 0; i < m_TickRate; i++)
+                // {
+                //     m_TicksAgoSamples.Add(1f);
+                // }
                 TicksAgo = 2f;
-                //m_PreviousTicksAgo = 1f;
+                // m_PreviousTicksAgo = 1f;
                 if (networkManager.IsServer)
                 {
                     networkManager.OnServerStopped += OnNetworkManagerStopped;

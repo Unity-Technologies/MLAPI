@@ -123,7 +123,7 @@ namespace Unity.Netcode.RuntimeTests
         }
 
         /// <summary>
-        /// This test validates the SwitchTransformSpaceWhenParented setting under all network topologies        
+        /// This test validates the SwitchTransformSpaceWhenParented setting under all network topologies
         /// </summary>
         [Test]
         public void SwitchTransformSpaceWhenParentedTest([Values(0.5f, 1.0f, 5.0f)] float scale)

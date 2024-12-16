@@ -128,7 +128,7 @@ namespace Unity.Netcode
                     }
                     else if (networkManager.DAHost)
                     {
-                        // Specific to distributed authority mode, the only sender of state updates will be the owner 
+                        // Specific to distributed authority mode, the only sender of state updates will be the owner
                         ownerClientId = context.SenderId;
                     }
 

@@ -6,7 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 Additional documentation and release notes are available at [Multiplayer Documentation](https://docs-multiplayer.unity3d.com).
 
-[Unreleased]
+## [Unreleased]
+
+### Added
+
+### Fixed
+
+### Changed
+
+
+## [2.2.0] - 2024-12-12
 
 ### Added
 
@@ -16,6 +25,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Fixed
 
+- Fixed issue where the server, host, or session owner would not populate the in-scene place `NetworkObject` table if the scene was loaded prior to starting the `NetworkManager`. (#3177)
 - Fixed issue where the `NetworkObjectIdHash` value could be incorrect when entering play mode while still in prefab edit mode with pending changes and using MPPM. (#3162)
 - Fixed issue where a sever only `NetworkManager` instance would spawn the actual `NetworkPrefab`'s `GameObject` as opposed to creating an instance of it. (#3160)
 - Fixed issue where only the session owner (as opposed to all clients) would handle spawning prefab overrides properly when using a distributed authority network topology. (#3160)
@@ -216,8 +226,8 @@ Additional documentation and release notes are available at [Multiplayer Documen
 ## [2.0.0-exp.2] - 2024-04-02
 
 ### Added
-- Added updates to all internal messages to account for a distributed authority network session connection.  (#2863)
-- Added `NetworkRigidbodyBase` that provides users with a more customizable network rigidbody, handles both `Rigidbody` and `Rigidbody2D`, and provides an option to make `NetworkTransform` use the rigid body for motion.  (#2863)
+- Added updates to all internal messages to account for a distributed authority network session connection. (#2863)
+- Added `NetworkRigidbodyBase` that provides users with a more customizable network rigidbody, handles both `Rigidbody` and `Rigidbody2D`, and provides an option to make `NetworkTransform` use the rigid body for motion. (#2863)
   - For a customized `NetworkRigidbodyBase` class:
     - `NetworkRigidbodyBase.AutoUpdateKinematicState` provides control on whether the kinematic setting will be automatically set or not when ownership changes.
     - `NetworkRigidbodyBase.AutoSetKinematicOnDespawn` provides control on whether isKinematic will automatically be set to true when the associated `NetworkObject` is despawned.
@@ -353,6 +363,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 - Fixed issue where  you could not have multiple source network prefab overrides targeting the same network prefab as their override. (#2710)
 
 ### Changed
+
 - Changed the server or host shutdown so it will now perform a "soft shutdown" when `NetworkManager.Shutdown` is invoked. This will send a disconnect notification to all connected clients and the server-host will wait for all connected clients to disconnect or timeout after a 5 second period before completing the shutdown process. (#2789)
 - Changed `OnClientDisconnectedCallback` will now return the assigned client identifier on the local client side if the client was approved and assigned one prior to being disconnected. (#2789)
 - Changed `NetworkTransform.SetState` (and related methods) now are cumulative during a fractional tick period and sent on the next pending tick. (#2777)
@@ -364,6 +375,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 - Changed in-scene placed `NetworkObject`s no longer require a `NetworkPrefab` entry with `GlobalObjectIdHash` override in order for clients to properly synchronize. (#2710)
 - Changed in-scene placed `NetworkObject`s now set their `IsSceneObject` value when generating their `GlobalObjectIdHash` value. (#2710)
 - Changed the default `NetworkConfig.SpawnTimeout` value from 1.0s to 10.0s. (#2710)
+
 
 ## [1.7.1] - 2023-11-15
 
@@ -414,7 +426,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 ### Added
 
 - Added a protected virtual method `NetworkTransform.OnInitialize(ref NetworkTransformState replicatedState)` that just returns the replicated state reference.
-  
+
 ### Fixed
 
 - Fixed issue where invoking `NetworkManager.Shutdown` within `NetworkManager.OnClientStopped` or `NetworkManager.OnServerStopped` would force `NetworkManager.ShutdownInProgress` to remain true after completing the shutdown process. (#2661)

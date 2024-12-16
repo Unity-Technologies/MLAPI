@@ -1,5 +1,5 @@
 {
-	"name": "Bootstrap",
+    "name": "Bootstrap",
     "rootNamespace": "Unity.Netcode.Samples",
     "references": [
         "Unity.Netcode.Runtime"

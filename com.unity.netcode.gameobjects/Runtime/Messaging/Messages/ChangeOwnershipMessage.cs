@@ -17,7 +17,7 @@ namespace Unity.Netcode
         /// <summary>
         /// When requesting, RequestClientId is the requestor.
         /// When approving, RequestClientId is the owner that approved.
-        /// When responding (only for denied), RequestClientId is the requestor 
+        /// When responding (only for denied), RequestClientId is the requestor
         /// </summary>
         internal ulong RequestClientId;
         internal int ClientIdCount;
@@ -272,7 +272,7 @@ namespace Unity.Netcode
                         networkManager.ConnectionManager.SendMessage(ref message, NetworkDelivery.Reliable, clientId);
                     }
                 }
-                // If the NetworkObject is not visible to the DAHost client, then exit early 
+                // If the NetworkObject is not visible to the DAHost client, then exit early
                 if (!networkManager.SpawnManager.SpawnedObjects.ContainsKey(NetworkObjectId))
                 {
                     return;
@@ -294,7 +294,7 @@ namespace Unity.Netcode
         }
 
         /// <summary>
-        /// Handle the 
+        /// Handle the extended distributed authority ownership updates
         /// </summary>
         /// <param name="context"></param>
         private void HandleExtendedOwnershipUpdate(ref NetworkContext context)
@@ -351,10 +351,10 @@ namespace Unity.Netcode
                 networkObject.InvokeBehaviourOnLostOwnership();
             }
 
-            // If in distributed authority mode 
+            // If in distributed authority mode
             if (networkManager.DistributedAuthorityMode)
             {
-                // Always update the network properties in distributed authority mode 
+                // Always update the network properties in distributed authority mode
                 for (int i = 0; i < networkObject.ChildNetworkBehaviours.Count; i++)
                 {
                     networkObject.ChildNetworkBehaviours[i].UpdateNetworkProperties();

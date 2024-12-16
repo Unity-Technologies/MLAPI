@@ -11,7 +11,7 @@ using UnityEngine.SceneManagement;
 namespace Unity.Netcode
 {
     /// <summary>
-    /// This is a helper tool to update all in-scene placed instances of a prefab that 
+    /// This is a helper tool to update all in-scene placed instances of a prefab that
     /// originally did not have a NetworkObject component but one was added to the prefab
     /// later.
     /// </summary>

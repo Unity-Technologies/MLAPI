@@ -16,7 +16,7 @@ namespace Unity.Netcode
         /// <summary>
         /// Enum representing the different types of messages that can be sent over the network.
         /// The values cannot be changed, as they are used to serialize and deserialize messages.
-        /// Adding new messages should be done by adding new values to the end of the enum 
+        /// Adding new messages should be done by adding new values to the end of the enum
         /// using the next free value.
         /// </summary>
         /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

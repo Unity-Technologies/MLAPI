@@ -869,7 +869,7 @@ namespace Unity.Netcode.RuntimeTests
 
             foreach (var networkManager in m_NetworkManagers)
             {
-                // Randomize the position 
+                // Randomize the position
                 RandomizeObjectTransformPositions(m_SpawnObject);
 
                 // Create an instance owned by the specified networkmanager

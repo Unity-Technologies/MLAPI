@@ -180,7 +180,7 @@ namespace Unity.Netcode.Components
         /// </summary>
         /// <remarks>
         /// For <see cref="Rigidbody2D"/>, only the x and y components of the <see cref="Vector3"/> are applied.
-        /// </remarks>        
+        /// </remarks>
         public void SetLinearVelocity(Vector3 linearVelocity)
         {
             if (m_IsRigidbody2D)
@@ -546,7 +546,7 @@ namespace Unity.Netcode.Components
                 {
                     if (IsKinematic())
                     {
-                        // If not already set to interpolate then set the Rigidbody to interpolate 
+                        // If not already set to interpolate then set the Rigidbody to interpolate
                         if (m_InternalRigidbody.interpolation == RigidbodyInterpolation.Extrapolate)
                         {
                             // Sleep until the next fixed update when switching from extrapolation to interpolation
@@ -849,36 +849,30 @@ namespace Unity.Netcode.Components
             }
             if (UseRigidBodyForMotion)
             {
-                if (m_IsRigidbody2D)
+                if (m_IsRigidbody2D && FixedJoint2D != null)
                 {
-                    if (FixedJoint2D != null)
+                    if (!m_FixedJoint2DUsingGravity)
                     {
-                        if (!m_FixedJoint2DUsingGravity)
-                        {
-                            FixedJoint2D.connectedBody.gravityScale = m_OriginalGravityScale;
-                        }
-                        FixedJoint2D.connectedBody = null;
-                        Destroy(FixedJoint2D);
-                        FixedJoint2D = null;
-                        ResetInterpolation();
-                        RemoveFromParentBody();
+                        FixedJoint2D.connectedBody.gravityScale = m_OriginalGravityScale;
                     }
+                    FixedJoint2D.connectedBody = null;
+                    Destroy(FixedJoint2D);
+                    FixedJoint2D = null;
+                    ResetInterpolation();
+                    RemoveFromParentBody();
                 }
-                else
+                else if (FixedJoint != null)
                 {
-                    if (FixedJoint != null)
-                    {
-                        FixedJoint.connectedBody = null;
-                        m_InternalRigidbody.useGravity = m_OriginalGravitySetting;
-                        Destroy(FixedJoint);
-                        FixedJoint = null;
-                        ResetInterpolation();
-                        RemoveFromParentBody();
-                    }
+                    FixedJoint.connectedBody = null;
+                    m_InternalRigidbody.useGravity = m_OriginalGravitySetting;
+                    Destroy(FixedJoint);
+                    FixedJoint = null;
+                    ResetInterpolation();
+                    RemoveFromParentBody();
                 }
             }
         }
     }
 }
-#endif // COM_UNITY_MODULES_PHYSICS
-
+// COM_UNITY_MODULES_PHYSICS
+#endif

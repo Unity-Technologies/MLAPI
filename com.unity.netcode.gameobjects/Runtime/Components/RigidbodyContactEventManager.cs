@@ -27,7 +27,7 @@ namespace Unity.Netcode.Components
     }
 
     /// <summary>
-    /// Default implementation required to register a <see cref="Rigidbody"/> with a <see cref="RigidbodyContactEventManager"/> instance. 
+    /// Default implementation required to register a <see cref="Rigidbody"/> with a <see cref="RigidbodyContactEventManager"/> instance.
     /// </summary>
     /// <remarks>
     /// Recommended to implement this method on a <see cref="NetworkBehaviour"/> component
@@ -52,7 +52,7 @@ namespace Unity.Netcode.Components
     }
 
     /// <summary>
-    /// This is an extended version of <see cref="IContactEventHandler"/> and can be used to register a <see cref="Rigidbody"/> with a <see cref="RigidbodyContactEventManager"/> instance. <br />
+    /// This is an extended version of <see cref="IContactEventHandler"/> and can be used to register a <see cref="Rigidbody"/> with a <see cref="RigidbodyContactEventManager"/> instance.<br />
     /// This provides additional <see cref="ContactEventHandlerInfo"/> information to the <see cref="RigidbodyContactEventManager"/> for each set of contact events it is processing.
     /// </summary>
     public interface IContactEventHandlerWithInfo : IContactEventHandler
@@ -66,9 +66,9 @@ namespace Unity.Netcode.Components
 
     /// <summary>
     /// Add this component to an in-scene placed GameObject to provide faster collision event processing between <see cref="Rigidbody"/> instances and optionally static colliders.
-    /// <see cref="IContactEventHandler"/> <br />
-    /// <see cref="IContactEventHandlerWithInfo"/> <br />
-    /// <see cref="ContactEventHandlerInfo"/> <br />
+    /// <see cref="IContactEventHandler"/><br />
+    /// <see cref="IContactEventHandlerWithInfo"/><br />
+    /// <see cref="ContactEventHandlerInfo"/><br />
     /// </summary>
     [AddComponentMenu("Netcode/Rigidbody Contact Event Manager")]
     public class RigidbodyContactEventManager : MonoBehaviour

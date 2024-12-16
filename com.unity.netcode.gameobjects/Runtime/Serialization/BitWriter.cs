@@ -62,7 +62,7 @@ namespace Unity.Netcode
         /// When you know you will be writing multiple fields back-to-back and you know the total size,
         /// you can call TryBeginWriteBits() once on the total size, and then follow it with calls to
         /// WriteBit() or WriteBits().
-        /// 
+        ///
         /// Bitwise write operations will throw OverflowException in editor and development builds if you
         /// go past the point you've marked using TryBeginWriteBits(). In release builds, OverflowException will not be thrown
         /// for performance reasons, since the point of using TryBeginWrite is to avoid bounds checking in the following

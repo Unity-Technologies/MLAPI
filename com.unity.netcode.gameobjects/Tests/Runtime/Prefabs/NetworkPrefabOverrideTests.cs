@@ -109,7 +109,7 @@ namespace Unity.Netcode.RuntimeTests
             playerPrefabOverrideHandler.ServerSideInstance = m_PlayerPrefab;
             playerPrefabOverrideHandler.ClientSideInstance = m_ClientSidePlayerPrefab.Prefab;
 
-            // Add the NetworkPrefab with override 
+            // Add the NetworkPrefab with override
             m_ServerNetworkManager.NetworkConfig.Prefabs.Add(m_PrefabOverride);
             // Add the client player prefab that will be used on clients (and the host)
             m_ServerNetworkManager.NetworkConfig.Prefabs.Add(m_ClientSidePlayerPrefab);
@@ -121,7 +121,7 @@ namespace Unity.Netcode.RuntimeTests
                 playerPrefabOverrideHandler.ServerSideInstance = m_PlayerPrefab;
                 playerPrefabOverrideHandler.ClientSideInstance = m_ClientSidePlayerPrefab.Prefab;
 
-                // Add the NetworkPrefab with override 
+                // Add the NetworkPrefab with override
                 networkManager.NetworkConfig.Prefabs.Add(m_PrefabOverride);
                 // Add the client player prefab that will be used on clients (and the host)
                 networkManager.NetworkConfig.Prefabs.Add(m_ClientSidePlayerPrefab);

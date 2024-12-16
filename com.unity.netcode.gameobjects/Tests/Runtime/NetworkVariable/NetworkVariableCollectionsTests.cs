@@ -20,7 +20,7 @@ namespace Unity.Netcode.RuntimeTests
     /// - HashSet
     /// This also does some testing on nested collections, but does
     /// not test every possible combination.
-    /// </summary>    
+    /// </summary>
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     public class NetworkVariableCollectionsTests : NetcodeIntegrationTest
@@ -218,7 +218,7 @@ namespace Unity.Netcode.RuntimeTests
                 yield return WaitForConditionOrTimeOut(() => compInt.CompareTrackedChanges(ListTestHelperBase.Targets.Owner));
                 AssertOnTimeout($"Client-{client.LocalClientId} full set failed to synchronize on {nameof(ListTestHelperInt)} {compInt.name}!");
                 //////////////////////////////////
-                // Server Full Set    
+                // Server Full Set
                 compIntServer.FullSet(GetRandomIntList(5), ListTestHelperBase.Targets.Server);
                 yield return WaitForConditionOrTimeOut(() => compIntServer.CompareTrackedChanges(ListTestHelperBase.Targets.Server));
                 AssertOnTimeout($"Server full set failed to synchronize on {nameof(ListTestHelperInt)} {compIntServer.name}!");
@@ -285,7 +285,7 @@ namespace Unity.Netcode.RuntimeTests
                 // Only test restore on non-host clients (otherwise a host is both server and client/owner)
                 if (!client.IsServer)
                 {
-                    // No Write Client Remove List<int> item with CheckDirtyState restore                
+                    // No Write Client Remove List<int> item with CheckDirtyState restore
                     compListInt.Remove(compListInt.ListCollectionServer.Value[index], ListTestHelperBase.Targets.Server);
                     yield return WaitForConditionOrTimeOut(() => compListInt.CompareTrackedChanges(ListTestHelperBase.Targets.Server));
                     AssertOnTimeout($"Client-{client.LocalClientId} remove failed to restore on {nameof(ListTestHelperListInt)} {compListIntServer.name}! {compListIntServer.GetLog()}");
@@ -474,7 +474,7 @@ namespace Unity.Netcode.RuntimeTests
                     yield return WaitForConditionOrTimeOut(() => compObjectServer.CompareTrackedChanges(ListTestHelperBase.Targets.Server));
                     AssertOnTimeout($"Client-{client.LocalClientId} change failed to restore on {nameof(ListTestHelperSerializableObject)} {compObjectServer.name}!");
 
-                    // No Write Client Remove Serializable item with owner state update restore                
+                    // No Write Client Remove Serializable item with owner state update restore
                     compObject.ListCollectionServer.Value[index] = SerializableObject.GetRandomObject();
                 }
                 compObjectServer.ListCollectionServer.Value[index] = SerializableObject.GetRandomObject();
@@ -838,7 +838,7 @@ namespace Unity.Netcode.RuntimeTests
                     compDictionaryServer.ListCollectionOwner.IsDirty();
                     yield return WaitForConditionOrTimeOut(() => compDictionaryServer.CompareTrackedChanges(ListTestHelperBase.Targets.Owner));
                     AssertOnTimeout($"Server add to owner write collection property failed to restore on {className} {compDictionaryServer.name}! {compDictionaryServer.GetLog()}");
-                    // Server-side add the same key and SerializableObject to owner write permission (would throw key exists exception too if previous failed)                    
+                    // Server-side add the same key and SerializableObject to owner write permission (would throw key exists exception too if previous failed)
                     compDictionaryServer.ListCollectionOwner.Value.Add(newEntry.Item1, newEntry.Item2);
                     // Server-side add a completely new key and SerializableObject to to owner write permission property
                     compDictionaryServer.ListCollectionOwner.Value.Add(GetNextKey(), SerializableObject.GetRandomObject());
@@ -864,7 +864,7 @@ namespace Unity.Netcode.RuntimeTests
                     compDictionary.ListCollectionServer.IsDirty();
                     yield return WaitForConditionOrTimeOut(() => compDictionary.CompareTrackedChanges(ListTestHelperBase.Targets.Server));
                     AssertOnTimeout($"Client-{client.LocalClientId} add to server write collection property failed to restore on {className} {compDictionary.name}! {compDictionary.GetLog()}");
-                    // Client-side add the same key and SerializableObject to server write permission property (would throw key exists exception too if previous failed)                    
+                    // Client-side add the same key and SerializableObject to server write permission property (would throw key exists exception too if previous failed)
                     compDictionary.ListCollectionServer.Value.Add(newEntry.Item1, newEntry.Item2);
                     // Client-side add a completely new key and SerializableObject to to server write permission property
                     compDictionary.ListCollectionServer.Value.Add(GetNextKey(), SerializableObject.GetRandomObject());

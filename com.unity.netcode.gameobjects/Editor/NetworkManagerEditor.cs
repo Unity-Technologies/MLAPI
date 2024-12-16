@@ -237,7 +237,7 @@ namespace Unity.Netcode.Editor
                 if (m_NetworkManager.NetworkConfig.NetworkTopology == NetworkTopologyTypes.DistributedAuthority)
                 {
                     EditorGUILayout.PropertyField(m_AutoSpawnPlayerPrefabClientSide, new GUIContent("Auto Spawn Player Prefab"));
-                }                
+                }
 #endif
                 EditorGUILayout.PropertyField(m_PlayerPrefabProperty, new GUIContent("Default Player Prefab"));
 
