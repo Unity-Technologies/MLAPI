@@ -17,6 +17,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Fixed
 
+- Fixed issue where the server, host, or session owner would not populate the in-scene place `NetworkObject` table if the scene was loaded prior to starting the `NetworkManager`.
 - Fixed issue where the `NetworkObjectIdHash` value could be incorrect when entering play mode while still in prefab edit mode with pending changes and using MPPM. (#3162)
 - Fixed issue where a sever only `NetworkManager` instance would spawn the actual `NetworkPrefab`'s `GameObject` as opposed to creating an instance of it. (#3160)
 - Fixed issue where only the session owner (as opposed to all clients) would handle spawning prefab overrides properly when using a distributed authority network topology. (#3160)
