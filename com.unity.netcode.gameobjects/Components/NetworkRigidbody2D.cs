@@ -17,6 +17,13 @@ namespace Unity.Netcode.Components
         /// </summary>
         private bool m_IsServerAuthoritative;
 
+        /// <summary>
+        /// Stores the original body type of the rigidbody
+        /// so to abide to the original type desired by the user
+        /// when authority changes
+        /// </summary>
+        private RigidbodyType2D m_OriginalBodyType;
+
         private Rigidbody2D m_Rigidbody;
         private NetworkTransform m_NetworkTransform;
 
@@ -48,11 +55,14 @@ namespace Unity.Netcode.Components
             m_Rigidbody = GetComponent<Rigidbody2D>();
             m_OriginalInterpolation = m_Rigidbody.interpolation;
 
+            // Store the original body type of the rigidbody
+            m_OriginalBodyType = m_Rigidbody.bodyType;
+
             m_Rigidbody.interpolation = m_IsAuthority ? m_OriginalInterpolation : (m_NetworkTransform.Interpolate ? RigidbodyInterpolation2D.None : m_OriginalInterpolation);
             // Turn off physics for the rigid body until spawned, otherwise
             // clients can run fixed update before the first full
             // NetworkTransform update
-            m_Rigidbody.isKinematic = true;
+            m_Rigidbody.bodyType = RigidbodyType2D.Kinematic;
         }
 
         /// <summary>
@@ -89,7 +99,8 @@ namespace Unity.Netcode.Components
             }
 
             // If you have authority then you are not kinematic
-            m_Rigidbody.isKinematic = !m_IsAuthority;
+            // unless the original body type was set to be Kinematic by the user
+            m_Rigidbody.bodyType = m_IsAuthority && m_OriginalBodyType == RigidbodyType2D.Dynamic ? RigidbodyType2D.Dynamic : RigidbodyType2D.Kinematic;
 
             // Set interpolation of the Rigidbody2D based on authority
             // With authority: let local transform handle interpolation
