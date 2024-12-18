@@ -4,7 +4,7 @@
 # Ubuntu is used for this job because of better performance for simple operations
 {% for project in projects -%}
 pack_{{ project.name }}:
-  name: Pack {{ project.name }}
+  name: Project Pack - {{ project.name }}
   agent:
     type: {{ test_platforms[0].type }}
     image: {{ test_platforms[0].image }}
