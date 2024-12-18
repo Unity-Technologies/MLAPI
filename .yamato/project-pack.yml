@@ -7,9 +7,9 @@
 pack_{{ project.name }}:
   name: Pack {{ project.name }}
   agent:
-    type: platform.type
-    image: platform.image
-    flavor: platform.flavor
+    type: {{ platform.type }}
+    image: {{ platform.image }}
+    flavor: {{ platform.flavor }}
   commands:
     - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - upm-ci project pack --project-path {{ project.path }}
