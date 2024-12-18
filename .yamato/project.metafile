@@ -1,6 +1,3 @@
-validation_editor: 6000.0
-mobile_validation_editor: 6000.0
-
 # Platforms that will be tested. The first entry in this array will also
 # be used for validation
 test_platforms:
@@ -28,6 +25,13 @@ test_platforms:
     standalone: StandaloneLinux64
     editorpath: .Editor/Unity
     utr: ./utr
+    
+# Editors to be used for testing.
+# Since NGOv2 official support started from U6 it means that only those editors should be used for testing
+validation_editors:
+    - 6000.0
+    - 6000.1
+    - trunk
 
 # Projects within the repository that will be tested. Name will be used
 # for job ids, so it should not contain spaces/non-supported characters
@@ -41,9 +45,6 @@ projects:
     packages:
       - name: com.unity.netcode.gameobjects
         path: com.unity.netcode.gameobjects
-    test_editors:
-      - 6000.0
-      - trunk
   - name: minimalproject
     path: minimalproject
     validate: false
@@ -52,24 +53,11 @@ projects:
     packages:
       - name: com.unity.netcode.gameobjects
         path: com.unity.netcode.gameobjects
-    test_editors:
-      - 6000.0
   - name: testproject-tools-integration
     path: testproject-tools-integration
     validate: false
     publish: false
     has_tests: true
-    test_editors:
-      - 6000.0
-      - trunk
-
-# Package dependencies
-dependencies: 
-  - name: com.unity.transport
-    version: 2.2.1
-    test_editors:
-      - 6000.0
-      - trunk
 
 # Scripting backends used by Standalone Playmode Tests
 scripting_backends: 

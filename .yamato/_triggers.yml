@@ -11,7 +11,7 @@ develop_nightly:
     - .yamato/_run-all.yml#run_all_tests
 {% for project in projects -%}
 {% if project.has_tests == "true" -%}
-    - .yamato/code-coverage.yml#code_coverage_win_{{ project.name }}_{{ validation_editor }}
+    - .yamato/code-coverage.yml#code_coverage_win_{{ project.name }}_{{ validation_editors.last }}
 {% endif -%}
 {% endfor -%}
 
@@ -25,27 +25,17 @@ develop_weekly_trunk:
   dependencies:
     - .yamato/_run-all.yml#run_all_tests_trunk
 
-multiprocess_nightly:
-  name: "\U0001F319 [Nightly] Run Multiprocess Tests"
-  triggers:
-    recurring:
-    - branch: develop-2.0.0
-      frequency: daily
-      rerun: always
-  dependencies:
-    - .yamato/_run-all.yml#all_singlenode_multiprocess_tests
-
 # Run all relevant tasks when a pull request targeting the develop
 # branch is created or updated. Currently only netcode package tests are
 # enabled, since the others are missing test coverage and will fail CI.
 pull_request_trigger:
-  name: Pull Request Trigger (master, develop, develop-2.0.0, & release branches)
+  name: Pull Request Trigger (develop, develop-2.0.0, & release branches)
   dependencies:
     - .yamato/project-standards.yml#standards_{{ projects.first.name }}
 {% for project in projects -%}
 {% for package in project.packages -%}
 {% if project.validate == "true" -%}
-    - .yamato/project-publish.yml#validate_{{ package.name }}_{{ test_platforms.first.name }}_{{ validation_editor }}
+    - .yamato/wrench/project-publish.yml#validate_{{ package.name }}_{{ test_platforms.first.name }}_{{ validation_editors.last }}
 {% endif -%}
 {% endfor -%}
 {% for platform in test_platforms -%}
@@ -60,41 +50,6 @@ pull_request_trigger:
     pull_requests:
     - targets:
         only:
-          - "master"
           - "develop"
           - "develop-2.0.0"
           - "/release\/.*/"
-
-# Currently, we need to have a trigger to updated badges
-# Only package badges currently exist
-badges_test_trigger:
-  name: ⚡ Badges Tests Trigger
-  agent:
-    type: Unity::VM
-    image: package-ci/ubuntu-22.04:v4
-    flavor: b1.small
-  commands:
-    - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
-    - upm-ci package izon -t
-  artifacts:
-    logs:
-      paths:
-        - "upm-ci~/test-results/**/*"
-    packages:
-      paths:
-        - "upm-ci~/packages/**/*"
-  dependencies:
-{% for project in projects -%}
-{% for package in project.packages -%}
-{% if project.validate == "true" -%}
-    - .yamato/project-publish.yml#validate_{{ package.name }}_{{ test_platforms.first.name }}_{{ validation_editor }}
-{% endif -%}
-{% for editor in project.test_editors -%}
-{% if editor != "trunk" -%}
-{% for platform in test_platforms -%}
-    - .yamato/package-tests.yml#test_{{ project.name }}_{{ package.name }}_{{ editor }}_{{ platform.name }}
-{% endfor -%}
-{% endif -%}
-{% endfor -%}
-{% endfor -%}
-{% endfor -%}

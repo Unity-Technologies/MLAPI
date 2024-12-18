@@ -5,14 +5,14 @@
 # running package tests too since they are handled on their respective
 # jobs
 {% for project in projects -%}
-{% for editor in project.test_editors -%}
+{% for editor in validation_editors -%}
 {% for platform in test_platforms -%}
 test_{{ project.name }}_{{ editor }}_{{ platform.name }}:
   name : {{ project.name }} project tests - {{ editor }} on {{ platform.name }}
   agent:
     type: {{ platform.type }}
     image: {{ platform.image }}
-    flavor: {{ platform.flavor}}
+    flavor: {{ platform.flavor }}
   commands:
     - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple

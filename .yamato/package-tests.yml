@@ -7,9 +7,9 @@
 # the results with package tests
 {% for project in projects -%}
 {% for package in project.packages -%}
-{% for editor in project.test_editors -%}
+{% for editor in validation_editors -%}
 {% for platform in test_platforms -%}
-test_{{project.name}}_{{  package.name }}_{{ editor }}_{{ platform.name }}:
+test_{{project.name}}_{{ package.name }}_{{ editor }}_{{ platform.name }}:
   name : {{ project.name }} - {{ package.name }} package tests - {{ editor }} on {{ platform.name }}
   agent:
     type: {{ platform.type }}
@@ -27,31 +27,4 @@ test_{{project.name}}_{{  package.name }}_{{ editor }}_{{ platform.name }}:
 {% endfor -%}
 {% endfor -%}
 {% endfor -%}
-{% endfor -%}
-
-# Test minimal project with different versions of dependencies
-{% for project in projects -%}
-{% if project.name == "minimalproject" -%}
-{% for dependency in dependencies -%}
-{% for editor in dependency.test_editors -%}
-{% for platform in test_platforms -%}
-test_compatibility_{{project.name}}_{{ project.packages.first.name }}_with_{{ dependency.name }}@{{ dependency.version }}_{{ editor }}_{{ platform.name }}:
-  name : {{ project.name }} - {{ project.packages.first.name }} with {{ dependency.name }}@{{ dependency.version }} - {{ editor }} on {{ platform.name }}
-  agent:
-    type: {{ platform.type }}
-    image: {{ platform.image }}
-    flavor: {{ platform.flavor}}
-  commands:
-    - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
-    - {% if platform.name == "ubuntu" %}DISPLAY=:0 {% endif %}upm-ci project test -u {{ editor }} --type project-tests --project-path {{ project.name }} --package-filter {{ project.packages.first.name }}
-  artifacts:
-    logs:
-      paths:
-        - "upm-ci~/test-results/**/*"
-  dependencies:
-    - .yamato/project-pack.yml#pack_{{ project.name }}_{{ dependency.name }}@{{ dependency.version }}
-{% endfor -%}
-{% endfor -%}
-{% endfor -%}
-{% endif -%}
 {% endfor -%}

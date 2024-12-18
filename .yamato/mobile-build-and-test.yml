@@ -16,7 +16,7 @@ build_{{ project.name }}_tests_{{ editor }}_android:
     - python .yamato/disable-burst-if-requested.py --project-path testproject --platform Android
     - unity-downloader-cli -u {{ editor }} -c editor -c Android -w --fast
     - |
-       set UTR_VERSION=0.12.0
+       set UTR_VERSION=1.35.1
        utr.bat --artifacts_path=artifacts --timeout=1800 --testproject={{ project.name }} --editor-location=.Editor --suite=playmode --platform=android --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testfilter=Unity.Netcode.RuntimeTests
   artifacts:
     logs:
@@ -53,7 +53,7 @@ build_{{ project.name }}_tests_{{ editor }}_iOS:
     - unity-downloader-cli -u {{ editor }} -c editor -c iOS -w --fast
     - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr
     - chmod +x ./utr
-    - export UTR_VERSION=0.12.0
+    - export UTR_VERSION=1.35.1
     - ./utr --artifacts_path=artifacts --timeout=1800 --testproject={{ project.name }} --editor-location=.Editor --suite=playmode --platform=iOS --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testfilter=Unity.Netcode.RuntimeTests
   artifacts:
     logs:
@@ -92,7 +92,7 @@ run_{{ project.name }}_tests_{{ editor }}_iOS:
     # Give UTR execution permissions
     - chmod +x ./utr
     # Run the test build on the device
-    - export UTR_VERSION=0.12.0
+    - export UTR_VERSION=1.35.1
     - ./utr -artifacts_path=artifacts --testproject={{ project.name }} --editor-location=.Editor --reruncount=2 --suite=playmode --platform=iOS --player-load-path=build/players --testfilter=Unity.Netcode.RuntimeTests
   artifacts:
     logs:
@@ -132,7 +132,7 @@ run_{{ project.name }}_tests_{{ editor }}_android:
        set ANDROID_DEVICE_CONNECTION=%BOKKEN_DEVICE_IP%
        start %ANDROID_SDK_ROOT%\platform-tools\adb.exe connect %BOKKEN_DEVICE_IP%
        start %ANDROID_SDK_ROOT%\platform-tools\adb.exe devices
-       set UTR_VERSION=0.12.0
+       set UTR_VERSION=1.35.1
        ./utr --artifacts_path=artifacts --testproject={{ project.name }} --editor-location=.Editor --reruncount=2 --suite=playmode --platform=android --player-connection-ip=%BOKKEN_HOST_IP% --player-load-path=build/players --testfilter=Unity.Netcode.RuntimeTests
   # Set uploadable artifact paths
   artifacts:
