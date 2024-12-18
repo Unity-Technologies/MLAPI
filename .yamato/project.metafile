@@ -1,5 +1,5 @@
 # Platforms that will be tested. The first entry in this array will also
-# be used for validation
+# be used for validation, code coverage etc (windows) so it's important to be careful when changing order of test platforms!
 test_platforms:
   - name: win
     type: Unity::VM
@@ -28,6 +28,8 @@ test_platforms:
     
 # Editors to be used for testing.
 # Since NGOv2 official support started from U6 it means that only those editors should be used for testing
+# The last entry in this array will also
+# be used for validation, code coverage etc (windows) so it's important to be careful when changing order of validation editors!
 validation_editors:
     - 6000.0
     - 6000.1
@@ -35,6 +37,8 @@ validation_editors:
 
 # Projects within the repository that will be tested. Name will be used
 # for job ids, so it should not contain spaces/non-supported characters
+# The first entry in this array will also
+# be used for validation, code coverage etc (windows) so it's important to be careful when changing order of projects!
 projects:
   - name: testproject
     path: testproject
