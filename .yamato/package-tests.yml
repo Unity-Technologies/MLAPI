@@ -10,6 +10,7 @@ package_test_-_ngo_{{ editor }}_{{ platform.name }}:
     image: {{ platform.image }}
     flavor: {{ platform.flavor}}
   commands:
+    - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - {% if platform.name == "ubuntu" %}DISPLAY=:0 {% endif %}upm-ci package test -u {{ editor }} --type package-tests
   artifacts:
     logs:

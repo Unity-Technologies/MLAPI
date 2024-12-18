@@ -13,7 +13,7 @@ package_test_-_ngo:
     PVP_PROFILE: supported rme
   timeout: 0.25
   commands:
-      - npm install -g "$UPMCI_PKG" -g --registry https://artifactory.prd.it.unity3d.com/artifactory/api/npm/upm-npm
+      - npm install -g "$UPMCI_PKG" --registry https://artifactory.prd.it.unity3d.com/artifactory/api/npm/upm-npm
       - upm-ci package pack --package-path com.unity.netcode.gameobjects
       - upm-pvp xray --packages "upm-ci~/packages/*.tgz" --results upm-ci~/xray
       - upm-pvp require "$PVP_PROFILE" --allow-missing --results upm-ci~/xray --exemptions upm-ci~/xray/new-exemptions.json
