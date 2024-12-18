@@ -3,11 +3,11 @@
 # Support for code coverage in public repos is not yet available
 # It's ok for code coverage to be performed only on one platform (windows in this case) and preferably with latest editor
 code_coverage_win_{{ project.first.name }}_{{ validation_editors.last }}:
-  name: Code Coverage - NGO [test_platforms[0].name, validation_editors[-1]]
+  name: Code Coverage - NGO [{{ test_platforms[0].name }}, {{ validation_editors[-1] }}]
   agent:
-    type: test_platforms[0].type
-    image: test_platforms[0].image
-    flavor: test_platforms[0].flavor
+    type: {{ test_platforms[0].type }}
+    image: {{ test_platforms[0].image }}
+    flavor: {{ test_platforms[0].flavor }}
   commands:
     - pip install unity-downloader-cli --upgrade --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
     - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
