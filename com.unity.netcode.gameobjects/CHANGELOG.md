@@ -12,7 +12,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Fixed
 
-- Fixed issue where `NetworkVariableBase` derived classes were not being re-initialized if the associated `NetworkObject` instance was not destroyed and respawned.
+- Fixed issue where `NetworkVariableBase` derived classes were not being re-initialized if the associated `NetworkObject` instance was not destroyed and respawned. (#3181)
 
 ### Changed
 
