@@ -1,6 +1,14 @@
-# Platforms that will be tested. The first entry in this array will also
-# be used for validation, code coverage etc (windows) so it's important to be careful when changing order of test platforms!
+# Platforms that will be tested. The first entry (ubuntu) in this array will also
+# be used for validation, code coverage etc (simple operations are performed faster on it) so it's important to be careful when changing order of test platforms!
 test_platforms:
+  - name: ubuntu
+    type: Unity::VM
+    image: package-ci/ubuntu-22.04:v4
+    flavor: b1.large
+    pathsep: /
+    standalone: StandaloneLinux64
+    editorpath: .Editor/Unity
+    utr: ./utr
   - name: win
     type: Unity::VM
     image: package-ci/win10:v4
@@ -16,14 +24,6 @@ test_platforms:
     standalone: StandaloneOSX
     flavor: b1.large
     editorpath: .Editor/Unity.app/Contents/MacOS/Unity
-    utr: ./utr
-  - name: ubuntu
-    type: Unity::VM
-    image: package-ci/ubuntu-22.04:v4
-    flavor: b1.large
-    pathsep: /
-    standalone: StandaloneLinux64
-    editorpath: .Editor/Unity
     utr: ./utr
     
 # Editors to be used for testing.
