@@ -61,10 +61,10 @@ validate_-_netcode_gameobjects_-_6000_0_-_macos:
   - path: .yamato/wrench/package-pack-jobs.yml#package_pack_-_netcode_gameobjects
   variables:
     UPMPVP_ACK_UPMPVP_DOES_NO_API_VALIDATION: 1
-    UPMPVP_CONTEXT_WRENCH: 0.10.31.0
+    UPMPVP_CONTEXT_WRENCH: 0.10.32.0
   metadata:
     Job Maintainers: '#rm-packageworks'
-    Wrench: 0.10.31.0
+    Wrench: 0.10.32.0
   labels:
   - Packages:netcode.gameobjects
 
@@ -128,10 +128,10 @@ validate_-_netcode_gameobjects_-_6000_0_-_ubuntu:
   - path: .yamato/wrench/package-pack-jobs.yml#package_pack_-_netcode_gameobjects
   variables:
     UPMPVP_ACK_UPMPVP_DOES_NO_API_VALIDATION: 1
-    UPMPVP_CONTEXT_WRENCH: 0.10.31.0
+    UPMPVP_CONTEXT_WRENCH: 0.10.32.0
   metadata:
     Job Maintainers: '#rm-packageworks'
-    Wrench: 0.10.31.0
+    Wrench: 0.10.32.0
   labels:
   - Packages:netcode.gameobjects
 
@@ -195,10 +195,10 @@ validate_-_netcode_gameobjects_-_6000_0_-_windows:
   - path: .yamato/wrench/package-pack-jobs.yml#package_pack_-_netcode_gameobjects
   variables:
     UPMPVP_ACK_UPMPVP_DOES_NO_API_VALIDATION: 1
-    UPMPVP_CONTEXT_WRENCH: 0.10.31.0
+    UPMPVP_CONTEXT_WRENCH: 0.10.32.0
   metadata:
     Job Maintainers: '#rm-packageworks'
-    Wrench: 0.10.31.0
+    Wrench: 0.10.32.0
   labels:
   - Packages:netcode.gameobjects
 
@@ -262,10 +262,10 @@ validate_-_netcode_gameobjects_-_6000_1_-_macos:
   - path: .yamato/wrench/package-pack-jobs.yml#package_pack_-_netcode_gameobjects
   variables:
     UPMPVP_ACK_UPMPVP_DOES_NO_API_VALIDATION: 1
-    UPMPVP_CONTEXT_WRENCH: 0.10.31.0
+    UPMPVP_CONTEXT_WRENCH: 0.10.32.0
   metadata:
     Job Maintainers: '#rm-packageworks'
-    Wrench: 0.10.31.0
+    Wrench: 0.10.32.0
   labels:
   - Packages:netcode.gameobjects
 
@@ -329,10 +329,10 @@ validate_-_netcode_gameobjects_-_6000_1_-_ubuntu:
   - path: .yamato/wrench/package-pack-jobs.yml#package_pack_-_netcode_gameobjects
   variables:
     UPMPVP_ACK_UPMPVP_DOES_NO_API_VALIDATION: 1
-    UPMPVP_CONTEXT_WRENCH: 0.10.31.0
+    UPMPVP_CONTEXT_WRENCH: 0.10.32.0
   metadata:
     Job Maintainers: '#rm-packageworks'
-    Wrench: 0.10.31.0
+    Wrench: 0.10.32.0
   labels:
   - Packages:netcode.gameobjects
 
@@ -396,10 +396,10 @@ validate_-_netcode_gameobjects_-_6000_1_-_windows:
   - path: .yamato/wrench/package-pack-jobs.yml#package_pack_-_netcode_gameobjects
   variables:
     UPMPVP_ACK_UPMPVP_DOES_NO_API_VALIDATION: 1
-    UPMPVP_CONTEXT_WRENCH: 0.10.31.0
+    UPMPVP_CONTEXT_WRENCH: 0.10.32.0
   metadata:
     Job Maintainers: '#rm-packageworks'
-    Wrench: 0.10.31.0
+    Wrench: 0.10.32.0
   labels:
   - Packages:netcode.gameobjects
 
