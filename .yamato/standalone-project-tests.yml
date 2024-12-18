@@ -12,7 +12,7 @@ standalone_tests_{{ project.name }}_{{ backend }}_{{ editor }}_{{ platform.name 
     type: {{ platform.type }}{% if platform.name == "ubuntu" %}::GPU{% endif %}
 {% if platform.name == "ubuntu" %}    model: rtx2080{% endif %}
     image: {% if platform.name == 'win' and backend == 'il2cpp' %}{{ win_il2cpp_test_image }} {% else %} {{ platform.image }} {% endif %}
-    flavor: {{ platform.flavor}}
+    flavor: {{ platform.flavor }}
   commands:
     - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
@@ -20,10 +20,10 @@ standalone_tests_{{ project.name }}_{{ backend }}_{{ editor }}_{{ platform.name 
 {% if platform.name != "win" %}
     - chmod +x ./utr
 {% endif %}
-    - unity-downloader-cli -u {{ editor }} -c Editor {% if backend == "il2cpp" %} -c il2cpp{% endif %} --fast --wait
+    - unity-downloader-cli -u {{ editor }} -c Editor {% if backend == "il2cpp" %} -c il2cpp {% endif %} --fast --wait
     - {% if platform.name != "win" %}./{% endif %}utr --suite=playmode --platform={{ platform.standalone }}  --editor-location=.Editor --testproject=testproject --player-save-path=build/players --artifacts_path=build/logs --scripting-backend={{ backend }} --build-only --testfilter=Unity.Netcode.RuntimeTests --extra-editor-arg=-batchmode --extra-editor-arg=-nographics
     - |
-      {% if platform.name == "win" %}set{% endif %}{% if platform.name != "win" %}export{% endif %} UTR_VERSION=0.12.0
+      {% if platform.name == "win" %}set{% endif %}{% if platform.name != "win" %}export{% endif %} UTR_VERSION=1.35.1
       {% if platform.name != "win" %}./{% endif %}utr --suite=playmode --platform={{ platform.standalone }}  --player-load-path=build/players --artifacts_path=build/test-results --scripting-backend={{ backend }} --testfilter=Unity.Netcode.RuntimeTests --playergraphicsapi=Null
   artifacts:
     logs:

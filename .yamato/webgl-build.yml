@@ -4,19 +4,21 @@
 {% for project in projects -%}
 {% if project.name == "testproject" -%}
 {% for editor in project.test_editors -%}
+{% for platform in test_platforms -%}
+{% if platform.name == "win" -%}
 build_{{ project.name }}_tests_{{ editor }}_webgl:
   name: Build {{ project.name }} Tests - {{ editor }} - WebGL
   agent:
-      type: Unity::VM
-      image: dots-ci/windows10:v1.493-auto
-      flavor: b1.xlarge
+      type: platform.type
+      image: platform.image
+      flavor: platform.flavor
   commands:
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
     - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
     - python .yamato/disable-burst-if-requested.py --project-path testproject --platform WebGL
     - unity-downloader-cli -u {{ editor }} -c editor -c webgl -c il2cpp -w --fast
     - |
-       set UTR_VERSION=0.12.0
+       set UTR_VERSION=1.35.1
        utr.bat --artifacts_path=artifacts --timeout=1800 --testproject={{ project.name }} --editor-location=.Editor --suite=playmode --platform=WebGL --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging"
   artifacts:
     logs:
@@ -34,6 +36,8 @@ build_{{ project.name }}_tests_{{ editor }}_webgl:
   variables:
     CI: true
     ENABLE_BURST_COMPILATION: False
+{% endif -%}
+{% endfor -%}
 {% endfor -%}
 {% endif -%}
 {% endfor -%}

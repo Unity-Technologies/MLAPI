@@ -109,19 +109,6 @@ all_compatibility_tests:
 {% endfor -%}
 {% endfor -%}
 
-all_singlenode_multiprocess_tests:
-  name: Run All Multiprocess Tests - Single Node
-  dependencies:
-{% for platform in test_platforms -%}
-{% for project in projects -%}
-{% for editor in project.test_editors -%}
-{% if editor != "trunk" %}
-    - .yamato/multiprocess-project-tests.yml#singlenode_multiprocess_test_testproject_{{ editor }}_{{ platform.name }}
-{% endif %}
-{% endfor -%}
-{% endfor -%}
-{% endfor -%}
-
 all_project_tests_standalone:
   name: Run All Project Tests - Standalone
   dependencies:
