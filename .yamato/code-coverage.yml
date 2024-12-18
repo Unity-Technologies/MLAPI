@@ -1,28 +1,20 @@
 {% metadata_file .yamato/project.metafile %}
 ---
 # Support for code coverage in public repos is not yet available
-{% for project in projects -%}
-{% if project.has_tests == "true" -%}
-{% for platform in test_platforms -%}
-{% if platform.name == "win" -%}
-code_coverage_win_{{ project.name }}_{{ validation_editors.last }}:
-  name: Code Coverage Report - Windows - {{ project.name }} - {{ validation_editors.last }}
+code_coverage_win_{{ project.first.name }}_{{ validation_editors.last }}:
+  name: Code Coverage - NGO [platform.first.name, validation_editors.last]
   agent:
-    type: platform.type
-    image: platform.image
-    flavor: platform.flavor
+    type: platform.first.type
+    image: platform.first.image
+    flavor: platform.first.flavor
   commands:
     - pip install unity-downloader-cli --upgrade --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
     - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - unity-downloader-cli -u {{ validation_editors.last }} -c editor --wait --fast
-    - upm-ci package test -u .Editor --package-path com.unity.netcode.gameobjects --enable-code-coverage --code-coverage-options 'enableCyclomaticComplexity;generateAdditionalMetrics;generateHtmlReport;assemblyFilters:+Unity.Netcode.Editor,+Unity.Netcode.Runtime,+Unity.Netcode.Components'
+    - upm-ci package test -u .Editor --package-path com.unity.netcode.gameobjects --enable-code-coverage --code-coverage-options 'generateAdditionalMetrics;generateBadgeReport;generateHtmlReport;assemblyFilters:+Unity.Netcode*' --extra-utr-arg="--extra-editor-arg=--burst-disable-compilation --extra-editor-arg=-testCategory --extra-editor-arg=!Performance --timeout=1800 --reruncount=1 --clean-library-on-rerun --extra-create-project-arg=-upmNoDefaultPackages"
   artifacts:
     logs:
       paths:
         - "upm-ci~/test-results/**/*"
   dependencies:
-    - .yamato/project-pack.yml#pack_{{ project.name }}
-{% endif -%}
-{% endfor -%}
-{% endif -%}
-{% endfor -%}
+    - .yamato/project-pack.yml#pack_{{ project.first.name }}
