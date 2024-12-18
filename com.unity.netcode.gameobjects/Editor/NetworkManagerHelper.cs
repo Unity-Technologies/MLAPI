@@ -134,9 +134,14 @@ namespace Unity.Netcode.Editor
                     {
                         Debug.LogError($"Active scene {activeScene.name} with path ({activeScene.path}) is potentially a duplicate of " +
                             $"scene {sceneAsset.name} with a path of ({scene.path})! Excluding from automatically adding to the scenes in build list!");
-                        // Exit as if it did find a perfect match
-                        return true;
                     }
+                    else
+                    {
+                        Debug.LogError($"Active scene {activeScene.name} was found but the active scene asset hash value ({activeSceneHash}) was " +
+                            $"not the same as the the one in the scenes in build list ({sceneAssetHash})! Excluding from automatically adding to the scenes in build list!");
+                    }
+                    // Exit as if it did find a perfect match
+                    return true;
                 }
             }
             return false;
