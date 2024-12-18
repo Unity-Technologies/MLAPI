@@ -104,8 +104,15 @@ namespace Unity.Netcode.Editor
                         $"to synchronize to this scene unless it is added to the scenes in build list.\n\nWould you like to add it now?",
                         "Yes", "No - Continue"))
                     {
-                        scenesList.Add(new EditorBuildSettingsScene(activeScene.path, true));
-                        EditorBuildSettings.scenes = scenesList.ToArray();
+                        // Double double check that the EditorBuildSettings.scenes has not changed already before adding
+                        // this scene to the array (Parrel Sync issue)
+                        scenesList = EditorBuildSettings.scenes.ToList();
+                        isSceneInBuildSettings = scenesList.Count((c) => c.path == activeScene.path) == 1;
+                        if (!isSceneInBuildSettings)
+                        {
+                            scenesList.Add(new EditorBuildSettingsScene(activeScene.path, true));
+                            EditorBuildSettings.scenes = scenesList.ToArray();
+                        }
                     }
                 }
             }
