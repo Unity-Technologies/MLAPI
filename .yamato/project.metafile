@@ -1,67 +1,104 @@
-# Platforms that will be tested. The first entry (ubuntu) in this array will also
-# be used for validation, code coverage etc (simple operations are performed faster on it) so it's important to be careful when changing order of test platforms!
+# Platforms that project will/can be tested on. It would be immensli expensive to test on all possible platforms since subset of those was chosen to show the best minimal representation
 test_platforms:
-  - name: ubuntu
-    type: Unity::VM
-    image: package-ci/ubuntu-22.04:v4
-    flavor: b1.large
-    pathsep: /
-    standalone: StandaloneLinux64
-    editorpath: .Editor/Unity
-    utr: ./utr
-  - name: win
-    type: Unity::VM
-    image: package-ci/win10:v4
-    flavor: b1.large
-    pathsep: \
-    standalone: StandaloneWindows64
-    editorpath: .Editor\Unity.exe
-    utr: .\utr.bat
-  - name: mac
-    type: Unity::VM::osx
-    image: package-ci/macos-13:v4
-    pathsep: /
-    standalone: StandaloneOSX
-    flavor: b1.large
-    editorpath: .Editor/Unity.app/Contents/MacOS/Unity
-    utr: ./utr
+    # Default platform is used for all basic jobs. Ubuntu was chosen since it's faster and more available
+    default:
+        - name: ubuntu
+          type: Unity::VM
+          image: package-ci/ubuntu-22.04:v4
+          flavor: b1.large
+          standalone: StandaloneLinux64
+    # Desktop platforms cover all main desktop platforms
+    desktop:  
+        - name: ubuntu
+          type: Unity::VM
+          image: package-ci/ubuntu-22.04:v4
+          flavor: b1.large
+          standalone: StandaloneLinux64
+        - name: win
+          type: Unity::VM
+          image: package-ci/win10:v4
+          flavor: b1.large
+          standalone: StandaloneWindows64
+        - name: mac
+          type: Unity::VM::osx
+          image: package-ci/macos-13:v4
+          flavor: b1.large
+          standalone: StandaloneOSX
+    # Mobile platforms cover all main mobile devices
+    mobile:
+        - name: android
+          type: Unity::VM
+          image: mobile-ci/android:stable
+          flavor: b1.large
+          standalone: Android
+        - name: ios
+          type: Unity::VM::osx
+          image: mobile-ci/ios:stable
+          flavor: b1.large
+          standalone: iOS
+    # We should test on at least one more "exotic" platform. Nintendo Switch was chosen as it represents broadly console platforms
+    console:
+        - name: nintendoSwitch
+          type: Unity::VM::Switch
+          image: nintendo-ci/switch:stable
+          flavor: b1.large
+          standalone: Switch
+    Arm64:
+        - name: mac-arm64
+          type: Unity::VM::osx
+          image: package-ci/macos-13-arm64:v4
+          flavor: b1.large
+          standalone: StandaloneOSX
+        - name: android-arm64
+          type: Unity::VM
+          image: mobile-ci/android-arm64:stable
+          flavor: b1.large
+          standalone: Android
     
 # Editors to be used for testing.
 # Since NGOv2 official support started from U6 it means that only those editors should be used for testing
-# The last entry in this array will also
-# be used for validation, code coverage etc (windows) so it's important to be careful when changing order of validation editors!
 validation_editors:
-    - 6000.0
-    - 6000.1
-    - trunk
+    default:
+        - trunk
+    all:
+        - 6000.0
+        - 6000.1
+        - trunk
 
 # Projects within the repository that will be tested. Name will be used
 # for job ids, so it should not contain spaces/non-supported characters
 # The first entry in this array will also
 # be used for validation, code coverage etc (windows) so it's important to be careful when changing order of projects!
 projects:
-  - name: testproject
-    path: testproject
-    validate: true
-    publish: true
-    has_tests: true
-    # Packages within a project that will be tested
-    packages:
-      - name: com.unity.netcode.gameobjects
-        path: com.unity.netcode.gameobjects
-  - name: minimalproject
-    path: minimalproject
-    validate: false
-    publish: false
-    has_tests: false
-    packages:
-      - name: com.unity.netcode.gameobjects
-        path: com.unity.netcode.gameobjects
-  - name: testproject-tools-integration
-    path: testproject-tools-integration
-    validate: false
-    publish: false
-    has_tests: true
+    default:
+        - name: testproject
+          path: testproject
+          validate: true
+          has_tests: true
+          # Packages within a project that will be tested
+          packages:
+            - name: com.unity.netcode.gameobjects
+              path: com.unity.netcode.gameobjects
+    all:
+    - name: testproject
+      path: testproject
+      validate: true
+      has_tests: true
+      # Packages within a project that will be tested
+      packages:
+        - name: com.unity.netcode.gameobjects
+          path: com.unity.netcode.gameobjects
+    - name: minimalproject
+      path: minimalproject
+      validate: false
+      has_tests: false
+      packages:
+        - name: com.unity.netcode.gameobjects
+          path: com.unity.netcode.gameobjects
+    - name: testproject-tools-integration
+      path: testproject-tools-integration
+      validate: false
+      has_tests: true
 
 # Scripting backends used by Standalone Playmode Tests
 scripting_backends: 
