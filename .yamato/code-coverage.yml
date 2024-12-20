@@ -1,21 +1,28 @@
 {% metadata_file .yamato/project.metafile %}
 ---
+
 # Support for code coverage in public repos is not yet available
 # It's ok for code coverage to be performed only on one platform (ubuntu in this case) and preferably with latest editor
-code_coverage_win_{{ project.first.name }}_{{ validation_editors.last }}:
-  name: Code Coverage - NGO [{{ test_platforms[0].name }}, {{ validation_editors[-1] }}]
+{% for platform in test_platforms.default -%}
+{% for editor in validation_editors.default -%}
+code_coverage_{{ platform.name }}_{{ editor }}:
+  name: Code Coverage - NGO [{{ platform.name }}, {{ editor }}]
   agent:
-    type: {{ test_platforms[0].type }}
-    image: {{ test_platforms[0].image }}
-    flavor: {{ test_platforms[0].flavor }}
+    type: {{ platform.type }}
+    image: {{ platform.image }}
+    flavor: {{ platform.flavor }}
+  variables:
+    UPMCI_PKG: upm-ci-utils@stable
   commands:
     - pip install unity-downloader-cli --upgrade --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
-    - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
-    - unity-downloader-cli -u {{ validation_editors[-1] }} -c editor --wait --fast
+    - npm install -g "$UPMCI_PKG" --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
+    - unity-downloader-cli -u {{ editor }} -c editor --wait --fast
     - upm-ci package test -u .Editor --package-path com.unity.netcode.gameobjects --enable-code-coverage --code-coverage-options 'generateAdditionalMetrics;generateHtmlReport;assemblyFilters:+Unity.Netcode.Editor,+Unity.Netcode.Runtime' --extra-utr-arg="--extra-editor-arg=--burst-disable-compilation --extra-editor-arg=-testCategory --extra-editor-arg=!Performance --timeout=1800 --reruncount=1 --clean-library-on-rerun"
   artifacts:
     logs:
       paths:
         - "upm-ci~/test-results/**/*"
   dependencies:
-    - .yamato/wrench/package-pack-jobs.yml#package_pack_-_netcode_gameobjects
+    - .yamato/package-pack.yml#package_pack_-_ngo
+{% endfor -%}
+{% endfor -%}

@@ -1,20 +1,27 @@
 {% metadata_file .yamato/project.metafile %}
 ---
 
-{% for platform in test_platforms -%}
-{% if platform.name == "ubuntu" -%}
-standards_{{ projects.first.name }}:
-  name: Standards Check {{ projects.first.name }}
+{% for platform in test_platforms.default -%}
+{% for editor in validation_editors.default -%}
+{% for project in projects.default -%}
+standards_{{ platform.name }}:
+  name: Standards Check - {{ platform.name }} - {{ project.name }}
   agent:
-    type: platform.type
-    image: platform.image
-    flavor: platform.flavor
+    type: {{ platform.type }}
+    image: {{ platform.image }}
+    flavor: {{ platform.flavor }}
   commands:
+    # .NET environment setup
     - dotnet --version
     - dotnet format --version
+    
+    # Unity setup
     - pip install unity-downloader-cli --upgrade --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
-    - unity-downloader-cli -u {{ projects.last.test_editors.first }} -c editor --wait --fast
-    - .Editor/Unity -batchmode -nographics -logFile - -executeMethod Packages.Rider.Editor.RiderScriptEditor.SyncSolution -projectPath {{ projects.first.path }} -quit
-    - dotnet run --project dotnet-tools/netcode.standards -- --project={{ projects.first.path }} --check
-{% endif -%}
+    - unity-downloader-cli -u {{ editor }} -c editor --wait --fast
+    - .Editor/Unity -batchmode -nographics -logFile - -executeMethod Packages.Rider.Editor.RiderScriptEditor.SyncSolution -projectPath {{ project.path }} -quit
+      
+    # Standards check
+    - dotnet run --project dotnet-tools/netcode.standards --project={{ project.path }} --check
+{% endfor -%}
+{% endfor -%}
 {% endfor -%}
