@@ -1,21 +1,19 @@
 {% metadata_file .yamato/project.metafile %}
 ---
 
-{% for project in projects -%}
-{% if project.name == "testproject" -%}
-{% for editor in project.test_editors -%}
-{% for platform in test_platforms -%}
-{% if platform.name == "win" -%}
-build_{{ project.name }}_tests_{{ editor }}_webgl:
-  name: Build {{ project.name }} Tests - {{ editor }} - WebGL
+{% for project in projects.default -%}
+{% for editor in validation_editors.all -%}
+{% for platform in test_platforms.default -%}
+webgl_build_{{ project.name }}_tests_{{ editor }}:
+  name: WebGl Build and Tests - [{{ project.name }}, {{ editor }}]
   agent:
-      type: platform.type
-      image: platform.image
-      flavor: platform.flavor
+      type: {{ platform.type }}
+      image: {{ platform.image }}
+      flavor: {{ platform.flavor }}
   commands:
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
     - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
-    - python .yamato/disable-burst-if-requested.py --project-path testproject --platform WebGL
+    - python .yamato/disable-burst-if-requested.py --project-path {{ project.path }} --platform WebGL
     - unity-downloader-cli -u {{ editor }} -c editor -c webgl -c il2cpp -w --fast
     - |
        set UTR_VERSION=1.35.1
@@ -36,8 +34,6 @@ build_{{ project.name }}_tests_{{ editor }}_webgl:
   variables:
     CI: true
     ENABLE_BURST_COMPILATION: False
-{% endif -%}
 {% endfor -%}
 {% endfor -%}
-{% endif -%}
 {% endfor -%}
