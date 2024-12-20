@@ -21,7 +21,7 @@ standards_{{ platform.name }}:
     - .Editor/Unity -batchmode -nographics -logFile - -executeMethod Packages.Rider.Editor.RiderScriptEditor.SyncSolution -projectPath {{ project.path }} -quit
       
     # Standards check
-    - dotnet run --project dotnet-tools/netcode.standards --project={{ project.path }} --check
+    - dotnet run --project=dotnet-tools/netcode.standards -- --project={{ project.path }} --check
 {% endfor -%}
 {% endfor -%}
 {% endfor -%}
