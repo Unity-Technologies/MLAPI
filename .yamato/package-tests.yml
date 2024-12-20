@@ -1,7 +1,7 @@
 {% metadata_file .yamato/project.metafile %}
 ---
 
-{% for editor in validation_editors -%}
+{% for editor in validation_editors.all -%}
 {% for platform in test_platforms.desktop -%}
 package_test_-_ngo_{{ editor }}_{{ platform.name }}:
   name : Package Test - NGO [{{ platform.name }}, {{ editor }}]
