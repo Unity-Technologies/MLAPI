@@ -1,13 +1,14 @@
 {% metadata_file .yamato/project.metafile %}
 ---
 
-# Pack and Sign Netcode for GameObjects
-package_test_-_ngo:
-  name: Package Pack (and x-ray) - netcode.gameobjects
+# Pack Netcode for GameObjects together with performing initial checks
+{% for platform in test_platforms.default -%}
+package_pack_-_ngo:
+  name: Package Pack (and x-ray) - NGO
   agent:
-    type: Unity::VM
-    image: package-ci/ubuntu-22.04:default
-    flavor: b1.large
+    type: {{ platform.type }}
+    image: {{ platform.image }}
+    flavor: {{ platform.flavor }}
   variables:
     UPMCI_PKG: upm-ci-utils@stable
     PVP_PROFILE: supported rme
@@ -21,3 +22,4 @@ package_test_-_ngo:
     packages:
       paths:
         - "upm-ci~/**"
+{% endfor -%}

@@ -3,12 +3,13 @@
 
 # Ubuntu is used for this job because of better performance for simple operations
 {% for project in projects -%}
-pack_{{ project.name }}:
+{% for platform in test_platforms.default -%}
+project_pack_-_{{ project.name }}:
   name: Project Pack - {{ project.name }}
   agent:
-    type: {{ test_platforms[0].type }}
-    image: {{ test_platforms[0].image }}
-    flavor: {{ test_platforms[0].flavor }}
+    type: {{ platform.type }}
+    image: {{ platform.image }}
+    flavor: {{ platform.flavor }}
   commands:
     - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - upm-ci project pack --project-path {{ project.path }}
@@ -16,4 +17,5 @@ pack_{{ project.name }}:
     packages:
       paths:
         - "upm-ci~/packages/**/*"
+{% endfor -%}
 {% endfor -%}
