@@ -4,28 +4,24 @@
 # For every platform and editor version, run its project tests without
 # running package tests too since they are handled on their respective
 # jobs
-{% for project in projects -%}
-{% for editor in validation_editors -%}
-{% for platform in test_platforms -%}
+{% for project in projects.all -%}
+{% for editor in validation_editors.all -%}
+{% for platform in test_platforms.desktop -%}
 test_{{ project.name }}_{{ editor }}_{{ platform.name }}:
-  name : {{ project.name }} project tests - {{ editor }} on {{ platform.name }}
+  name : Project Test - NGO [{{ project.name }}, {{ platform.name }}, {{ editor }}]
   agent:
     type: {{ platform.type }}
     image: {{ platform.image }}
     flavor: {{ platform.flavor }}
   commands:
     - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
-    - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
-    - unity-downloader-cli -u {{ editor }} -c editor -w --fast
     - {% if platform.name == "ubuntu" %}DISPLAY=:0 && {% endif %}upm-ci project test -u {{ editor }} --project-path {{ project.path }} --type project-tests
   artifacts:
     logs:
       paths:
         - "upm-ci~/test-results/**/*"
   dependencies:
-    - .yamato/project-pack.yml#pack_{{ project.name }}
-
+    - .yamato/project-pack.yml#project_pack_-_{{ project.name }}
 {% endfor -%}
 {% endfor -%}
 {% endfor -%}
-
