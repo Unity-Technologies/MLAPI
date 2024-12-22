@@ -99,9 +99,9 @@ run_{{ project.name }}_tests_{{ editor }}_iOS:
       - build/test-results/**
       - artifacts/**
       - build/players/**
-    # Set a dependency on the build job
-    dependencies:
-      - .yamato/mobile-build-and-test.yml#build_{{ project.name }}_{{ editor }}_iOS
+  # Set a dependency on the build job
+  dependencies:
+    - .yamato/mobile-build-and-test.yml#build_{{ project.name }}_{{ editor }}_iOS
 {% endfor -%}
 {% endfor -%}
 
@@ -138,8 +138,8 @@ run_{{ project.name }}_tests_{{ editor }}_android:
       - build/test-results/**
       - artifacts/**
       - build/players/**
-    # Set a dependency on the build job
-    dependencies:
-      - .yamato/mobile-build-and-test.yml#build_{{ project.name }}_{{ editor }}_android
+  # Set a dependency on the build job
+  dependencies:
+    - .yamato/mobile-build-and-test.yml#build_{{ project.name }}_{{ editor }}_android
 {% endfor -%}
 {% endfor -%}
