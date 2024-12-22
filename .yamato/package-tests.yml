@@ -9,10 +9,8 @@ package_test_-_ngo_{{ editor }}_{{ platform.name }}:
     type: {{ platform.type }}
     image: {{ platform.image }}
     flavor: {{ platform.flavor }}
-  variables:
-    UPMCI_PKG: upm-ci-utils@stable
   commands:
-    - npm install -g "$UPMCI_PKG" --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
+    - npm install -g upm-ci-utils@stable --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - {% if platform.name == "ubuntu" %}DISPLAY=:0 {% endif %}upm-ci package test -u {{ editor }} --package-path com.unity.netcode.gameobjects --type package-tests
   artifacts:
     logs:
