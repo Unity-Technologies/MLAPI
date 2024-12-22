@@ -2,7 +2,7 @@
 ---
 
 {% for project in projects.default -%}
-{% for editor in validation_editors.all-%}
+{% for editor in validation_editors.all -%}
 {% for platform in test_platforms.desktop -%}
 {% for backend in scripting_backends -%}
 desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{ editor }}:

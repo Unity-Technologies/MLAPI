@@ -1,11 +1,10 @@
 {% metadata_file .yamato/project.metafile %}
 ---
 
-{% for project in projects -%}
-{% if project.name == "testproject" -%}
-{% for editor in project.test_editors -%}
-build_{{ project.name }}_tests_{{ editor }}_android:
-  name: Build {{ project.name }} Tests - {{ editor }} - Android
+{% for project in projects.default -%}
+{% for editor in validation_editors.all -%}
+build_{{ project.name }}_{{ editor }}_android:
+  name: Build {{ project.name }} - [{{ editor }}, Android]
   agent:
       type: Unity::VM
       image: desktop/android-execution-r19:v0.1.1-860408
@@ -35,15 +34,13 @@ build_{{ project.name }}_tests_{{ editor }}_android:
     CI: true
     ENABLE_BURST_COMPILATION: False
 {% endfor -%}
-{% endif -%}
 {% endfor -%}
 
 
-{% for project in projects -%}
-{% if project.name == "testproject" -%}
-{% for editor in project.test_editors -%}
-build_{{ project.name }}_tests_{{ editor }}_iOS:
-  name: Build {{ project.name }} Tests - {{ editor }} - iOS
+{% for project in projects.default -%}
+{% for editor in validation_editors.all -%}
+build_{{ project.name }}_{{ editor }}_iOS:
+  name: Build {{ project.name }} - [{{ editor }}, iOS]
   agent:
     type: Unity::VM::osx
     image: mobile/ios-macos-11:stable
@@ -69,15 +66,13 @@ build_{{ project.name }}_tests_{{ editor }}_iOS:
       - artifacts/**
       - build/players/**
 {% endfor -%}
-{% endif -%}
 {% endfor -%}
 
 
-{% for project in projects -%}
-{% if project.name == "testproject" -%}
-{% for editor in project.test_editors -%}
+{% for project in projects.default -%}
+{% for editor in validation_editors.all -%}
 run_{{ project.name }}_tests_{{ editor }}_iOS:
-  name: Run {{ project.name }} Tests - {{ editor }} - iOS
+  name: Run {{ project.name }} Tests - [{{ editor }}, iOS]
   agent:
       type: Unity::mobile::iPhone
       model: SE
@@ -108,15 +103,13 @@ run_{{ project.name }}_tests_{{ editor }}_iOS:
       - artifacts/**
       - build/players/**
 {% endfor -%}
-{% endif -%}
 {% endfor -%}
 
     
-{% for project in projects -%}
-{% if project.name == "testproject" -%}
-{% for editor in project.test_editors -%}
+{% for project in projects.default -%}
+{% for editor in validation_editors.all -%}
 run_{{ project.name }}_tests_{{ editor }}_android:
-  name: Run {{ project.name }} Tests - {{ editor }} - Android
+  name: Run {{ project.name }} Tests - [{{ editor }}, Android]
   agent:
       type: Unity::mobile::shield
       image: mobile/android-execution-r19:stable
@@ -149,5 +142,4 @@ run_{{ project.name }}_tests_{{ editor }}_android:
       - artifacts/**
       - build/players/**
 {% endfor -%}
-{% endif -%}
 {% endfor -%}
