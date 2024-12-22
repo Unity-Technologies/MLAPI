@@ -5,43 +5,25 @@
 {% for editor in validation_editors.all-%}
 {% for platform in test_platforms.desktop -%}
 {% for backend in scripting_backends -%}
-  
-{%- set is_ubuntu = platform.name == "ubuntu" -%}
-{%- set is_windows = platform.name == "win" -%}
-{%- set is_il2cpp = backend == "il2cpp" -%}
-  
 desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{ editor }}:
   name : Standalone Tests - NGO {{ project.name }} - [{{ platform.name }}, {{ backend }}, {{ editor }}]
   agent:
-    type: {{ platform.type }}{{ "::GPU" if is_ubuntu }}
-    model: {{ "rtx2080" if is_ubuntu }}
-    image: {{ win_il2cpp_test_image if is_windows and is_il2cpp else platform.image }}
+    type: {{ platform.type }}{% if platform.name == "ubuntu" %}::GPU{% endif %}
+{% if platform.name == "ubuntu" %}   
+    model: rtx2080
+{% endif %}
+    image: {% if platform.name == 'win' and backend == 'il2cpp' %}{{ win_il2cpp_test_image }} {% else %} {{ platform.image }} {% endif %}
     flavor: {{ platform.flavor }}
   commands:
     - npm install -g upm-ci-utils@stable --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
-    - unity-downloader-cli -u {{ editor }} -c Editor {{ "-c il2cpp" if is_il2cpp }} --fast --wait
+{% if platform.name != "win" %}
+    - chmod +x ./utr
+{% endif %}
+    - unity-downloader-cli -u {{ editor }} -c Editor {% if backend == "il2cpp" %} -c il2cpp {% endif %} --fast --wait
+    - {% if platform.name != "win" %}./{% endif %}utr --suite=playmode --platform={{ platform.standalone }}  --editor-location=.Editor --testproject=testproject --player-save-path=build/players --artifacts_path=build/logs --scripting-backend={{ backend }} --build-only --testfilter=Unity.Netcode.RuntimeTests --extra-editor-arg=-batchmode --extra-editor-arg=-nographics
     - |
-      {% set utr_prefix = "./" if not is_windows %}
-      {{ utr_prefix }}utr --suite=playmode \
-        --platform={{ platform.standalone }} \
-        --editor-location=.Editor \
-        --testproject={{ project }} \
-        --player-save-path=build/players \
-        --artifacts_path=build/logs \
-        --scripting-backend={{ backend }} \
-        --build-only \
-        --testfilter=Unity.Netcode.RuntimeTests \
-        --extra-editor-arg=-batchmode \
-        --extra-editor-arg=-nographics
-      - |
-      {{ "set" if is_windows else "export" }} UTR_VERSION=1.35.1
-      {{ utr_prefix }}utr --suite=playmode \
-        --platform={{ platform.standalone }} \
-        --player-load-path=build/players \
-        --artifacts_path=build/test-results \
-        --scripting-backend={{ backend }} \
-        --testfilter=Unity.Netcode.RuntimeTests \
-        --playergraphicsapi=Null
+      {% if platform.name == "win" %}set{% endif %}{% if platform.name != "win" %}export{% endif %} UTR_VERSION=1.35.1
+      {% if platform.name != "win" %}./{% endif %}utr --suite=playmode --platform={{ platform.standalone }}  --player-load-path=build/players --artifacts_path=build/test-results --scripting-backend={{ backend }} --testfilter=Unity.Netcode.RuntimeTests --playergraphicsapi=Null
   artifacts:
     logs:
       paths:
