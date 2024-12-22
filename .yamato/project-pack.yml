@@ -2,7 +2,7 @@
 ---
 
 # Ubuntu is used for this job because of better performance for simple operations
-{% for project in projects -%}
+{% for project in projects.all -%}
 {% for platform in test_platforms.default -%}
 project_pack_-_{{ project.name }}:
   name: Project Pack - {{ project.name }}
