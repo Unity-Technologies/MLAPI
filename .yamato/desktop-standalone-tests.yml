@@ -16,6 +16,8 @@ desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{
     flavor: {{ platform.flavor }}
   commands:
     - npm install -g upm-ci-utils@stable --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
+    - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
+    - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr{% if platform.name == "win" %}.bat{% endif %} --output utr{% if platform.name == "win" %}.bat{% endif %}
 {% if platform.name != "win" %}
     - chmod +x ./utr
 {% endif %}
