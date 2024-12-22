@@ -8,7 +8,7 @@
 {% for editor in validation_editors.all -%}
 {% for platform in test_platforms.desktop -%}
 test_{{ project.name }}_{{ editor }}_{{ platform.name }}:
-  name : Project Test - NGO [{{ project.name }}, {{ platform.name }}, {{ editor }}]
+  name : Project Test - NGO {{ project.name }} [{{ platform.name }}, {{ editor }}]
   agent:
     type: {{ platform.type }}
     image: {{ platform.image }}
