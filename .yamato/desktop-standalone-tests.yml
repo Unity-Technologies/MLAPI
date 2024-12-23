@@ -30,7 +30,8 @@ desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{
     - unity-downloader-cli -u {{ editor }} -c Editor {% if backend == "il2cpp" %} -c il2cpp {% endif %} --fast --wait
     
     # Build Player
-    - utr \
+    - |
+      {% if platform.name != "win" %}./{% endif %}utr \
       --suite=playmode \
       --platform={{ platform.standalone }} \
       --editor-location=.Editor \
