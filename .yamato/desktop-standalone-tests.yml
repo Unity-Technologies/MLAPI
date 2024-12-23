@@ -1,6 +1,8 @@
 {% metadata_file .yamato/project.metafile %}
 ---
 
+# Builds a player on desktop standalone platform and executes PlayMode tests of the NGO package in the Standalone build
+# Only Package tests are being executed in the context of the default project
 {% for project in projects.default -%}
 {% for editor in validation_editors.all -%}
 {% for platform in test_platforms.desktop -%}
@@ -8,24 +10,52 @@
 desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{ editor }}:
   name : Standalone Tests - NGO {{ project.name }} - [{{ platform.name }}, {{ backend }}, {{ editor }}]
   agent:
-    type: {{ platform.type }}{% if platform.name == "ubuntu" %}::GPU{% endif %}
-{% if platform.name == "ubuntu" %}   
-    model: rtx2080
-{% endif %}
-    image: {% if platform.name == 'win' and backend == 'il2cpp' %}{{ win_il2cpp_test_image }} {% else %} {{ platform.image }} {% endif %}
+    type: {% if platform.name == "mac" %} {{ platform.type }} {% else %} {{ platform.type }}::GPU {% endif %}
+    image: {{ platform.image }}
     flavor: {{ platform.flavor }}
   commands:
+    # Installing tools
     - npm install -g upm-ci-utils@stable --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
-    - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr{% if platform.name == "win" %}.bat{% endif %} --output utr{% if platform.name == "win" %}.bat{% endif %}
-{% if platform.name != "win" %}
-    - chmod +x ./utr
-{% endif %}
-    - unity-downloader-cli -u {{ editor }} -c Editor {% if backend == "il2cpp" %} -c il2cpp {% endif %} --fast --wait
-    - {% if platform.name != "win" %}./{% endif %}utr --suite=playmode --platform={{ platform.standalone }}  --editor-location=.Editor --testproject=testproject --player-save-path=build/players --artifacts_path=build/logs --scripting-backend={{ backend }} --build-only --testfilter=Unity.Netcode.RuntimeTests --extra-editor-arg=-batchmode --extra-editor-arg=-nographics
+  
+    # Platform specific UTR setup
     - |
-      {% if platform.name == "win" %}set{% endif %}{% if platform.name != "win" %}export{% endif %} UTR_VERSION=1.35.1
-      {% if platform.name != "win" %}./{% endif %}utr --suite=playmode --platform={{ platform.standalone }}  --player-load-path=build/players --artifacts_path=build/test-results --scripting-backend={{ backend }} --testfilter=Unity.Netcode.RuntimeTests --playergraphicsapi=Null
+{% if platform.name == "win" %}
+      curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
+{% else %}
+      curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr && chmod +x utr
+{% endif %}
+    
+    # Installing editor
+    - unity-downloader-cli -u {{ editor }} -c Editor {% if backend == "il2cpp" %} -c il2cpp {% endif %} --fast --wait
+    
+    # Build Player
+    - utr \
+      --suite=playmode \
+      --platform={{ platform.standalone }} \
+      --editor-location=.Editor \
+      --testproject={{ project.name }} \
+      --player-save-path=build/players \
+      --artifacts_path=build/logs \
+      --scripting-backend={{ backend }} \
+      --build-only \
+      --testfilter=Unity.Netcode.RuntimeTests \
+      --extra-editor-arg=-batchmode \
+      --extra-editor-arg=-nographics
+    
+    # Run Standalone tests
+    - |
+      {% if platform.name == "win" %}set{% endif %}{% if platform.name != "win" %}export{% endif %} UTR_VERSION={{ UTR_VERSION }}
+      
+      {% if platform.name != "win" %}./{% endif %}utr \
+      --suite=playmode \
+      --platform={{ platform.standalone }} \
+      --player-load-path=build/players \
+      --artifacts_path=build/test-results \
+      --scripting-backend={{ backend }} \
+      --testfilter=Unity.Netcode.RuntimeTests \
+      --playergraphicsapi=Null
+      
   artifacts:
     logs:
       paths:

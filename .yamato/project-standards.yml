@@ -7,7 +7,7 @@
 {% for editor in validation_editors.default -%}
 {% for project in projects.default -%}
 standards_{{ platform.name }}:
-  name: Standards Check - {{ platform.name }} - {{ project.name }}
+  name: Standards Check - NGO [{{ platform.name }}, {{ project.name }}]
   agent:
     type: {{ platform.type }}
     image: {{ platform.image }}

@@ -1,3 +1,6 @@
+# Defined version of UTR to use
+UTR_VERSION: 1.35.1
+
 # The small agent was created to handle jobs that don't involve running Unity (for example pack job).
 # It uses ubuntu since Linux VMs are faster and cheaper to provision than Mac or Windows Virtual Machines (VMs).
 # The b1.small flavour is nearly always sufficient for jobs that don’t involve running Unity.
@@ -15,20 +18,24 @@ test_platforms:
           type: Unity::VM
           image: package-ci/ubuntu-22.04:v4
           flavor: b1.large
+          platform: StandaloneLinux64
     # Desktop platforms cover all main desktop platforms
     desktop:  
-        - name: ubuntu22
+        - name: ubuntu
           type: Unity::VM
           image: package-ci/ubuntu-22.04:v4
           flavor: b1.large
-        - name: win10
+          platform: StandaloneLinux64
+        - name: win
           type: Unity::VM
           image: package-ci/win10:v4
           flavor: b1.large
+          platform: StandaloneWindows64
         - name: mac
           type: Unity::VM::osx
           image: package-ci/macos-13:v4
           flavor: m1.mac
+          platform: StandaloneOSX
     # Mobile platforms cover all main mobile devices. There is a split between the build and run phase so there is a need of splitting specification for both (since its different)
     mobile_build:
         # It would be simpler to build android app with ubuntu but the option with windows was chosen since it covers more users
@@ -36,41 +43,49 @@ test_platforms:
           type: Unity::VM
           image: package-ci/win10:v4
           flavor: b1.large
+          platform: Android
         - name: ios
           type: Unity::VM::osx
           image: mobile-ci/ios:stable
           flavor: m1.mac
+          platform: IOS
     mobile_test:
         - name: android
           type: Unity::mobile::shield
           image: package-ci/ubuntu-22.04:v4
           flavor: b1.large
           model: ShieldPro
+          platform: Android
         - name: ios
           type: Unity::mobile::iPhone
           image: package-ci/macos-13:v4
           flavor: m1.mac
           model: SE
+          platform: IOS
     # We should test on at least one more "exotic" platform. Nintendo Switch was chosen as it represents broadly console platforms
     console:
         - name: nintendoSwitch
           type: Unity::console::switch
           image: package-ci/win10-switch:v4
           flavor: b1.large
-          # Requires splitting
+          platform: Switch
+        # Requires splitting
         - name: xboxOne
           type: Unity::console::xbox
           image: package-ci/win10-xbox
           flavor: b1.large
+          platform: GameCoreXboxOne
         - name: ps4
           type: Unity::console::ps4
           image: package-ci/win10-ps4
           flavor: b1.large
-         # PS5 requires splitting like Android and IOS
+          platform: PS4
+        # PS5 requires splitting like Android and IOS
         - name: ps5
           type: Unity::console::ps5
           image: package-ci/win10-ps5
           flavor: b1.large
+          platform: PS5
     Arm64:
         - name: mac-arm64
           type: Unity::VM::osx
