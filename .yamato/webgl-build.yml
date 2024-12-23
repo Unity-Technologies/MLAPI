@@ -21,7 +21,7 @@ webgl_build_{{ project.name }}_{{ editor }}:
       
     # Platform specific UTR setup
     - |
-{ % if platform.name == "win" % }
+{% if platform.name == "win" %}
   curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
 {% else %}
   curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr && chmod +x utr
