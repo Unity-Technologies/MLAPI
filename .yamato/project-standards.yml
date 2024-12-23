@@ -1,6 +1,8 @@
 {% metadata_file .yamato/project.metafile %}
 ---
 
+# Project standards are being checked for package (in project context)
+# It should be enough to perform the test on default project
 {% for platform in test_platforms.default -%}
 {% for editor in validation_editors.default -%}
 {% for project in projects.default -%}

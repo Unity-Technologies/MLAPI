@@ -1,8 +1,9 @@
 {% metadata_file .yamato/project.metafile %}
 ---
 
-# Pack Netcode for GameObjects together with performing initial checks
-{% for platform in test_platforms.default -%}
+# Packs Netcode for GameObjects together with performing initial checks. 
+# For this job no specific platform support and no running Unity instance is required so small agent will be used to save resources and speed up the process
+{% for platform in small_agent -%}
 package_pack_-_ngo:
   name: Package Pack (and x-ray) - NGO
   agent:

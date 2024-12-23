@@ -1,8 +1,8 @@
 {% metadata_file .yamato/project.metafile %}
 ---
 
-# Support for code coverage in public repos is not yet available
-# It's ok for code coverage to be performed only on one platform (ubuntu in this case) and preferably with latest editor
+# It's ok for code coverage to be performed only on one platform since code coverage won't change much between those.
+# Default platform was chosen (ubuntu) since it's the fastest and most resource friendly with default editor.
 {% for platform in test_platforms.default -%}
 {% for editor in validation_editors.default -%}
 code_coverage_{{ platform.name }}_{{ editor }}:

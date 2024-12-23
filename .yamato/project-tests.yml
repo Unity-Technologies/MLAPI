@@ -1,9 +1,8 @@
 {% metadata_file .yamato/project.metafile %}
 ---
 
-# For every platform and editor version, run its project tests without
-# running package tests too since they are handled on their respective
-# jobs
+# Executes PlayMode and EditMode tests of the given project in the Editor context
+# Those tests don't include NGO package tests since they are handled on their respective jobs.
 {% for project in projects.all -%}
 {% for editor in validation_editors.all -%}
 {% for platform in test_platforms.desktop -%}

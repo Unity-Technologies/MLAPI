@@ -1,9 +1,10 @@
 {% metadata_file .yamato/project.metafile %}
 ---
 
-# Ubuntu is used for this job because of better performance for simple operations
+# Iterates through and packs all NGO projects listed
+# For this job no specific platform support and no running Unity instance is required so small agent will be used to save resources and speed up the process
 {% for project in projects.all -%}
-{% for platform in test_platforms.default -%}
+{% for platform in small_agent -%}
 project_pack_-_{{ project.name }}:
   name: Project Pack - {{ project.name }}
   agent:
@@ -11,7 +12,7 @@ project_pack_-_{{ project.name }}:
     image: {{ platform.image }}
     flavor: {{ platform.flavor }}
   commands:
-    - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
+    - npm install -g upm-ci-utils@stable --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - upm-ci project pack --project-path {{ project.path }}
   artifacts:
     packages:
