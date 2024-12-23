@@ -1,6 +1,3 @@
-# Defined version of UTR to use
-UTR_VERSION: 1.35.1
-
 # The small agent was created to handle jobs that don't involve running Unity (for example pack job).
 # It uses ubuntu since Linux VMs are faster and cheaper to provision than Mac or Windows Virtual Machines (VMs).
 # The b1.small flavour is nearly always sufficient for jobs that don’t involve running Unity.

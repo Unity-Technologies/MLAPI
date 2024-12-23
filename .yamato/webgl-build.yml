@@ -1,43 +1,64 @@
 {% metadata_file .yamato/project.metafile %}
 ---
 
+# Builds a player on WebGl standalone platform without executing any tests.
+# This setup performs build-only validation since WebGL runs in browser and for tests to be executed we would need to 
+# consider having a web server, browser automation and overall complex test setup.
+# Default project in this case is used as a context.
+# WebGL requires Il2cpp scripting backend
 {% for project in projects.default -%}
 {% for editor in validation_editors.all -%}
 {% for platform in test_platforms.default -%}
 webgl_build_{{ project.name }}_{{ editor }}:
-  name: WebGl Build - [{{ project.name }}, {{ editor }}]
+  name: WebGl Build - [{{ project.name }}, {{ editor }}, il2cpp]
   agent:
     type: {{ platform.type }}
     image: {{ platform.image }}
     flavor: {{ platform.flavor }}
   commands:
+    # Installing tools
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
-    # Download appropriate UTR based on platform
-{% if platform.name == "win" %}
-    - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
+      
+    # Platform specific UTR setup
+    - |
+{ % if platform.name == "win" % }
+  curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
 {% else %}
-    - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr
-    - chmod +x utr
+  curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr && chmod +x utr
 {% endif %}
+  
+    # Disabling Burst
     - python .yamato/disable-burst-if-requested.py --project-path {{ project.path }} --platform WebGL
-    - unity-downloader-cli -u {{ editor }} -c editor -c webgl -c il2cpp -w --fast
-    - set UTR_VERSION=1.35.1
-{% if platform.name == "win" %}
-    - utr.bat 
-{% else %} 
-    - ./utr {% endif %} --artifacts_path=artifacts --timeout=1800 --testproject={{ project.name }} --editor-location=.Editor --suite=playmode --platform=WebGL --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging"
+  
+    # Installing editor
+    - unity-downloader-cli -u {{ editor }} -c Editor -c webgl -c il2cpp -w --fast
+  
+    # Build Player
+    - |
+      {% if platform.name != "win" %}./{% endif %}utr \
+      --suite=playmode
+      --platform=WebGL
+      --artifacts_path=build/test-results \
+      --timeout=1800 \
+      --testproject={{ project.name }} \
+      --editor-location=.Editor \
+      --build-only \
+      --player-save-path=build/players\
+      --extra-editor-arg=-batchmode \
+      --extra-editor-arg=-nographics \
+      --scripting-backend=il2cpp \
+      --extra-editor-arg="-cloudEnvironment staging"
+      
   artifacts:
     logs:
       paths:
         - '*.log'
         - '*.xml'
-        - artifacts/**/*
         - testproject/Logs/**
         - testproject/Library/*.log
         - testproject/*.log
         - testproject/Builds/*.log
-        - build/test-results/**
-        - artifacts/**
+        - build/test-results/**/*
         - build/players/**
   variables:
     CI: true

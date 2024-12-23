@@ -46,8 +46,6 @@ desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{
     
     # Run Standalone tests
     - |
-      {% if platform.name == "win" %}set{% endif %}{% if platform.name != "win" %}export{% endif %} UTR_VERSION={{ UTR_VERSION }}
-      
       {% if platform.name != "win" %}./{% endif %}utr \
       --suite=playmode \
       --platform={{ platform.standalone }} \
