@@ -31,11 +31,15 @@ desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{
     
     # Build Player
     - |
-      {% if platform.name != "win" %}./{% endif %}utr \
+{% if platform.name == "win" %}
+      utr.bat \
+{% else %}
+      ./utr \
+{% endif %} 
       --suite=playmode \
       --platform={{ platform.standalone }} \
       --editor-location=.Editor \
-      --testproject={{ project.name }} \
+      --testproject={{ project.path }} \
       --player-save-path=build/players \
       --artifacts_path=build/logs \
       --scripting-backend={{ backend }} \
