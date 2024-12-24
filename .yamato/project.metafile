@@ -15,24 +15,24 @@ test_platforms:
           type: Unity::VM
           image: package-ci/ubuntu-22.04:v4
           flavor: b1.large
-          platform: StandaloneLinux64
+          standalone: StandaloneLinux64
     # Desktop platforms cover all main desktop platforms
     desktop:  
         - name: ubuntu
           type: Unity::VM
           image: package-ci/ubuntu-22.04:v4
           flavor: b1.large
-          platform: StandaloneLinux64
+          standalone: StandaloneLinux64
         - name: win
           type: Unity::VM
           image: package-ci/win10:v4
           flavor: b1.large
-          platform: StandaloneWindows64
+          standalone: StandaloneWindows64
         - name: mac
           type: Unity::VM::osx
           image: package-ci/macos-13:v4
           flavor: m1.mac
-          platform: StandaloneOSX
+          standalone: StandaloneOSX
     # Mobile platforms cover all main mobile devices. There is a split between the build and run phase so there is a need of splitting specification for both (since its different)
     mobile_build:
         # It would be simpler to build android app with ubuntu but the option with windows was chosen since it covers more users
@@ -40,49 +40,49 @@ test_platforms:
           type: Unity::VM
           image: package-ci/win10:v4
           flavor: b1.large
-          platform: Android
+          standalone: Android
         - name: ios
           type: Unity::VM::osx
           image: mobile-ci/ios:stable
           flavor: m1.mac
-          platform: IOS
+          standalone: IOS
     mobile_test:
         - name: android
           type: Unity::mobile::shield
           image: package-ci/ubuntu-22.04:v4
           flavor: b1.large
           model: ShieldPro
-          platform: Android
+          standalone: Android
         - name: ios
           type: Unity::mobile::iPhone
           image: package-ci/macos-13:v4
           flavor: m1.mac
           model: SE
-          platform: IOS
+          standalone: IOS
     # We should test on at least one more "exotic" platform. Nintendo Switch was chosen as it represents broadly console platforms
     console:
         - name: nintendoSwitch
           type: Unity::console::switch
           image: package-ci/win10-switch:v4
           flavor: b1.large
-          platform: Switch
+          standalone: Switch
         # Requires splitting
         - name: xboxOne
           type: Unity::console::xbox
           image: package-ci/win10-xbox
           flavor: b1.large
-          platform: GameCoreXboxOne
+          standalone: GameCoreXboxOne
         - name: ps4
           type: Unity::console::ps4
           image: package-ci/win10-ps4
           flavor: b1.large
-          platform: PS4
+          standalone: PS4
         # PS5 requires splitting like Android and IOS
         - name: ps5
           type: Unity::console::ps5
           image: package-ci/win10-ps5
           flavor: b1.large
-          platform: PS5
+          standalone: PS5
     Arm64:
         - name: mac-arm64
           type: Unity::VM::osx

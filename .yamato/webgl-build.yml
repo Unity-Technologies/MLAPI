@@ -36,22 +36,10 @@ webgl_build_{{ project.name }}_{{ editor }}:
     # Build Player
     - |
 {% if platform.name == "win" %}
-      utr.bat \
+      utr.bat --suite=playmode --platform=WebGL --artifacts_path=build/test-results --timeout=1800 --testproject={{ project.path }} --editor-location=.Editor --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging"
 {% else %}
-      ./utr \
+      ./utr --suite=playmode --platform=WebGL --artifacts_path=build/test-results --timeout=1800 --testproject={{ project.path }} --editor-location=.Editor --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging"
 {% endif %}
-      --suite=playmode \
-      --platform=WebGL \
-      --artifacts_path=build/test-results \
-      --timeout=1800 \
-      --testproject={{ project.path }} \
-      --editor-location=.Editor \
-      --build-only \
-      --player-save-path=build/players\
-      --extra-editor-arg=-batchmode \
-      --extra-editor-arg=-nographics \
-      --scripting-backend=il2cpp \
-      --extra-editor-arg="-cloudEnvironment staging"
       
   artifacts:
     logs:
