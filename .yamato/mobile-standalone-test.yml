@@ -45,7 +45,6 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
   variables:
     CI: true
     ENABLE_BURST_COMPILATION: False
-{% endif -%}
 {% endfor -%}
 {% endfor -%}
 {% endfor -%}
