@@ -53,8 +53,8 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
 {% for project in projects.default -%}
 {% for editor in validation_editors.all -%}
 {% for platform in test_platforms.mobile_test -%}
-{% if platform.name == "android" -%}
-run_{{ project.name }}_tests_{{ editor }}_android:
+{% if platform.name == "Android" -%}
+run_{{ project.name }}_tests_{{ editor }}_Android:
   name: Run {{ project.name }} Tests - [{{ editor }}, Android]
   agent:
     type: {{ platform.type }}
@@ -63,13 +63,16 @@ run_{{ project.name }}_tests_{{ editor }}_android:
   # Skip repository cloning
   skip_checkout: true
   commands:
+    # Download standalone UnityTestRunner
     - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
+      
     - |
+    # Connect to Android device
       set ANDROID_DEVICE_CONNECTION=%BOKKEN_DEVICE_IP%
       start %ANDROID_SDK_ROOT%\platform-tools\adb.exe connect %BOKKEN_DEVICE_IP%
       start %ANDROID_SDK_ROOT%\platform-tools\adb.exe devices
-      set UTR_VERSION=1.35.1
-      ./utr --suite=playmode  --platform=Android --editor-location=.Editor --testproject={{ project.name }} --player-load-path=build/players --artifacts_path=build/logs --scripting-backend=mono --reruncount=1 --player-connection-ip=%BOKKEN_HOST_IP%  --testfilter=Unity.Netcode.RuntimeTests
+    # Run the tests on the device
+      ./utr --suite=playmode  --platform=Android --editor-location=.Editor --testproject={{ project.path }} --player-load-path=build/players --artifacts_path=build/logs --scripting-backend=mono --reruncount=1 --player-connection-ip=%BOKKEN_HOST_IP%  --testfilter=Unity.Netcode.RuntimeTests
   artifacts:
     logs:
       paths:
@@ -83,22 +86,17 @@ run_{{ project.name }}_tests_{{ editor }}_android:
         - build/test-results/**
         - build/players/**
   dependencies:
-    - .yamato/mobile-build-and-test.yml#build_{{ project.name }}_{{ editor }}_android
+    - .yamato/mobile-standalone-test.yml#build_{{ project.name }}_{{ editor }}_Android
 {% endif -%}
 {% endfor -%}
 {% endfor -%}
 {% endfor -%}
   
-  
-  
-
-
-
 
 {% for project in projects.default -%}
 {% for editor in validation_editors.all -%}
 {% for platform in test_platforms.mobile_build -%}
-{% if platform.name == "ios" -%}
+{% if platform.name == "iOS" -%}
 run_{{ project.name }}_tests_{{ editor }}_iOS:
   name: Run {{ project.name }} Tests - [{{ editor }}, iOS]
   agent:
@@ -110,9 +108,8 @@ run_{{ project.name }}_tests_{{ editor }}_iOS:
     - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr
     # Give UTR execution permissions
     - chmod +x ./utr
-    # Run the test build on the device
-    - export UTR_VERSION=1.35.1
-    - ./utr -artifacts_path=artifacts --testproject={{ project.name }} --editor-location=.Editor --reruncount=1 --suite=playmode --platform=iOS --player-load-path=build/players --testfilter=Unity.Netcode.RuntimeTests
+    # Run the tests on the device
+    - ./utr -artifacts_path=artifacts --testproject={{ project.path }} --editor-location=.Editor --reruncount=1 --suite=playmode --platform=iOS --player-load-path=build/players --testfilter=Unity.Netcode.RuntimeTests
   artifacts:
     logs:
       paths:
@@ -124,11 +121,10 @@ run_{{ project.name }}_tests_{{ editor }}_iOS:
       - testproject/*.log
       - testproject/Builds/*.log
       - build/test-results/**
-      - artifacts/**
       - build/players/**
   # Set a dependency on the build job
   dependencies:
-    - .yamato/mobile-build-and-test.yml#build_{{ project.name }}_{{ editor }}_iOS
+    - .yamato/mobile-standalone-test.yml#build_{{ project.name }}_{{ editor }}_iOS
 {% endif -%}
 {% endfor -%}
 {% endfor -%}
