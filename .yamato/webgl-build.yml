@@ -36,9 +36,9 @@ webgl_build_{{ project.name }}_{{ editor }}:
     # Build Player
     - |
 {% if platform.name == "Win" %}
-      utr.bat --suite=playmode --platform=WebGL --artifacts_path=build/test-results --timeout=2700 --testproject={{ project.path }} --editor-location=.Editor --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging"
+      utr.bat --suite=playmode --platform=WebGL --artifacts_path=build/test-results --testproject={{ project.path }} --editor-location=.Editor --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging"
 {% else %}
-      ./utr --suite=playmode --platform=WebGL --artifacts_path=build/test-results --timeout=2700 --testproject={{ project.path }} --editor-location=.Editor --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging"
+      ./utr --suite=playmode --platform=WebGL --artifacts_path=build/test-results --testproject={{ project.path }} --editor-location=.Editor --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging"
 {% endif %}
       
   artifacts:
