@@ -21,7 +21,7 @@ webgl_build_{{ project.name }}_{{ editor }}:
       
     # Platform specific UTR setup
     - |
-{% if platform.name == "win" %}
+{% if platform.name == "Win" %}
       curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
 {% else %}
       curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr && chmod +x utr
@@ -35,7 +35,7 @@ webgl_build_{{ project.name }}_{{ editor }}:
   
     # Build Player
     - |
-{% if platform.name == "win" %}
+{% if platform.name == "Win" %}
       utr.bat --suite=playmode --platform=WebGL --artifacts_path=build/test-results --timeout=1800 --testproject={{ project.path }} --editor-location=.Editor --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging"
 {% else %}
       ./utr --suite=playmode --platform=WebGL --artifacts_path=build/test-results --timeout=1800 --testproject={{ project.path }} --editor-location=.Editor --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging"
