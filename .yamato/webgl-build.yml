@@ -22,9 +22,9 @@ webgl_build_{{ project.name }}_{{ editor }}:
     # Platform specific UTR setup
     - |
 {% if platform.name == "win" %}
-  curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
+      curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
 {% else %}
-  curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr && chmod +x utr
+      curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr && chmod +x utr
 {% endif %}
   
     # Disabling Burst
@@ -35,12 +35,16 @@ webgl_build_{{ project.name }}_{{ editor }}:
   
     # Build Player
     - |
-      {% if platform.name != "win" %}./{% endif %}utr \
-      --suite=playmode
-      --platform=WebGL
+{% if platform.name == "win" %}
+      utr.bat \
+{% else %}
+      ./utr \
+{% endif %}
+      --suite=playmode \
+      --platform=WebGL \
       --artifacts_path=build/test-results \
       --timeout=1800 \
-      --testproject={{ project.name }} \
+      --testproject={{ project.path }} \
       --editor-location=.Editor \
       --build-only \
       --player-save-path=build/players\

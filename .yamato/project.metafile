@@ -97,7 +97,6 @@ test_platforms:
     
 # Editors to be used for testing.
 # Since NGOv2 official support started from U6 it means that only those editors should be used for testing
-#Aren't we stopping support of 6000.0 when 6000.1 is released?
 validation_editors:
     default:
         - trunk
