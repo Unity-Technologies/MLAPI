@@ -7,8 +7,9 @@
 {% for project in projects.default -%}
 {% for editor in validation_editors.all -%}
 {% for platform in test_platforms.mobile_build -%}
-build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
-  name: Build {{ project.name }} - [{{ editor }}, {{ platform.name }}]
+{% for backend in scripting_backends -%}
+build_{{ project.name }}_{{ editor }}_{{ platform.name }}_{{ backend }}:
+  name: Build {{ project.name }} - [{{ editor }}, {{ platform.name }}, {{ backend }}]
   agent:
       type: {{ platform.type }}
       image: {{ platform.image }}
@@ -22,11 +23,11 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
 {% if platform.name == "Android" %}
     - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat 
     - python .yamato/disable-burst-if-requested.py --project-path {{ project.path }} --platform {{ platform.name }}
-    - utr.bat --suite=playmode --platform={{ platform.standalone }} --editor-location=.Editor --testproject={{ project.path }} --player-save-path=build/players --artifacts_path=build/logs --scripting-backend=mono --build-only --timeout=1800 --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testfilter=Unity.Netcode.RuntimeTests
+    - utr.bat --suite=playmode --platform={{ platform.standalone }} --editor-location=.Editor --testproject={{ project.path }} --player-save-path=build/players --artifacts_path=build/logs --scripting-backend={{ backend }} --build-only --timeout=1800 --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testfilter=Unity.Netcode.RuntimeTests
 {% else %}
     - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr
     - chmod +x ./utr
-    - ./utr --artifacts_path=artifacts --timeout=1800 --testproject={{ project.path }} --editor-location=.Editor --suite=playmode --platform={{ platform.standalone }} --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testfilter=Unity.Netcode.RuntimeTests
+    - ./utr --artifacts_path=artifacts --timeout=1800 --testproject={{ project.path }} --editor-location=.Editor --suite=playmode --platform={{ platform.standalone }} --scripting-backend={{ backend }} --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testfilter=Unity.Netcode.RuntimeTests
 {% endif %}
 
   artifacts:
@@ -48,14 +49,16 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
 {% endfor -%}
 {% endfor -%}
 {% endfor -%}
+{% endfor -%}
   
   
 {% for project in projects.default -%}
 {% for editor in validation_editors.all -%}
 {% for platform in test_platforms.mobile_test -%}
 {% if platform.name == "Android" -%}
-run_{{ project.name }}_tests_{{ editor }}_Android:
-  name: Run {{ project.name }} Tests - [{{ editor }}, Android]
+{% for backend in scripting_backends -%}
+run_{{ project.name }}_tests_{{ editor }}_Android_{{ backend }}:
+  name: Run {{ project.name }} Tests - [{{ editor }}, Android, {{ backend }}]
   agent:
     type: {{ platform.type }}
     image: {{ platform.image }}
@@ -70,7 +73,7 @@ run_{{ project.name }}_tests_{{ editor }}_Android:
     - start %ANDROID_SDK_ROOT%\platform-tools\adb.exe connect %BOKKEN_DEVICE_IP%
     - start %ANDROID_SDK_ROOT%\platform-tools\adb.exe devices
     # Run the tests on the device
-    - ./utr --suite=playmode  --platform=Android --editor-location=.Editor --testproject={{ project.path }} --player-load-path=build/players --artifacts_path=build/logs --scripting-backend=mono --reruncount=1 --player-connection-ip=%BOKKEN_HOST_IP%  --testfilter=Unity.Netcode.RuntimeTests
+    - ./utr --suite=playmode  --platform=Android --editor-location=.Editor --testproject={{ project.path }} --player-load-path=build/players --artifacts_path=build/logs --scripting-backend={{ backend }} --reruncount=1 --player-connection-ip=%BOKKEN_HOST_IP%  --testfilter=Unity.Netcode.RuntimeTests
   artifacts:
     logs:
       paths:
@@ -85,6 +88,7 @@ run_{{ project.name }}_tests_{{ editor }}_Android:
         - build/players/**
   dependencies:
     - .yamato/mobile-standalone-test.yml#build_{{ project.name }}_{{ editor }}_Android
+{% endfor -%}
 {% endif -%}
 {% endfor -%}
 {% endfor -%}
@@ -95,8 +99,9 @@ run_{{ project.name }}_tests_{{ editor }}_Android:
 {% for editor in validation_editors.all -%}
 {% for platform in test_platforms.mobile_build -%}
 {% if platform.name == "iOS" -%}
-run_{{ project.name }}_tests_{{ editor }}_iOS:
-  name: Run {{ project.name }} Tests - [{{ editor }}, iOS]
+{% for backend in scripting_backends -%}
+run_{{ project.name }}_tests_{{ editor }}_iOS_{{ backend }}:
+  name: Run {{ project.name }} Tests - [{{ editor }}, iOS, {{ backend }}]
   agent:
       type: {{ platform.type }}
       image: {{ platform.image }}
@@ -107,7 +112,7 @@ run_{{ project.name }}_tests_{{ editor }}_iOS:
     # Give UTR execution permissions
     - chmod +x ./utr
     # Run the tests on the device
-    - ./utr -artifacts_path=artifacts --testproject={{ project.path }} --editor-location=.Editor --reruncount=1 --suite=playmode --platform=iOS --player-load-path=build/players --testfilter=Unity.Netcode.RuntimeTests
+    - ./utr -artifacts_path=artifacts --testproject={{ project.path }} --scripting-backend={{ backend }} --editor-location=.Editor --reruncount=1 --suite=playmode --platform=iOS --player-load-path=build/players --testfilter=Unity.Netcode.RuntimeTests
   artifacts:
     logs:
       paths:
@@ -123,6 +128,7 @@ run_{{ project.name }}_tests_{{ editor }}_iOS:
   # Set a dependency on the build job
   dependencies:
     - .yamato/mobile-standalone-test.yml#build_{{ project.name }}_{{ editor }}_iOS
+{% endfor -%}
 {% endif -%}
 {% endfor -%}
 {% endfor -%}
