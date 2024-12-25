@@ -3,6 +3,7 @@
 
 # Executes PlayMode and EditMode tests of the NGO package in the Editor context
 {% for platform in test_platforms.desktop -%}
+{% if platform.name != "win-arm64" -%} # Recommended to use only after builds
 {% for editor in validation_editors.all -%}
 package_test_-_ngo_{{ editor }}_{{ platform.name }}:
   name : Package Test - NGO [{{ platform.name }}, {{ editor }}]
@@ -24,4 +25,5 @@ package_test_-_ngo_{{ editor }}_{{ platform.name }}:
   dependencies:
     - .yamato/package-pack.yml#package_pack_-_ngo
 {% endfor -%}
+{% endif -%}
 {% endfor -%}

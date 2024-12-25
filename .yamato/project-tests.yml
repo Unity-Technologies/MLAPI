@@ -6,6 +6,7 @@
 {% for project in projects.all -%}
 {% if project.has_tests == "true" -%}
 {% for platform in test_platforms.desktop -%}
+{% if platform.name != "win-arm64" -%} # Recommended to use only after builds
 {% for editor in validation_editors.all -%}
 test_{{ project.name }}_{{ platform.name }}_{{ editor }}:
   name : Project Test - NGO {{ project.name }} [{{ platform.name }}, {{ editor }}]
@@ -27,6 +28,7 @@ test_{{ project.name }}_{{ platform.name }}_{{ editor }}:
   dependencies:
     - .yamato/project-pack.yml#project_pack_-_{{ project.name }}
 {% endfor -%}
+{% endif -%}
 {% endfor -%}
 {% endif -%}
 {% endfor -%}

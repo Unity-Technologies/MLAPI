@@ -8,11 +8,12 @@
 # WebGL requires Il2cpp scripting backend
 {% for project in projects.default -%}
 {% for platform in test_platforms.desktop -%}
+{% if platform.name != "win-arm64" -%} # Recommended to use only after builds
 {% for editor in validation_editors.all -%}
 webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}:
   name: WebGl Build - {{ project.name }} [{{ platform.name }}, {{ editor }}, il2cpp]
   agent:
-    type: {{ platform.type }}
+    type: {% if platform.base == "mac" %} {{ platform.type }} {% else %} {{ platform.type }}::GPU {% endif %}
     image: {{ platform.image }}
     flavor: {{ platform.flavor }}
 {% if platform.model %}
@@ -39,9 +40,9 @@ webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}:
     # Build Player
     - |
 {% if platform.base == "win" %}
-      utr.bat --suite=playmode --platform=WebGL --artifacts_path=build/test-results --testproject={{ project.path }} --editor-location=.Editor --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging"
+      utr.bat --suite=playmode --platform=WebGL --artifacts_path=build/test-results --testproject={{ project.path }} --editor-location=.Editor --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging" --extra-editor-arg=-nographics {% if platform.base == "mac" %} --extra-editor-arg=-disable-gpu-skinning {% endif %}
 {% else %}
-      ./utr --suite=playmode --platform=WebGL --artifacts_path=build/test-results --testproject={{ project.path }} --editor-location=.Editor --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging"
+      ./utr --suite=playmode --platform=WebGL --artifacts_path=build/test-results --testproject={{ project.path }} --editor-location=.Editor --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging" --extra-editor-arg=-nographics {% if platform.base == "mac" %} --extra-editor-arg=-disable-gpu-skinning {% endif %}
 {% endif %}
       
   artifacts:
@@ -59,5 +60,6 @@ webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}:
     CI: true
     ENABLE_BURST_COMPILATION: False
 {% endfor -%}
+{% endif -%}
 {% endfor -%}
 {% endfor -%}
