@@ -18,6 +18,7 @@ test_{{ project.name }}_{{ platform.name }}_{{ editor }}:
 {% endif %}
   commands:
     - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
+    - unity-downloader-cli {% if platform.extension == "arm64" %} --arch arm64 {% endif %} -u {{ editor }} -c Editor --fast --wait
     - {% if platform.name == "Ubuntu" %}DISPLAY=:0 && {% endif %}upm-ci project test -u {{ editor }} --project-path {{ project.path }} --type project-tests
   artifacts:
     logs:

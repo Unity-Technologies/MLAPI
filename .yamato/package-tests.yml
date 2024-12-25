@@ -15,6 +15,7 @@ package_test_-_ngo_{{ editor }}_{{ platform.name }}:
 {% endif %}
   commands:
     - npm install -g upm-ci-utils@stable --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
+    - unity-downloader-cli {% if platform.extension == "arm64" %} --arch arm64 {% endif %} -u {{ editor }} -c Editor --fast --wait
     - {% if platform.name == "ubuntu" %}DISPLAY=:0 {% endif %}upm-ci package test -u {{ editor }} --package-path com.unity.netcode.gameobjects --type package-tests
   artifacts:
     logs:
