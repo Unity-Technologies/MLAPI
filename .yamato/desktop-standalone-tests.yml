@@ -10,7 +10,7 @@
 desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{ editor }}:
   name : Standalone Tests - NGO {{ project.name }} - [{{ platform.name }}, {{ editor }}, {{ backend }}]
   agent:
-    type: {% if platform.name == "mac" or platform.name == "mac-arm64" %} {{ platform.type }} {% else %} {{ platform.type }}::GPU {% endif %}
+    type: {% if platform.name | downcase contains "mac" %} {{ platform.type }} {% else %} {{ platform.type }}::GPU {% endif %}
     image: {{ platform.image }}
     flavor: {{ platform.flavor }}
 {% if platform.model %}
@@ -18,7 +18,7 @@ desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{
 {% endif %}
   commands:
     # Installing tools
-{% if platform.name == "ubuntu" %}
+{% if platform.name | downcase contains "ubuntu" %}
     - sudo apt-get update -q
     - sudo apt install -qy imagemagick
 {% endif %}
@@ -27,18 +27,22 @@ desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{
   
     # Platform specific UTR setup
     - |
-{% if platform.name == "win" %}
+{% if platform.name | downcase contains "win" %}
       curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
 {% else %}
       curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr && chmod +x utr
 {% endif %}
     
     # Installing editor
+{% if platform.name | downcase contains "arm64" %}
+    - unity-downloader-cli --arch arm64 -u {{ editor }} -c Editor {% if backend == "il2cpp" %} -c il2cpp {% endif %} --fast --wait
+{% else %}
     - unity-downloader-cli -u {{ editor }} -c Editor {% if backend == "il2cpp" %} -c il2cpp {% endif %} --fast --wait
+{% endif %}
     
     # Build Player
     - |
-{% if platform.name == "win" %}
+{% if platform.name | downcase contains "win" %}
       utr --suite=playmode --platform={{ platform.standalone }} --editor-location=.Editor --testproject={{ project.path }} --player-save-path=build/players --artifacts_path=build/logs --scripting-backend={{ backend }} --build-only --testfilter=Unity.Netcode.RuntimeTests --extra-editor-arg=-batchmode --extra-editor-arg=-nographics
 {% else %}
       ./utr --suite=playmode --platform={{ platform.standalone }} --editor-location=.Editor --testproject={{ project.path }} --player-save-path=build/players --artifacts_path=build/logs --scripting-backend={{ backend }} --build-only --testfilter=Unity.Netcode.RuntimeTests --extra-editor-arg=-batchmode --extra-editor-arg=-nographics
@@ -46,7 +50,7 @@ desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{
     
     # Run Standalone tests
     - |
-{% if platform.name == "win" %}
+{% if platform.name | downcase contains "win" %}
       utr --suite=playmode --platform={{ platform.standalone }} --player-load-path=build/players --artifacts_path=build/test-results --scripting-backend={{ backend }} --testfilter=Unity.Netcode.RuntimeTests --playergraphicsapi=Null
 {% else %}
       ./utr --suite=playmode --platform={{ platform.standalone }} --player-load-path=build/players --artifacts_path=build/test-results --scripting-backend={{ backend }} --testfilter=Unity.Netcode.RuntimeTests --playergraphicsapi=Null
