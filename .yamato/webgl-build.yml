@@ -7,9 +7,9 @@
 # Default project in this case is used as a context.
 # WebGL requires Il2cpp scripting backend
 {% for project in projects.default -%}
-{% for platform in test_platforms.all -%}
+{% for platform in test_platforms.desktop -%}
 {% for editor in validation_editors.all -%}
-webgl_build_{{ project.name }}_{{ editor }}:
+webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}:
   name: WebGl Build - {{ project.name }} [{{ platform.name }}, {{ editor }}, il2cpp]
   agent:
     type: {{ platform.type }}

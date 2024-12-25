@@ -6,8 +6,8 @@
 {% for platform in test_platforms.default -%}
 {% for project in projects.all -%}
 {% for editor in validation_editors.default -%}
-standards_{{ platform.name }}:
-  name: Standards Check - NGO [{{ platform.name }}, {{ project.name }}]
+standards_{{ platform.name }}_{{ project.name }}_{{ editor }}:
+  name: Standards Check - NGO [{{ platform.name }}, {{ project.name }}, {{ editor }}]
   agent:
     type: {{ platform.type }}
     image: {{ platform.image }}

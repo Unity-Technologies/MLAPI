@@ -4,10 +4,10 @@
 # Executes PlayMode and EditMode tests of the given project in the Editor context
 # Those tests don't include NGO package tests since they are handled on their respective jobs.
 {% for project in projects.all -%}
-{% if project.has_tests=="true" -%}
+{% if project.has_tests == "true" -%}
 {% for platform in test_platforms.desktop -%}
 {% for editor in validation_editors.all -%}
-test_{{ project.name }}_{{ editor }}_{{ platform.name }}:
+test_{{ project.name }}_{{ platform.name }}_{{ editor }}:
   name : Project Test - NGO {{ project.name }} [{{ platform.name }}, {{ editor }}]
   agent:
     type: {{ platform.type }}
