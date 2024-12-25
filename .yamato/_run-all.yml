@@ -56,7 +56,18 @@ run_all_webgl_builds:
 {% endfor -%}
 {% endfor -%}
 
-
+run_all_project_tests_desktop_standalone:
+  name: Run All Standalone Tests - Desktop
+  dependencies:
+{% for project in projects.default -%}
+{% for platform in test_platforms.desktop -%}
+{% for editor in validation_editors.all -%}
+{% for backend in scripting_backends -%}
+  - .yamato/desktop-standalone-tests.yml#desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{ editor }}
+{% endfor -%}
+{% endfor -%}
+{% endfor -%}
+{% endfor -%}
 
 
 
@@ -150,20 +161,7 @@ run_all_webgl_builds:
 #{% endfor -%}
 #{% endfor -%}
 #
-#all_project_tests_desktop_standalone:
-#  name: Run All Project Tests - Desktop Standalone
-#  dependencies:
-#{% for platform in test_platforms -%}
-#{% for project in projects -%}
-#{% if project.has_tests == "true" -%}
-#{% for editor in project.test_editors -%}
-#{% for backend in scripting_backends -%}
-#    - .yamato/standalone-project-tests.yml#standalone_tests_{{ project.name }}_{{ backend }}_{{ editor }}_{{ platform.name }}
-#{% endfor -%}
-#{% endfor -%}
-#{% endif -%}
-#{% endfor -%}
-#{% endfor -%}
+
 #
 #all_project_tests_mobile:
 #  name: Run All Project Tests - Mobile
