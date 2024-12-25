@@ -2,7 +2,7 @@
 # It uses ubuntu since Linux VMs are faster and cheaper to provision than Mac or Windows Virtual Machines (VMs).
 # The b1.small flavour is nearly always sufficient for jobs that don’t involve running Unity.
 small_agent: 
-    - name: Ubuntu
+    - name: ubuntu
       type: Unity::VM
       image: package-ci/ubuntu-22.04:v4
       flavor: b1.small
@@ -11,89 +11,101 @@ small_agent:
 test_platforms:
     # Default platform is used for all basic jobs. Ubuntu was chosen since it's fastest and most available
     default:
-        - name: Ubuntu
+        - name: ubuntu
           type: Unity::VM
           image: package-ci/ubuntu-22.04:v4
           flavor: b1.large
           standalone: StandaloneLinux64
     # Desktop platforms cover all main desktop platforms
     desktop:  
-        - name: Ubuntu
+        - name: ubuntu
           type: Unity::VM
           image: package-ci/ubuntu-22.04:v4
           flavor: b1.large
           standalone: StandaloneLinux64
-        - name: Win
+        - name: win
           type: Unity::VM
           image: package-ci/win10:v4
           flavor: b1.large
           standalone: StandaloneWindows64
-        - name: Mac
+        - name: mac
           type: Unity::VM::osx
           image: package-ci/macos-13:v4
           flavor: m1.mac
           standalone: StandaloneOSX
+          model: default
+        - name: mac-arm64
+          type: Unity::VM::osx
+          image: package-ci/macos-13-arm64:v4
+          flavor: m1.mac
+          standalone: StandaloneOSX
+          model: M1
+        - name: windows-arm64
+          type: Unity::VM::Azure
+          image: package-ci/win11-arm64:v4
+          flavor: b1.large
+          standalone: StandaloneWindows64
+          model: arm
     # Mobile platforms cover all main mobile devices. There is a split between the build and run phase so there is a need of splitting specification for both (since its different)
     mobile_build:
         # It would be simpler to build android app with ubuntu but the option with windows was chosen since it covers more users
-        - name: Android
+        - name: android
           type: Unity::VM
           image: package-ci/win10:v4
           flavor: b1.large
           standalone: Android
-        - name: iOS
+        - name: ios
           type: Unity::VM::osx
           image: package-ci/macos-13:v4
           flavor: m1.mac
           standalone: IOS
     mobile_test:
-        - name: Android
+        - name: android
           type: Unity::mobile::shield
-          image: package-ci/win10:v4
+          image: package-ci/ubuntu-22.04:v4
           flavor: b1.large
           model: ShieldPro
           standalone: Android
-        - name: iOS
+        - name: ios
           type: Unity::mobile::iPhone
           image: package-ci/macos-13:v4
           flavor: m1.mac
           model: SE
           standalone: IOS
     # We should test on at least one more "exotic" platform. Nintendo Switch was chosen as it represents broadly console platforms
-    console:
-        - name: NintendoSwitch
+    console_no_split:
+        - name: nintendoSwitch
           type: Unity::console::switch
           image: package-ci/win10-switch:v4
           flavor: b1.large
           standalone: Switch
-        # Requires splitting
-        - name: XboxOne
-          type: Unity::console::xbox
-          image: package-ci/win10-xbox
-          flavor: b1.large
-          standalone: GameCoreXboxOne
-        - name: Ps4
+        - name: ps4
           type: Unity::console::ps4
           image: package-ci/win10-ps4
           flavor: b1.large
           standalone: PS4
-        # PS5 requires splitting like Android and IOS
-        - name: Ps5
+    console_build:
+        - name: xboxOne
+          type: Unity::console::xbox
+          image: package-ci/win10-xbox
+          flavor: b1.large
+          standalone: GameCoreXboxOne
+        - name: ps5
           type: Unity::console::ps5
           image: package-ci/win10-ps5
           flavor: b1.large
           standalone: PS5
-    Arm64:
-        - name: Mac-arm64
-          type: Unity::VM::osx
-          image: package-ci/macos-13-arm64:v4
-          flavor: m1.mac
-          model: M1
-        - name: Android-arm64
-          type: Unity::VM::Azure
-          image: package-ci/win11-arm64:v4
+    console_test:
+        - name: xboxOne
+          type: Unity::console::xbox
+          image: package-ci/win10-xbox
           flavor: b1.large
-          model: arm
+          standalone: GameCoreXboxOne
+        - name: ps5
+          type: Unity::console::ps5
+          image: package-ci/win10-ps5
+          flavor: b1.large
+          standalone: PS5
     
 # Editors to be used for testing.
 # Since NGOv2 official support started from U6 it means that only those editors should be used for testing

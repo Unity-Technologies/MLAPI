@@ -2,8 +2,8 @@
 ---
 
 # Executes PlayMode and EditMode tests of the NGO package in the Editor context
-{% for editor in validation_editors.all -%}
 {% for platform in test_platforms.desktop -%}
+{% for editor in validation_editors.all -%}
 package_test_-_ngo_{{ editor }}_{{ platform.name }}:
   name : Package Test - NGO [{{ platform.name }}, {{ editor }}]
   agent:
