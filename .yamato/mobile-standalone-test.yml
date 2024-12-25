@@ -21,11 +21,7 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
       
     # Installing editor
-{% if platform.extension == "arm64" %}
-    - unity-downloader-cli --arch arm64 -u {{ editor }} -c Editor {% if backend == "il2cpp" %} -c il2cpp {% endif %} --fast --wait
-{% else %}
-    - unity-downloader-cli -u {{ editor }} -c Editor {% if backend == "il2cpp" %} -c il2cpp {% endif %} --fast --wait
-{% endif %}
+    - unity-downloader-cli {% if platform.extension == "arm64" %} --arch arm64 {% endif %} -u {{ editor }} -c Editor {% if backend == "il2cpp" %} -c il2cpp {% endif %} {% if platform.base == "mac" %} -c ios {% endif %} {% if platform.base == "win" %} -c android {% endif %} --fast --wait
     
     # Platform specific Build
 {% if platform.base == "win" %}
