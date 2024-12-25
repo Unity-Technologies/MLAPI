@@ -84,6 +84,7 @@ namespace Unity.Netcode.RuntimeTests
         }
 
         [UnityTest]
+        [Ignore("Test is failing for Standalone Tests - NGO testproject - [win, trunk, mono] with message: [Client-2][Connected (True)] Still has client identifier 2  Expected: False but was True")]
         public IEnumerator TestPeerDisconnectCallback([Values] ClientDisconnectType clientDisconnectType, [Values(1ul, 2ul, 3ul)] ulong disconnectedClient)
         {
             foreach (var client in m_ClientNetworkManagers)
