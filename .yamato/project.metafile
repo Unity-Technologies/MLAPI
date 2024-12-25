@@ -16,6 +16,8 @@ test_platforms:
           image: package-ci/ubuntu-22.04:v4
           flavor: b1.large
           standalone: StandaloneLinux64
+          base: ubuntu
+          extension: default
     # Desktop platforms cover all main desktop platforms
     desktop:  
         - name: ubuntu
@@ -23,29 +25,39 @@ test_platforms:
           image: package-ci/ubuntu-22.04:v4
           flavor: b1.large
           standalone: StandaloneLinux64
+          base: ubuntu
+          extension: default
         - name: win
           type: Unity::VM
           image: package-ci/win10:v4
           flavor: b1.large
           standalone: StandaloneWindows64
+          base: win
+          extension: default
         - name: mac
           type: Unity::VM::osx
           image: package-ci/macos-13:v4
           flavor: m1.mac
           standalone: StandaloneOSX
           model: default
+          base: mac
+          extension: default
         - name: mac-arm64
           type: Unity::VM::osx
           image: package-ci/macos-13-arm64:v4
           flavor: m1.mac
           standalone: StandaloneOSX
           model: M1
+          base: mac
+          extension: arm64
         - name: windows-arm64
           type: Unity::VM::Azure
           image: package-ci/win11-arm64:v4
           flavor: b1.large
           standalone: StandaloneWindows64
           model: arm
+          base: win
+          extension: arm64
     # Mobile platforms cover all main mobile devices. There is a split between the build and run phase so there is a need of splitting specification for both (since its different)
     mobile_build:
         # It would be simpler to build android app with ubuntu but the option with windows was chosen since it covers more users
