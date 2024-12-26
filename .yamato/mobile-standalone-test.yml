@@ -65,6 +65,9 @@ run_{{ project.name }}_tests_{{ editor }}_android:
     type: {{ platform.type }}
     image: {{ platform.image }}
     flavor: {{ platform.flavor }}
+{% if platform.model %}
+    model: {{ platform.model }}
+{% endif %}
   # Skip repository cloning
   skip_checkout: true
   commands:
@@ -106,6 +109,9 @@ run_{{ project.name }}_tests_{{ editor }}_ios:
       type: {{ platform.type }}
       image: {{ platform.image }}
       flavor: {{ platform.flavor }}
+{% if platform.model %}
+      model: {{ platform.model }}
+{% endif %}
   commands:
     # Download standalone UnityTestRunner
     - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr
