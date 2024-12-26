@@ -31,7 +31,6 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
     - chmod +x ./utr
     - ./utr --artifacts_path=artifacts --testproject={{ project.path }} --architecture={{ platform.architecture }} --editor-location=.Editor --reruncount=1 --suite=playmode --platform={{ platform.standalone }} --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testfilter=Unity.Netcode.RuntimeTests --extra-editor-arg=!Performance --extra-editor-arg=-testCategory
 {% endif %}
-
   artifacts:
     logs:
       paths:
@@ -57,7 +56,7 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
 {% for editor in validation_editors.all -%}
 {% for platform in test_platforms.mobile_test -%}
 {% if platform.standalone == "Android" -%}
-run_{{ project.name }}_tests_{{ editor }}_android:
+run_{{ project.name }}_tests_{{ editor }}_{{ platform.name }}:
   name: Run {{ project.name }} Tests - [{{ editor }}, android, il2cpp]
   agent:
     type: {{ platform.type }}
@@ -91,7 +90,7 @@ run_{{ project.name }}_tests_{{ editor }}_android:
         - build/test-results/**
         - build/players/**
   dependencies:
-    - .yamato/mobile-standalone-test.yml#build_{{ project.name }}_{{ editor }}_android
+    - .yamato/mobile-standalone-test.yml#build_{{ project.name }}_{{ editor }}_{{ platform.name }}
 {% endif -%}
 {% endfor -%}
 {% endfor -%}
@@ -103,7 +102,7 @@ run_{{ project.name }}_tests_{{ editor }}_android:
 {% for editor in validation_editors.all -%}
 {% for platform in test_platforms.mobile_build -%}
 {% if platform.standalone == "IOS" -%}
-run_{{ project.name }}_tests_{{ editor }}_ios:
+run_{{ project.name }}_tests_{{ editor }}_{{ platform.name }}:
   name: Run {{ project.name }} Tests - [{{ editor }}, ios, il2cpp]
   agent:
       type: {{ platform.type }}
@@ -133,7 +132,7 @@ artifacts:
       - build/players/**
   # Set a dependency on the build job
   dependencies:
-    - .yamato/mobile-standalone-test.yml#build_{{ project.name }}_{{ editor }}_ios
+    - .yamato/mobile-standalone-test.yml#build_{{ project.name }}_{{ editor }}_{{ platform.name }}
 {% endif -%}
 {% endfor -%}
 {% endfor -%}
