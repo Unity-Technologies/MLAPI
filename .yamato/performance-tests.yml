@@ -37,26 +37,16 @@ performance_editor_tests_-_NGO_{{ platform.name }}_{{ editor }}_no_data_reportin
       - ./utr --artifacts-path=artifacts --timeout=3600 --testproject={{ project.path }} --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --suite=editor --dontreportperformancedata --extra-editor-arg=-assemblyNames --extra-editor-arg=Unity.NetCode.* --extra-editor-arg=-testCategory --extra-editor-arg=Performance --extra-editor-arg=-enablePackageManagerTraces
 {% endif %}
   artifacts:
-    CrashDumps:
-    paths:
-      - CrashDumps/**
-  logs:
-    paths:
-      - '*.log'
-      - '*.xml'
-      - artifacts/**/*
-      - {{ project.path }}/Logs/**
-      - {{ project.path }}/Library/*.log
-      - {{ project.path }}/*.log
-      - {{ project.path }}/Builds/*.log
-      - build/test-results/**
-    browsable: onNonSuccess
-  players:
-    paths:
-      - build/players/**
-    browsable: onDemand
-  variables:
-    CI: true
+    logs:
+      paths:
+        - '*.log'
+        - '*.xml'
+        - artifacts/**/*
+        - {{ project.path }}/Logs/**
+        - {{ project.path }}/Library/*.log
+        - {{ project.path }}/*.log
+        - {{ project.path }}/Builds/*.log
+        - build/test-results/**
 {% endfor -%}
 {% endfor -%}
 {% endfor -%}
