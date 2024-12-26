@@ -4,34 +4,32 @@
 # Builds a player on mobile standalone platform and executes PlayMode tests of the NGO package in the Standalone build
 # Only Package tests are being executed in the context of the default project
 # For mobile devices it's necessary to split build and run phases
+# For iOS we need to use il2cpp. For android we could use both but il2cpp should be recommended 
 {% for project in projects.default -%}
 {% for editor in validation_editors.all -%}
 {% for platform in test_platforms.mobile_build -%}
 build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
-  name: Build {{ project.name }} - [{{ editor }}, {{ platform.name }}]
+  name: Build {{ project.name }} - [{{ editor }}, {{ platform.name }}, il2cpp]
   agent:
       type: {{ platform.type }}
       image: {{ platform.image }}
       flavor: {{ platform.flavor }}
-{% if platform.model %}
-      model: {{ platform.model }}
-{% endif %}
   commands:
     # Installing tools
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
       
     # Installing editor
-    - unity-downloader-cli {% if platform.extension == "arm64" %} --arch arm64 {% endif %} -u {{ editor }} -c Editor {% if backend == "il2cpp" %} -c il2cpp {% endif %} {% if platform.base == "mac" %} -c ios {% endif %} {% if platform.base == "win" %} -c android {% endif %} --fast --wait
+    - unity-downloader-cli {% if platform.architecture == "arm64" %} --arch arm64 {% endif %} -u {{ editor }} -c Editor -c il2cpp {% if platform.base == "mac" %} -c ios {% else %} -c android {% endif %} --fast --wait
     
     # Platform specific Build
 {% if platform.base == "win" %}
     - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat 
     - python .yamato/disable-burst-if-requested.py --project-path {{ project.path }} --platform {{ platform.name }}
-    - utr.bat --suite=playmode --platform={{ platform.standalone }} --editor-location=.Editor --testproject={{ project.path }} --player-save-path=build/players --artifacts_path=build/logs --scripting-backend=mono --build-only --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testfilter=Unity.Netcode.RuntimeTests
+    - utr.bat --suite=playmode --platform={{ platform.standalone }} --architecture={{ platform.architecture }} --editor-location=.Editor --testproject={{ project.path }} --reruncount=1 --player-save-path=build/players --artifacts_path=build/logs --scripting-backend=mono --build-only --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testfilter=Unity.Netcode.RuntimeTests --extra-editor-arg=!Performance --extra-editor-arg=-testCategory
 {% else %}
     - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr
     - chmod +x ./utr
-    - ./utr --artifacts_path=artifacts --testproject={{ project.path }} --editor-location=.Editor --suite=playmode --platform={{ platform.standalone }} --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testfilter=Unity.Netcode.RuntimeTests
+    - ./utr --artifacts_path=artifacts --testproject={{ project.path }} --architecture={{ platform.architecture }} --editor-location=.Editor --reruncount=1 --suite=playmode --platform={{ platform.standalone }} --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testfilter=Unity.Netcode.RuntimeTests --extra-editor-arg=!Performance --extra-editor-arg=-testCategory
 {% endif %}
 
   artifacts:
@@ -58,9 +56,9 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
 {% for project in projects.default -%}
 {% for editor in validation_editors.all -%}
 {% for platform in test_platforms.mobile_test -%}
-{% if platform.name == "android" -%}
+{% if platform.standalone == "Android" -%}
 run_{{ project.name }}_tests_{{ editor }}_android:
-  name: Run {{ project.name }} Tests - [{{ editor }}, android, mono]
+  name: Run {{ project.name }} Tests - [{{ editor }}, android, il2cpp]
   agent:
     type: {{ platform.type }}
     image: {{ platform.image }}
@@ -71,32 +69,15 @@ run_{{ project.name }}_tests_{{ editor }}_android:
   # Skip repository cloning
   skip_checkout: true
   commands:
-{% if platform.base == "win" %}
-    # Download standalone UnityTestRunner
-    - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
-  
-    # Connect to Android device
-    - set ANDROID_DEVICE_CONNECTION=%BOKKEN_DEVICE_IP%
-    - start %ANDROID_SDK_ROOT%\platform-tools\adb.exe connect %BOKKEN_DEVICE_IP%
-    - start %ANDROID_SDK_ROOT%\platform-tools\adb.exe devices
-  
-    # Run the tests on the device
-    - utr --suite=playmode  --platform=Android --editor-location=.Editor --testproject={{ project.path }} --player-load-path=build/players --artifacts_path=build/logs --scripting-backend=mono --reruncount=1 --player-connection-ip=%BOKKEN_HOST_IP%  --testfilter=Unity.Netcode.RuntimeTests
-
-{% else %}
     # Download standalone UnityTestRunner
     - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr && chmod +x utr
   
     # Connect to Android device
     - export ANDROID_DEVICE_CONNECTION=${BOKKEN_DEVICE_IP}
-    - ${ANDROID_SDK_ROOT}/platform-tools/adb connect ${BOKKEN_DEVICE_IP}
-    - ${ANDROID_SDK_ROOT}/platform-tools/adb devices
   
     # Run the tests on the device
-    - ./utr --suite=playmode  --platform=Android --editor-location=.Editor --testproject={{ project.path }} --player-load-path=build/players --artifacts_path=build/logs --scripting-backend=mono --reruncount=1 --player-connection-ip=%BOKKEN_HOST_IP%  --testfilter=Unity.Netcode.RuntimeTests
-
+    - ./utr --suite=playmode  --platform=Android --editor-location=.Editor --architecture={{ platform.architecture }} --testproject={{ project.path }} --player-load-path=build/players --artifacts_path=build/logs --scripting-backend=il2cpp --extra-editor-arg=-testCategory --extra-editor-arg=!Performance --reruncount=1 --clean-library-on-rerun --player-connection-ip=%BOKKEN_HOST_IP%  --testfilter=Unity.Netcode.RuntimeTests
 {% endif %}
-
   artifacts:
     logs:
       paths:
@@ -116,11 +97,12 @@ run_{{ project.name }}_tests_{{ editor }}_android:
 {% endfor -%}
 {% endfor -%}
   
+  
 # iOS only supports Il2cpp scripting backend
 {% for project in projects.default -%}
 {% for editor in validation_editors.all -%}
 {% for platform in test_platforms.mobile_build -%}
-{% if platform.name == "ios" -%}
+{% if platform.standalone == "IOS" -%}
 run_{{ project.name }}_tests_{{ editor }}_ios:
   name: Run {{ project.name }} Tests - [{{ editor }}, ios, il2cpp]
   agent:
@@ -136,8 +118,8 @@ run_{{ project.name }}_tests_{{ editor }}_ios:
     # Give UTR execution permissions
     - chmod +x ./utr
     # Run the tests on the device
-    - ./utr -artifacts_path=artifacts --testproject={{ project.path }} --editor-location=.Editor --reruncount=1 --suite=playmode --platform=iOS --player-load-path=build/players --testfilter=Unity.Netcode.RuntimeTests
-  artifacts:
+    - ./utr -artifacts_path=artifacts --testproject={{ project.path }} --editor-location=.Editor --reruncount=1 --suite=playmode --platform=iOS --player-load-path=build/players --testfilter=Unity.Netcode.RuntimeTests --architecture={{ platform.architecture }} --scripting-backend=il2cpp --extra-editor-arg=-testCategory --extra-editor-arg=!Performance --clean-library-on-rerun --player-connection-ip=%BOKKEN_HOST_IP%   
+artifacts:
     logs:
       paths:
       - '*.log'

@@ -60,39 +60,53 @@ test_platforms:
           extension: arm64
     # Mobile platforms cover all main mobile devices. There is a split between the build and run phase so there is a need of splitting specification for both (since its different)
     mobile_build:
-        # It would be simpler to build android app with ubuntu but the option with windows was chosen since it covers more users. Normal windows used for builds on Android and ARM64 for iOS. No iOS Arm64 building since there is no OpenCL support
-        - name: android
+        - name: android-armV7
           type: Unity::VM
           image: package-ci/win10:v4
           flavor: b1.large
           standalone: Android
           base: win
-          extension: default
-        - name: ios 
+          architecture: armv7
+        - name: android-arm64
+          type: Unity::VM
+          image: package-ci/win10:v4
+          flavor: b1.large
+          standalone: Android
+          base: win
+          architecture: arm64
+        # iOS modern builds are ARM64-only, thus no testing with armv7 (as in android case)
+        - name: ios-arm64
           type: Unity::VM::osx
           image: package-ci/macos-13:v4
           flavor: m1.mac
           standalone: IOS
-          model: default
           base: mac
-          extension: default
+          architecture: arm64
     mobile_test:
-        - name: android
+        - name: android-armV7
           type: Unity::mobile::shield
           image: package-ci/ubuntu-22.04:v4
           flavor: b1.large
           model: ShieldPro
           standalone: Android
           base: ubuntu
-          extension: default
-        - name: ios
+          architecture: armv7
+        - name: android-arm64
+          type: Unity::mobile::shield
+          image: package-ci/ubuntu-22.04:v4
+          flavor: b1.large
+          model: ShieldPro
+          standalone: Android
+          base: ubuntu
+          architecture: arm64
+        - name: ios-arm64
           type: Unity::mobile::iPhone
           image: package-ci/macos-13:v4
           flavor: m1.mac
           model: SE
           standalone: IOS
           base: mac
-          extension: default
+          architecture: arm64
     # We should test on at least one more "exotic" platform. Nintendo Switch was chosen as it represents broadly console platforms
     console_no_split:
         - name: nintendoSwitch
