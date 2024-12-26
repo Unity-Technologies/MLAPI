@@ -22,8 +22,8 @@ run_all_project_tests:
 {% for editor in validation_editors.all -%}
   - .yamato/project-tests.yml#test_{{ project.name }}_{{ platform.name }}_{{ editor }}
 {% endfor -%}
-{% endif -%}
 {% endfor -%}
+{% endif -%}
 {% endfor -%}
 
 
