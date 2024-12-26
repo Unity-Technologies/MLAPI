@@ -58,9 +58,9 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
 {% for project in projects.default -%}
 {% for editor in validation_editors.all -%}
 {% for platform in test_platforms.mobile_test -%}
-{% if platform.name == "Android" -%}
-run_{{ project.name }}_tests_{{ editor }}_Android:
-  name: Run {{ project.name }} Tests - [{{ editor }}, Android, mono]
+{% if platform.name == "android" -%}
+run_{{ project.name }}_tests_{{ editor }}_android:
+  name: Run {{ project.name }} Tests - [{{ editor }}, android, mono]
   agent:
     type: {{ platform.type }}
     image: {{ platform.image }}
@@ -89,7 +89,7 @@ run_{{ project.name }}_tests_{{ editor }}_Android:
         - build/test-results/**
         - build/players/**
   dependencies:
-    - .yamato/mobile-standalone-test.yml#build_{{ project.name }}_{{ editor }}_Android
+    - .yamato/mobile-standalone-test.yml#build_{{ project.name }}_{{ editor }}_android
 {% endif -%}
 {% endfor -%}
 {% endfor -%}
@@ -99,9 +99,9 @@ run_{{ project.name }}_tests_{{ editor }}_Android:
 {% for project in projects.default -%}
 {% for editor in validation_editors.all -%}
 {% for platform in test_platforms.mobile_build -%}
-{% if platform.name == "iOS" -%}
-run_{{ project.name }}_tests_{{ editor }}_iOS:
-  name: Run {{ project.name }} Tests - [{{ editor }}, iOS, Il2cpp]
+{% if platform.name == "ios" -%}
+run_{{ project.name }}_tests_{{ editor }}_ios:
+  name: Run {{ project.name }} Tests - [{{ editor }}, ios, il2cpp]
   agent:
       type: {{ platform.type }}
       image: {{ platform.image }}
@@ -127,7 +127,7 @@ run_{{ project.name }}_tests_{{ editor }}_iOS:
       - build/players/**
   # Set a dependency on the build job
   dependencies:
-    - .yamato/mobile-standalone-test.yml#build_{{ project.name }}_{{ editor }}_iOS
+    - .yamato/mobile-standalone-test.yml#build_{{ project.name }}_{{ editor }}_ios
 {% endif -%}
 {% endfor -%}
 {% endfor -%}

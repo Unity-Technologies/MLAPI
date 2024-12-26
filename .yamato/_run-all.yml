@@ -72,6 +72,18 @@ run_all_project_tests_desktop_standalone:
 {% endfor -%}
 
 
+run_all_project_tests_mobile_standalone:
+  name: Run All Standalone Tests - Mobile
+  dependencies:
+{% for project in projects.default -%}
+{% for editor in validation_editors.all -%}
+{% for platform in test_platforms.mobile_test -%}
+    - .yamato/mobile-build-and-test.yml#run_{{ project.name }}_tests_{{ editor }}_{{ platform.name }}
+{% endfor -%}
+{% endfor -%}
+{% endfor -%}
+
+
 
 
 
@@ -164,17 +176,4 @@ run_all_project_tests_desktop_standalone:
 #{% endfor -%}
 #
 
-#
-#all_project_tests_mobile:
-#  name: Run All Project Tests - Mobile
-#  dependencies:
-#{% for project in projects -%}
-#{% if project.name == "testproject" -%}
-#{% for editor in project.test_editors -%}
-#    - .yamato/mobile-build-and-test.yml#run_{{ project.name }}_tests_{{ editor }}_android
-#    - .yamato/mobile-build-and-test.yml#run_{{ project.name }}_tests_{{ editor }}_iOS
-#{% endfor -%}
-#{% endif -%}
-#{% endfor -%}
-#
 
