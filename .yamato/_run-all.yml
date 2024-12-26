@@ -48,7 +48,7 @@ run_all_webgl_builds:
   dependencies:
 {% for project in projects.default -%}
 {% for platform in test_platforms.desktop -%}
-{% if platform.name != "win-arm64" -%} # Recommended to use only after builds
+{% if platform.extension != "arm64" -%} # Windows_arm64 is recommended to use only after builds and when it comes to macOS_arm64 there is problem with OpenCL not being available
 {% for editor in validation_editors.all -%}
   - .yamato/webgl-build.yml#webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}
 {% endfor -%}

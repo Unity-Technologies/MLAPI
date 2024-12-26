@@ -8,7 +8,7 @@
 # WebGL requires Il2cpp scripting backend
 {% for project in projects.default -%}
 {% for platform in test_platforms.desktop -%}
-{% if platform.name != "win-arm64" -%} # Recommended to use only after builds
+{% if platform.extension != "arm64" -%} # Windows_arm64 is recommended to use only after builds and when it comes to macOS_arm64 there is problem with OpenCL not being available
 {% for editor in validation_editors.all -%}
 webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}:
   name: WebGl Build - {{ project.name }} [{{ platform.name }}, {{ editor }}, il2cpp]
@@ -40,9 +40,9 @@ webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}:
     # Build Player
     - |
 {% if platform.base == "win" %}
-      utr.bat --suite=playmode --platform=WebGL --artifacts_path=build/test-results --testproject={{ project.path }} --editor-location=.Editor --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging" --extra-editor-arg=-nographics {% if platform.base == "mac" %} --extra-editor-arg=-disable-gpu-skinning {% endif %}
+      utr.bat --suite=playmode --platform=WebGL --artifacts_path=build/test-results --testproject={{ project.path }} --editor-location=.Editor --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging" --extra-editor-arg=-nographics
 {% else %}
-      ./utr --suite=playmode --platform=WebGL --artifacts_path=build/test-results --testproject={{ project.path }} --editor-location=.Editor --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging" --extra-editor-arg=-nographics {% if platform.base == "mac" %} --extra-editor-arg=-disable-gpu-skinning {% endif %}
+      ./utr --suite=playmode --platform=WebGL --artifacts_path=build/test-results --testproject={{ project.path }} --editor-location=.Editor --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging" --extra-editor-arg=-nographics
 {% endif %}
       
   artifacts:

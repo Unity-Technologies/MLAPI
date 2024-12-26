@@ -6,7 +6,7 @@
 {% for project in projects.all -%}
 {% for platform in small_agent -%}
 project_pack_-_{{ project.name }}:
-  name: Project Pack - {{ project.name }}
+  name: Project Pack - {{ project.name }} [{{ platform.name }}]
   agent:
     type: {{ platform.type }}
     image: {{ platform.image }}

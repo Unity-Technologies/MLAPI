@@ -3,11 +3,11 @@
 
 # Project standards are being checked for package (in project context)
 # It should be enough to perform the test on default project
-{% for platform in test_platforms.default -%}
 {% for project in projects.all -%}
+{% for platform in test_platforms.default -%}
 {% for editor in validation_editors.default -%}
 standards_{{ platform.name }}_{{ project.name }}_{{ editor }}:
-  name: Standards Check - NGO [{{ platform.name }}, {{ project.name }}, {{ editor }}]
+  name: Standards Check - NGO {{ project.name }} [{{ platform.name }}, {{ editor }}]
   agent:
     type: {{ platform.type }}
     image: {{ platform.image }}
