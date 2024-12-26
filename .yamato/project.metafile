@@ -60,7 +60,7 @@ test_platforms:
           extension: arm64
     # Mobile platforms cover all main mobile devices. There is a split between the build and run phase so there is a need of splitting specification for both (since its different)
     mobile_build:
-        # It would be simpler to build android app with ubuntu but the option with windows was chosen since it covers more users
+        # It would be simpler to build android app with ubuntu but the option with windows was chosen since it covers more users. Normal windows used for builds on Android and ARM64 for iOS
         - name: android
           type: Unity::VM
           image: package-ci/win10:v4
@@ -68,23 +68,7 @@ test_platforms:
           standalone: Android
           base: win
           extension: default
-        - name: ios
-          type: Unity::VM::osx
-          image: package-ci/macos-13:v4
-          flavor: m1.mac
-          standalone: IOS
-          model: default
-          base: mac
-          extension: default
-        - name: android-arm64
-          type: Unity::VM::Azure
-          image: package-ci/win11-arm64:v4
-          flavor: b1.large
-          standalone: Android
-          model: arm
-          base: win
-          extension: arm64
-        - name: ios-arm64
+        - name: ios 
           type: Unity::VM::osx
           image: package-ci/macos-13-arm64:v4
           flavor: m1.mac
