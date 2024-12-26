@@ -3,7 +3,6 @@
 
 # Executes PlayMode and EditMode tests of the NGO package in the Editor context
 {% for platform in test_platforms.desktop -%}
-{% if platform.name != "win-arm64" -%} # Recommended to use only after builds
 {% for editor in validation_editors.all -%}
 package_test_-_ngo_{{ editor }}_{{ platform.name }}:
   name : Package Test - NGO [{{ platform.name }}, {{ editor }}]
@@ -11,13 +10,10 @@ package_test_-_ngo_{{ editor }}_{{ platform.name }}:
     type: {{ platform.type }}
     image: {{ platform.image }}
     flavor: {{ platform.flavor }}
-{% if platform.model %}
-    model: {{ platform.model }}
-{% endif %}
   commands:
     - npm install -g upm-ci-utils@stable --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
-    - unity-downloader-cli {% if platform.extension == "arm64" %} --arch arm64 {% endif %} -u {{ editor }} -c Editor --fast --wait
-    - {% if platform.name == "ubuntu" %}DISPLAY=:0 {% endif %}upm-ci package test -u {{ editor }} --package-path com.unity.netcode.gameobjects --type package-tests
+    - unity-downloader-cli -u {{ editor }} -c Editor --fast --wait
+    - {% if platform.name == "ubuntu" %}DISPLAY=:0 {% endif %}upm-ci package test -u {{ editor }} --package-path com.unity.netcode.gameobjects --type package-tests --extra-utr-arg="--extra-editor-arg=-testCategory --extra-editor-arg=!Performance --reruncount=1 --clean-library-on-rerun"
   artifacts:
     logs:
       paths:
@@ -25,5 +21,4 @@ package_test_-_ngo_{{ editor }}_{{ platform.name }}:
   dependencies:
     - .yamato/package-pack.yml#package_pack_-_ngo
 {% endfor -%}
-{% endif -%}
 {% endfor -%}

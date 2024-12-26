@@ -6,7 +6,6 @@
 {% for project in projects.all -%}
 {% if project.has_tests == "true" -%}
 {% for platform in test_platforms.desktop -%}
-{% if platform.name != "win-arm64" -%} # Recommended to use only after builds
 {% for editor in validation_editors.all -%}
 test_{{ project.name }}_{{ platform.name }}_{{ editor }}:
   name : Project Test - NGO {{ project.name }} [{{ platform.name }}, {{ editor }}]
@@ -14,13 +13,10 @@ test_{{ project.name }}_{{ platform.name }}_{{ editor }}:
     type: {{ platform.type }}
     image: {{ platform.image }}
     flavor: {{ platform.flavor }}
-{% if platform.model %}
-    model: {{ platform.model }}
-{% endif %}
   commands:
     - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
-    - unity-downloader-cli {% if platform.extension == "arm64" %} --arch arm64 {% endif %} -u {{ editor }} -c Editor --fast --wait
-    - {% if platform.name == "Ubuntu" %}DISPLAY=:0 && {% endif %}upm-ci project test -u {{ editor }} --project-path {{ project.path }} --type project-tests
+    - unity-downloader-cli -u {{ editor }} -c Editor --fast --wait
+    - {% if platform.name == "Ubuntu" %}DISPLAY=:0 && {% endif %}upm-ci project test -u {{ editor }} --project-path {{ project.path }} --type project-tests --extra-utr-arg="--extra-editor-arg=-testCategory --extra-editor-arg=!Performance --reruncount=1 --clean-library-on-rerun"
   artifacts:
     logs:
       paths:
@@ -28,7 +24,6 @@ test_{{ project.name }}_{{ platform.name }}_{{ editor }}:
   dependencies:
     - .yamato/project-pack.yml#project_pack_-_{{ project.name }}
 {% endfor -%}
-{% endif -%}
 {% endfor -%}
 {% endif -%}
 {% endfor -%}

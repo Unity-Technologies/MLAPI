@@ -6,11 +6,9 @@ run_all_package_tests:
   name: Run All Package Tests
   dependencies:
 {% for platform in test_platforms.desktop -%}
-{% if platform.name != "win-arm64" -%} # Recommended to use only after builds
 {% for editor in validation_editors.all -%}
   - .yamato/package-tests.yml#package_test_-_ngo_{{ editor }}_{{ platform.name }}
 {% endfor -%}
-{% endif -%}
 {% endfor -%}
 
 
@@ -21,13 +19,11 @@ run_all_project_tests:
 {% for project in projects.all -%}
 {% if project.has_tests == "true" -%}
 {% for platform in test_platforms.desktop -%}
-{% if platform.name != "win-arm64" -%} # Recommended to use only after builds
 {% for editor in validation_editors.all -%}
   - .yamato/project-tests.yml#test_{{ project.name }}_{{ platform.name }}_{{ editor }}
 {% endfor -%}
 {% endif -%}
 {% endfor -%}
-{% endif -%}
 {% endfor -%}
 
 

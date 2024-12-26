@@ -1,0 +1,49 @@
+{% metadata_file .yamato/project.metafile %}
+---
+
+# Performance tests for the `com.unity.netcode.gameobjects` package. No performance data will be reported.
+{% for platform in test_platforms.desktop -%}
+{% for editor in validation_editors.all -%}
+{% for project in projects.default -%}
+performance_editor_tests_-_netcode_macos_trunk_dots_monorepo__no_data_reporting:
+  name : Performance editor Tests - NGO {{ project.name }} [{{ platform.name }}, {{ editor }}] (No Data Reporting)
+  agent:
+    type: {{ platform.type }}
+    image: {{ platform.image }}
+    flavor: {{ platform.flavor }}
+  commands:
+      # Installing tools
+{% if platform.name == "ubuntu" %}
+      - sudo apt-get update -q
+      - sudo apt install -qy imagemagick
+{% endif %}
+      - npm install -g upm-ci-utils@stable --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
+      - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
+      
+      # Platform specific UTR setup
+      - |
+{% if platform.name == "win" %}
+        curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
+{% else %}
+        curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr && chmod +x utr
+{% endif %}
+      
+      # Installing editor
+      - unity-downloader-cli -u {{ editor }} -c Editor --fast --wait
+      
+      # Build Player
+      - |
+{% if platform.name == "win" %}
+      utr --artifacts-path=artifacts --timeout=3600 --testproject={{ project.path }} --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --suite=editor --dontreportperformancedata --extra-editor-arg=-assemblyNames --extra-editor-arg=Unity.NetCode.* --extra-editor-arg=-testCategory --extra-editor-arg=Performance --extra-editor-arg=-enablePackageManagerTraces
+  {% else %}
+      ./utr --artifacts-path=artifacts --timeout=3600 --testproject={{ project.path }} --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --suite=editor --dontreportperformancedata --extra-editor-arg=-assemblyNames --extra-editor-arg=Unity.NetCode.* --extra-editor-arg=-testCategory --extra-editor-arg=Performance --extra-editor-arg=-enablePackageManagerTraces
+  {% endif %}
+  artifacts:
+    logs:
+      paths:
+        - "upm-ci~/test-results/**/*"
+  dependencies:
+    - .yamato/package-pack.yml#package_pack_-_ngo
+{% endfor -%}
+{% endfor -%}
+{% endfor -%}
