@@ -14,6 +14,9 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
       type: {{ platform.type }}
       image: {{ platform.image }}
       flavor: {{ platform.flavor }}
+{% if platform.model %}
+      model: {{ platform.model }}
+{% endif %}
   commands:
     # Installing tools
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
