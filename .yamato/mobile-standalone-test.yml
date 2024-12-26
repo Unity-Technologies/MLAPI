@@ -22,7 +22,7 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
       
     # Installing editor
-    - unity-downloader-cli {% if platform.architecture == "arm64" %} --arch arm64 {% endif %} -u {{ editor }} -c Editor -c il2cpp {% if platform.base == "mac" %} -c ios {% else %} -c android {% endif %} --fast --wait
+    - unity-downloader-cli -u {{ editor }} -c Editor -c il2cpp {% if platform.base == "mac" %} -c ios {% else %} -c android {% endif %} --fast --wait
     
     # Platform specific Build
 {% if platform.base == "win" %}
