@@ -78,7 +78,7 @@ run_all_project_tests_mobile_standalone:
 {% for project in projects.default -%}
 {% for editor in validation_editors.all -%}
 {% for platform in test_platforms.mobile_test -%}
-    - .yamato/mobile-build-and-test.yml#run_{{ project.name }}_tests_{{ editor }}_{{ platform.name }}
+    - .yamato/mobile-standalone-test.yml#run_{{ project.name }}_tests_{{ editor }}_{{ platform.name }}
 {% endfor -%}
 {% endfor -%}
 {% endfor -%}
