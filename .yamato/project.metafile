@@ -85,39 +85,66 @@ test_platforms:
           base: mac
           architecture: arm64
     # We should test on at least one more "exotic" platform. Nintendo Switch was chosen as it represents broadly console platforms
-    console_no_split:
-        - name: nintendoSwitch
-          type: Unity::console::switch
-          image: package-ci/win10-switch:v4
+    console_build:
+        - name: ps4
+          type: Unity::VM
+          image: package-ci/win10:v4
+          flavor: b1.large
+          standalone: PS4
+          base: win
+        - name: ps5
+          type: Unity::VM
+          image: package-ci/win10:v4
+          flavor: b1.large
+          standalone: PS5
+          base: win
+        - name: switch
+          type: Unity::VM
+          image: package-ci/win10:v4
           flavor: b1.large
           standalone: Switch
+          base: win
+        - name: xboxone
+          type: Unity::VM
+          image: package-ci/win10:v4
+          flavor: b1.large
+          standalone: GameCoreXboxOne
+          base: win
+        - name: xboxseries
+          type: Unity::VM
+          image: package-ci/win10:v4
+          flavor: b1.large
+          standalone: XboxSeries
+          base: win
+    console_test:
         - name: ps4
           type: Unity::console::ps4
           image: package-ci/win10-ps4
           flavor: b1.large
+          model: devkit
           standalone: PS4
-    console_build:
+        - name: ps5
+          type:  Unity::console::ps5
+          image: package-ci/win10-ps5
+          flavor: b1.large
+          model: devkit
+          standalone: PS5
+        - name: switch
+          type: Unity::console::switch
+          image: package-ci/win10-switch:v4
+          flavor: b1.large
+          standalone: Switch
+          base: win
         - name: xboxOne
           type: Unity::console::xbox
           image: package-ci/win10-xbox
           flavor: b1.large
           standalone: GameCoreXboxOne
-        - name: ps5
-          type: Unity::console::ps5
-          image: package-ci/win10-ps5
-          flavor: b1.large
-          standalone: PS5
-    console_test:
-        - name: xboxOne
-          type: Unity::console::xbox
+        - name: xboxseries
+          type: Unity::console::scarlett
           image: package-ci/win10-xbox
           flavor: b1.large
-          standalone: GameCoreXboxOne
-        - name: ps5
-          type: Unity::console::ps5
-          image: package-ci/win10-ps5
-          flavor: b1.large
-          standalone: PS5
+          standalone: XboxSeries
     
 # Editors to be used for testing.
 # Since NGOv2 official support started from U6 it means that only those editors should be used for testing
