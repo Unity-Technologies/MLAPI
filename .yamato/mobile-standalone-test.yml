@@ -55,7 +55,6 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
 {% for project in projects.default -%}
 {% for editor in validation_editors.all -%}
 {% for platform in test_platforms.mobile_test -%}
-{% if platform.standalone == "Android" -%}
 run_{{ project.name }}_tests_{{ editor }}_{{ platform.name }}:
   name: Run {{ project.name }} Tests - [{{ editor }}, {{ platform.standalone }}, il2cpp]
   agent:
@@ -95,7 +94,6 @@ run_{{ project.name }}_tests_{{ editor }}_{{ platform.name }}:
         - build/players/**
   dependencies:
     - .yamato/mobile-standalone-test.yml#build_{{ project.name }}_{{ editor }}_{{ platform.name }}
-{% endif -%}
 {% endfor -%}
 {% endfor -%}
 {% endfor -%}
