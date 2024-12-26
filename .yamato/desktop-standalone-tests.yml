@@ -5,6 +5,7 @@
 # Only Package tests are being executed in the context of the default project
 {% for project in projects.default -%}
 {% for platform in test_platforms.desktop -%}
+{% if platform.name != "win-arm64" -%} # Recommended to use only after builds. Other option would be to separate build and run phases but disabled for now
 {% for editor in validation_editors.all -%}
 {% for backend in scripting_backends -%}
 desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{ editor }}:
@@ -61,5 +62,6 @@ desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{
     - .yamato/project-pack.yml#project_pack_-_{{ project.name }}
 {% endfor -%}
 {% endfor -%}
+{% endif -%}
 {% endfor -%}
 {% endfor -%}
