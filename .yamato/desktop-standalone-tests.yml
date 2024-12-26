@@ -5,7 +5,6 @@
 # Only Package tests are being executed in the context of the default project
 {% for project in projects.default -%}
 {% for platform in test_platforms.desktop -%}
-{% if platform.extension != "arm64" -%} # Windows_arm64 is recommended to use only after builds and when it comes to macOS_arm64 there is problem with OpenCL not being available. Other option would be to separate build and run phases but disabled for now
 {% for editor in validation_editors.all -%}
 {% for backend in scripting_backends -%}
 desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{ editor }}:
@@ -14,9 +13,6 @@ desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{
     type: {% if platform.base == "mac" %} {{ platform.type }} {% else %} {{ platform.type }}::GPU {% endif %}
     image: {{ platform.image }}
     flavor: {{ platform.flavor }}
-{% if platform.model %}
-    model: {{ platform.model }}
-{% endif %}
   commands:
     # Installing tools
 {% if platform.base == "ubuntu" %}
@@ -35,22 +31,22 @@ desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{
 {% endif %}
     
     # Installing editor
-    - unity-downloader-cli {% if platform.extension == "arm64" %} --arch arm64 {% endif %} -u {{ editor }} -c Editor {% if backend == "il2cpp" %} -c il2cpp {% endif %} --fast --wait
+    - unity-downloader-cli -u {{ editor }} -c Editor {% if backend == "il2cpp" %} -c il2cpp {% endif %} --fast --wait
     
     # Build Player
     - |
 {% if platform.base == "win" %}
-      utr --suite=playmode --platform={{ platform.standalone }} --editor-location=.Editor --testproject={{ project.path }} --player-save-path=build/players --artifacts_path=build/logs --scripting-backend={{ backend }} --build-only --testfilter=Unity.Netcode.RuntimeTests --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --extra-editor-arg=-disable-gpu-skinning
+      utr --suite=playmode --platform={{ platform.standalone }} --editor-location=.Editor --testproject={{ project.path }} --player-save-path=build/players --artifacts_path=build/logs --scripting-backend={{ backend }} --build-only --testfilter=Unity.Netcode.RuntimeTests --extra-editor-arg=-batchmode --extra-editor-arg=-nographics
 {% else %}
-      ./utr --suite=playmode --platform={{ platform.standalone }} --editor-location=.Editor --testproject={{ project.path }} --player-save-path=build/players --artifacts_path=build/logs --scripting-backend={{ backend }} --build-only --testfilter=Unity.Netcode.RuntimeTests --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --extra-editor-arg=-disable-gpu-skinning
+      ./utr --suite=playmode --platform={{ platform.standalone }} --editor-location=.Editor --testproject={{ project.path }} --player-save-path=build/players --artifacts_path=build/logs --scripting-backend={{ backend }} --build-only --testfilter=Unity.Netcode.RuntimeTests --extra-editor-arg=-batchmode --extra-editor-arg=-nographics
 {% endif %} 
     
     # Run Standalone tests
     - |
 {% if platform.base == "win" %}
-      utr --suite=playmode --platform={{ platform.standalone }} --player-load-path=build/players --artifacts_path=build/test-results --scripting-backend={{ backend }} --testfilter=Unity.Netcode.RuntimeTests --playergraphicsapi=Null
+      utr --suite=playmode --platform={{ platform.standalone }} --player-load-path=build/players --artifacts_path=build/test-results --scripting-backend={{ backend }} --testfilter=Unity.Netcode.RuntimeTests
 {% else %}
-      ./utr --suite=playmode --platform={{ platform.standalone }} --player-load-path=build/players --artifacts_path=build/test-results --scripting-backend={{ backend }} --testfilter=Unity.Netcode.RuntimeTests --playergraphicsapi=Null
+      ./utr --suite=playmode --platform={{ platform.standalone }} --player-load-path=build/players --artifacts_path=build/test-results --scripting-backend={{ backend }} --testfilter=Unity.Netcode.RuntimeTests
 {% endif %}      
       
   artifacts:
@@ -62,6 +58,5 @@ desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{
     - .yamato/project-pack.yml#project_pack_-_{{ project.name }}
 {% endfor -%}
 {% endfor -%}
-{% endif -%}
 {% endfor -%}
 {% endfor -%}

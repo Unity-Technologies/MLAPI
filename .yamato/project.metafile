@@ -16,48 +16,24 @@ test_platforms:
           image: package-ci/ubuntu-22.04:v4
           flavor: b1.large
           standalone: StandaloneLinux64
-          base: ubuntu
-          extension: default
     # Desktop platforms cover all main desktop platforms
+    # Windows_arm64 is recommended to use only after builds and when it comes to macOS_arm64 there is problem with OpenCL not being available. Other option would be to separate build and run phases but disabled for now
     desktop:  
         - name: ubuntu
           type: Unity::VM
           image: package-ci/ubuntu-22.04:v4
           flavor: b1.large
           standalone: StandaloneLinux64
-          base: ubuntu
-          extension: default
         - name: win
           type: Unity::VM
           image: package-ci/win10:v4
           flavor: b1.large
           standalone: StandaloneWindows64
-          base: win
-          extension: default
         - name: mac
           type: Unity::VM::osx
           image: package-ci/macos-13:v4
           flavor: m1.mac
           standalone: StandaloneOSX
-          model: default
-          base: mac
-          extension: default
-        - name: mac-arm64
-          type: Unity::VM::osx
-          image: package-ci/macos-13-arm64:v4
-          flavor: m1.mac
-          standalone: StandaloneOSX
-          model: M1
-          base: mac
-          extension: arm64
-        - name: win-arm64
-          type: Unity::VM::Azure
-          image: package-ci/win11-arm64:v4
-          flavor: b1.large
-          standalone: StandaloneWindows64
-          model: arm
-          base: win
-          extension: arm64
     # Mobile platforms cover all main mobile devices. There is a split between the build and run phase so there is a need of splitting specification for both (since its different)
     mobile_build:
         - name: android-armV7

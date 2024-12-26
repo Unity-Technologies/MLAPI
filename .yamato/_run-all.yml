@@ -61,13 +61,11 @@ run_all_project_tests_desktop_standalone:
   dependencies:
 {% for project in projects.default -%}
 {% for platform in test_platforms.desktop -%}
-{% if platform.extension != "arm64" -%} # Windows_arm64 is recommended to use only after builds and when it comes to macOS_arm64 there is problem with OpenCL not being available. Other option would be to separate build and run phases but disabled for now
 {% for editor in validation_editors.all -%}
 {% for backend in scripting_backends -%}
   - .yamato/desktop-standalone-tests.yml#desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{ editor }}
 {% endfor -%}
 {% endfor -%}
-{% endif -%}
 {% endfor -%}
 {% endfor -%}
 
