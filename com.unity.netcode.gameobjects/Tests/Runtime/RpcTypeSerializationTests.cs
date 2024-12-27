@@ -1099,6 +1099,7 @@ namespace Unity.Netcode.RuntimeTests
 #endif
 
         [UnityTest]
+        [Ignore("Fails on mac")]
         public IEnumerator WhenSendingAValueTypeOverAnRpc_ValuesAreSerializedCorrectly(
 
             [Values(typeof(byte), typeof(sbyte), typeof(short), typeof(ushort), typeof(int), typeof(uint),

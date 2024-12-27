@@ -78,6 +78,18 @@ run_all_project_tests_mobile_standalone:
 {% endfor -%}
 
 
+run_all_project_tests_console_standalone:
+  name: Run All Standalone Tests - Console
+  dependencies:
+{% for project in projects.default -%}
+{% for editor in validation_editors.all -%}
+{% for platform in test_platforms.console_build -%}
+  - .yamato/console-standalone-test.yml#build_{{ project.name }}_{{ editor }}_{{ platform.name }}
+{% endfor -%}
+{% endfor -%}
+{% endfor -%}
+
+
 
 
 
