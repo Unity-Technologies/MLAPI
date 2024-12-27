@@ -83,7 +83,6 @@ test_platforms:
           standalone: IOS
           base: mac
           architecture: arm64
-    # We should test on at least one more "exotic" platform. Nintendo Switch was chosen as it represents broadly console platforms
     console_build:
         - name: ps4
           type: Unity::VM
