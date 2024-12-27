@@ -33,7 +33,7 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
 {% endif %}
   variables:
 {% if platform.name == "ps4" %}
-    SCE_ORBIS_SDK_DIR: 'C:\Users\bokken\SCE\ps4_sdk_10_00\'
+    SCE_ORBIS_SDK_DIR: 'C:\Users\bokken\SCE\ps4_sdk_12_00\'
 {% else if platform.name == "ps5" %}
     SCE_PROSPERO_SDK_DIR: 'C:\Program Files (x86)\SCE\Prospero SDKs\6.000'
 {% else if platform.name == "switch" %}
