@@ -73,10 +73,10 @@ run_{{ project.name }}_tests_{{ editor }}_{{ platform.name }}:
 
     # Connect to Android device and run tests
     - |
-      set ANDROID_DEVICE_CONNECTION=%BOKKEN_DEVICE_IP%
-      start %ANDROID_SDK_ROOT%\platform-tools\adb.exe connect %BOKKEN_DEVICE_IP%
-      start %ANDROID_SDK_ROOT%\platform-tools\adb.exe devices
-      utr --suite=playmode  --platform=Android --editor-location=.Editor --architecture={{ platform.architecture }} --testproject={{ project.path }} --player-load-path=build/players --artifacts_path=build/logs --scripting-backend=il2cpp --extra-editor-arg=-testCategory --extra-editor-arg=!Performance --reruncount=1 --clean-library-on-rerun --player-connection-ip=%BOKKEN_HOST_IP% --timeout=1800 --test-timeout=300 --player-connection-timeout=120
+      export ANDROID_DEVICE_CONNECTION=${BOKKEN_DEVICE_IP}
+      ${ANDROID_SDK_ROOT}/platform-tools/adb connect ${BOKKEN_DEVICE_IP}
+      ${ANDROID_SDK_ROOT}/platform-tools/adb devices
+      ./utr --suite=playmode  --platform=Android --editor-location=.Editor --architecture={{ platform.architecture }} --testproject={{ project.path }} --player-load-path=build/players --artifacts_path=build/logs --scripting-backend=il2cpp --extra-editor-arg=-testCategory --extra-editor-arg=!Performance --reruncount=1 --clean-library-on-rerun --player-connection-ip=%BOKKEN_HOST_IP% --timeout=1800 --test-timeout=300 --player-connection-timeout=120
 {% else %}
     # Download standalone UnityTestRunner
     - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr && chmod +x utr
