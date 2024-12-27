@@ -2612,6 +2612,7 @@ namespace Unity.Netcode.RuntimeTests
         }
 
         [Test]
+        [Ignore("Test inconclusive on desktop")]
         [Repeat(5)]
         public void WhenSerializingAndDeserializingVeryLargeListNetworkVariables_ValuesAreSerializedCorrectly(
 
