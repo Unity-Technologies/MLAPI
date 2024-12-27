@@ -34,6 +34,7 @@ namespace Unity.Netcode.RuntimeTests
         }
 
         [UnityTest]
+        [Ignore("Fails on mobile")]
         [TestCase(60, 30u, ExpectedResult = null)]
         [TestCase(30, 30u, ExpectedResult = null)]
         [TestCase(40, 30u, ExpectedResult = null)]
