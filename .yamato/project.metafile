@@ -13,7 +13,7 @@ test_platforms:
     default:
         - name: ubuntu
           type: Unity::VM
-          image: package-ci/ubuntu-22.04:v4
+          image: dots-ci/ubuntu-20.04:v3.3194411
           flavor: b1.large
           standalone: StandaloneLinux64
     # Desktop platforms cover all main desktop platforms
@@ -21,17 +21,17 @@ test_platforms:
     desktop:  
         - name: ubuntu
           type: Unity::VM
-          image: package-ci/ubuntu-22.04:v4
+          image: dots-ci/ubuntu-20.04:v3.3194411
           flavor: b1.large
           standalone: StandaloneLinux64
         - name: win
           type: Unity::VM
-          image: package-ci/win10:v4
+          image: dots-ci/windows10:v3.3194412
           flavor: b1.large
           standalone: StandaloneWindows64
         - name: mac
           type: Unity::VM::osx
-          image: package-ci/macos-13:v4
+          image: dots-ci/macos:v3.3194405
           flavor: m1.mac
           standalone: StandaloneOSX
     # Mobile platforms cover all main mobile devices. There is a split between the build and run phase so there is a need of splitting specification for both (since its different)
@@ -53,7 +53,7 @@ test_platforms:
         # iOS modern builds are ARM64-only, thus no testing with armv7 (as in android case)
         - name: ios-arm64
           type: Unity::VM::osx
-          image: package-ci/macos-13:v4
+          image: dots-ci/macos:v3.3194405
           flavor: m1.mac
           standalone: IOS
           base: mac
@@ -77,7 +77,7 @@ test_platforms:
           architecture: arm64
         - name: ios-arm64
           type: Unity::mobile::iPhone
-          image: package-ci/macos-13-arm64:v4
+          image: dots-ci/macos:v3.3194405
           flavor: m1.mac
           model: SE
           standalone: IOS
@@ -92,55 +92,55 @@ test_platforms:
           base: win
         - name: ps5
           type: Unity::VM
-          image: package-ci/win10:v4
+          image: dots-ci/ps5:v3.3194407
           flavor: b1.large
           standalone: PS5
           base: win
         - name: switch
           type: Unity::VM
-          image: package-ci/win10:v4
+          image: dots-ci/switch:v3.3194409
           flavor: b1.large
           standalone: Switch
           base: win
         - name: gamecorexboxone
           type: Unity::VM
-          image: package-ci/win10:v4
+          image: dots-ci/xbox:v3.3194406
           flavor: b1.large
           standalone: GameCoreXboxOne
           base: win
         - name: gamecorescarlett
           type: Unity::VM
-          image: package-ci/win10:v4
+          image: dots-ci/xbox:v3.3194406
           flavor: b1.large
           standalone: XboxSeries
           base: win
     console_test:
         - name: ps4
           type: Unity::console::ps4
-          image: package-ci/win10-ps4
+          image: dots-ci/ps4:v3.3194410
           flavor: b1.large
           model: devkit
           standalone: PS4
         - name: ps5
           type:  Unity::console::ps5
-          image: package-ci/win10-ps5
+          image: dots-ci/ps4:v3.3194410
           flavor: b1.large
           model: devkit
           standalone: PS5
         - name: switch
           type: Unity::console::switch
-          image: package-ci/win10-switch:v4
+          image: dots-ci/switch:v3.3194409
           flavor: b1.large
           standalone: Switch
           base: win
         - name: xboxOne
           type: Unity::console::xbox
-          image: package-ci/win10-xbox
+          image: dots-ci/xbox:v3.3194406
           flavor: b1.large
           standalone: GameCoreXboxOne
         - name: xboxseries
           type: Unity::console::scarlett
-          image: package-ci/win10-xbox
+          image: dots-ci/xbox:v3.3194406
           flavor: b1.large
           standalone: XboxSeries
     
