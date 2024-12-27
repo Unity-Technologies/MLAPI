@@ -102,13 +102,13 @@ test_platforms:
           flavor: b1.large
           standalone: Switch
           base: win
-        - name: xboxone
+        - name: gamecorexboxone
           type: Unity::VM
           image: package-ci/win10:v4
           flavor: b1.large
           standalone: GameCoreXboxOne
           base: win
-        - name: xboxseries
+        - name: gamecorescarlett
           type: Unity::VM
           image: package-ci/win10:v4
           flavor: b1.large
