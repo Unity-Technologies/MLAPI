@@ -86,7 +86,7 @@ test_platforms:
     console_build:
         - name: ps4
           type: Unity::VM
-          image: package-ci/win10:v4
+          image: dots-ci/ps4:v3
           flavor: b1.large
           standalone: PS4
           base: win
