@@ -16,6 +16,8 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
     flavor: {{ platform.flavor }}
   commands:
     # Installing tools
+    - curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+    - python get-pip.py
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
     
     # Installing editor
