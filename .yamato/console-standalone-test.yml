@@ -23,7 +23,7 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
 {% if platform.base == "win" %}
 #    - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
 #    - py .yamato/disable-burst-if-requested.py --project-path {{ project.path }} --platform {{ platform.name }}
-    - utr --artifacts_path=build/logs --testproject={{ project.path }} architecture={% if platform.name == "switch" %}arm64{% else %}x64{% endif %} --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --suite=playmode --platform={{ platform.standalone }} --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testCategory=!Performance --scripting-backend=il2cpp
+    - UnifiedTestRunner.exe --artifacts_path=build/logs --testproject={{ project.path }} architecture={% if platform.name == "switch" %}arm64{% else %}x64{% endif %} --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --suite=playmode --platform={{ platform.standalone }} --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testCategory=!Performance --scripting-backend=il2cpp
 {% else %}
 #    - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr
     - chmod +x ./utr
