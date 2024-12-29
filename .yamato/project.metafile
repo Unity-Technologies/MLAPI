@@ -144,6 +144,7 @@ test_platforms:
           flavor: b1.large
           standalone: XboxSeries
     
+    
 # Editors to be used for testing.
 # Since NGOv2 official support started from U6 it means that only those editors should be used for testing
 validation_editors:
@@ -153,6 +154,13 @@ validation_editors:
         - 6000.0
         - 6000.1 
         - trunk
+        
+        
+# Scripting backends used by Standalone Playmode Tests
+scripting_backends: 
+  - mono
+  - il2cpp
+
 
 # Projects within the repository that will be tested. Name will be used
 # for job ids, so it should not contain spaces/non-supported characters
@@ -162,34 +170,14 @@ projects:
     default:
         - name: testproject
           path: testproject
-          validate: true
           has_tests: true
-          # Packages within a project that will be tested
-          packages:
-            - name: com.unity.netcode.gameobjects
-              path: com.unity.netcode.gameobjects
     all:
-    - name: testproject
-      path: testproject
-      validate: true
-      has_tests: true
-      # Packages within a project that will be tested
-      packages:
-        - name: com.unity.netcode.gameobjects
-          path: com.unity.netcode.gameobjects
-    - name: minimalproject
-      path: minimalproject
-      validate: false
-      has_tests: false
-      packages:
-        - name: com.unity.netcode.gameobjects
-          path: com.unity.netcode.gameobjects
-    - name: testproject-tools-integration
-      path: testproject-tools-integration
-      validate: false
-      has_tests: true
-
-# Scripting backends used by Standalone Playmode Tests
-scripting_backends: 
-  - mono
-  - il2cpp
+        - name: testproject
+          path: testproject
+          has_tests: true
+        - name: minimalproject
+          path: minimalproject
+          has_tests: false
+        - name: testproject-tools-integration
+          path: testproject-tools-integration
+          has_tests: true

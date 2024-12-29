@@ -1,50 +1,20 @@
 {% metadata_file .yamato/project.metafile %}
 ---
-develop_nightly:
-  name: "\U0001F319 [Nightly] Run All Tests"
-  triggers:
-    recurring:
-    - branch: develop-2.0.0
-      frequency: daily
-      rerun: always
-  dependencies:
-    - .yamato/_run-all.yml#run_all_tests
-{% for project in projects -%}
-{% if project.has_tests == "true" -%}
-    - .yamato/code-coverage.yml#code_coverage_win_{{ project.name }}_{{ validation_editors.last }}
-{% endif -%}
-{% endfor -%}
 
-develop_weekly_trunk:
-  name: "\U0001F319 [Weekly] Run All Tests [Trunk]"
-  triggers:
-    recurring:
-    - branch: develop-2.0.0
-      frequency: weekly
-      rerun: always
-  dependencies:
-    - .yamato/_run-all.yml#run_all_tests_trunk
-
-# Run all relevant tasks when a pull request targeting the develop
-# branch is created or updated. Currently only netcode package tests are
-# enabled, since the others are missing test coverage and will fail CI.
+# Run all relevant tasks when a pull request targeting the develop or release branch is created or updated.
 pull_request_trigger:
   name: Pull Request Trigger (develop, develop-2.0.0, & release branches)
   dependencies:
-    - .yamato/project-standards.yml#standards_{{ projects.first.name }}
-{% for project in projects -%}
-{% for package in project.packages -%}
-{% if project.validate == "true" -%}
-    - .yamato/wrench/project-publish.yml#validate_{{ package.name }}_{{ test_platforms.first.name }}_{{ validation_editors.last }}
-{% endif -%}
-{% endfor -%}
-{% for platform in test_platforms -%}
-{% for package in project.packages -%}
-    - .yamato/package-tests.yml#test_{{ project.name }}_{{ package.name }}_{{ project.test_editors.first }}_{{ platform.name }}
-{% endfor -%}
-    - .yamato/project-tests.yml#test_{{ project.name }}_{{ project.test_editors.first }}_{{ platform.name }}
-{% endfor -%}
-{% endfor -%}
+    # Run project standards to verify package/default project
+    - .yamato/project-standards.yml#standards_{{ test_platforms.default }}_{{ projects.default.name }}_{{ validation_editors.default }}
+    # Run APV jobs to make sure the change won't break any dependants
+    - .yamato/wrench/preview-a-p-v.yml#all_preview_apv_jobs
+    # Run api validation to make sure that the change won't break SemVer
+    - .yamato/wrench/api-validation-jobs.yml#api_validation_-_netcode_gameobjects_-_6000_0_-_windows
+    # Run package EditMode and Playmode tests on desktop platforms on trunk
+    - .yamato/_run-all#run_all_package_tests_trunk
+    # Run project EditMode and PLaymode tests on desktop platforms on trunk 
+    - .yamato/_run-all#run_all_project_tests_trunk
   triggers:
     cancel_old_ci: true
     pull_requests:
@@ -53,3 +23,62 @@ pull_request_trigger:
           - "develop"
           - "develop-2.0.0"
           - "/release\/.*/"
+            
+
+# Run all tests on trunk on nightly basis.
+# Same subset as pull_request_trigger with addition of mobile/desktop/console tests and webgl builds
+develop_nightly:
+  name: "\U0001F319 [Nightly] Run All Tests [Trunk]"
+  triggers:
+    recurring:
+      - branch: develop-2.0.0
+        frequency: daily
+        rerun: always
+  dependencies:
+    # Run project standards to verify package/default project
+    - .yamato/project-standards.yml#standards_{{ test_platforms.default }}_{{ projects.default.name }}_{{ validation_editors.default }}
+    # Run APV jobs to make sure the change won't break any dependants
+    - .yamato/wrench/preview-a-p-v.yml#all_preview_apv_jobs
+    # Run api validation to make sure that the change won't break SemVer
+    - .yamato/wrench/api-validation-jobs.yml#api_validation_-_netcode_gameobjects_-_6000_0_-_windows
+    # Run package EditMode and Playmode tests on desktop platforms on trunk
+    - .yamato/_run-all#run_all_package_tests_trunk
+    # Run project EditMode and PLaymode tests on desktop platforms on trunk 
+    - .yamato/_run-all#run_all_project_tests_trunk
+    # Run Runtime tests on desktop players on trunk
+    - .yamato/_run-all.yml#run_all_project_tests_desktop_standalone_trunk
+    # Run Runtime tests on mobile players on trunk
+    - .yamato/_run-all.yml#run_all_project_tests_mobile_standalone_trunk
+    # Run Runtime tests on console players on trunk
+    - .yamato/_run-all.yml#run_all_project_tests_console_standalone_trunk
+    # Build player for webgl platform on trunk
+    - .yamato/_run-all.yml#run_all_webgl_builds_trunk
+
+
+# Run all tests on weekly bases
+# Same subset as develop_nightly but runs per all supported editors as well as executes code coverage test and runs project standards per project
+# It's not running wrench jobs since those will run either way in nightly test run
+develop_weekly_trunk:
+  name: "\U0001F319 [Weekly] Run All Tests"
+  triggers:
+    recurring:
+      - branch: develop-2.0.0
+        frequency: weekly
+        rerun: always
+  dependencies:
+    # Run project standards to verify package/default project
+    - .yamato/_run-all.yml#run_all_projects_standards
+    # Run package EditMode and Playmode tests on desktop platforms on trunk
+    - .yamato/_run-all#run_all_package_tests
+    # Run project EditMode and PLaymode tests on desktop platforms on trunk 
+    - .yamato/_run-all#run_all_project_tests
+    # Run Runtime tests on desktop players on trunk
+    - .yamato/_run-all.yml#run_all_project_tests_desktop_standalone
+    # Run Runtime tests on mobile players on trunk
+    - .yamato/_run-all.yml#run_all_project_tests_mobile_standalone
+    # Run Runtime tests on console players on trunk
+    - .yamato/_run-all.yml#run_all_project_tests_console_standalone
+    # Build player for webgl platform on trunk
+    - .yamato/_run-all.yml#run_all_webgl_builds
+    # Run code coverage test
+    - .yamato/code-coverage.yml#code_coverage_ubuntu_trunk
