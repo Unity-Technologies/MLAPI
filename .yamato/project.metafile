@@ -92,25 +92,25 @@ test_platforms:
           base: win
         - name: ps5
           type: Unity::VM
-          image: package-ci/win10-ps4:v4
+          image: package-ci/win10-ps5:v4
           flavor: b1.large
           standalone: PS5
           base: win
         - name: switch
           type: Unity::VM
-          image: package-ci/win10-ps4:v4
+          image: package-ci/win10-switch:v4
           flavor: b1.large
           standalone: Switch
           base: win
         - name: gamecorexboxone
           type: Unity::VM
-          image: package-ci/win10-ps4:v4
+          image: package-ci/win10-xbox:v4
           flavor: b1.large
           standalone: GameCoreXboxOne
           base: win
         - name: gamecorescarlett
           type: Unity::VM
-          image: package-ci/win10-ps4:v4
+          image: package-ci/win10-xbox:v4
           flavor: b1.large
           standalone: XboxSeries
           base: win
