@@ -16,7 +16,7 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
     flavor: {{ platform.flavor }}
   commands:
     # Installing tools. unity-downloader-cli and utr is already preinstalled on the image
-    - gsudo pip install unity-downloader-cli
+    - sudo pip install unity-downloader-cli
     - unity-downloader-cli -u {{ editor }} -c Editor -c il2cpp -c {{ platform.name }} --fast --wait
     
     # Platform specific Build
