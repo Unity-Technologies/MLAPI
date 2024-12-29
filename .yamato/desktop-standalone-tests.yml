@@ -13,6 +13,9 @@ desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{
     type: {% if platform.name == "mac" %} {{ platform.type }} {% else %} {{ platform.type }}::GPU {% endif %}
     image: {{ platform.image }}
     flavor: {{ platform.flavor }}
+{% if platform.model %}
+    model: {{ platform.model }}
+{% endif %}
   commands:
     # Installing tools
 {% if platform.name == "ubuntu" %}

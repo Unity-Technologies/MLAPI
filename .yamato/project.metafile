@@ -24,11 +24,13 @@ test_platforms:
           image: package-ci/ubuntu-22.04:v4
           flavor: b1.large
           standalone: StandaloneLinux64
+          model: rtx2080
         - name: win
           type: Unity::VM
           image: package-ci/win10:v4
           flavor: b1.large
           standalone: StandaloneWindows64
+          model: rtx2080
         - name: mac
           type: Unity::VM::osx
           image: package-ci/macos-13:v4
