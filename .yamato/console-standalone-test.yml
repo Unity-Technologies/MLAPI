@@ -21,11 +21,8 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
     
     # Platform specific Build
 {% if platform.base == "win" %}
-#    - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
-#    - py .yamato/disable-burst-if-requested.py --project-path {{ project.path }} --platform {{ platform.name }}
     - utr --artifacts_path=build/logs --testproject={{ project.path }} architecture={% if platform.name == "switch" %}arm64{% else %}x64{% endif %} --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --suite=playmode --platform={{ platform.standalone }} --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testCategory=!Performance --scripting-backend=il2cpp
 {% else %}
-#    - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr
     - chmod +x ./utr
     - ./utr --artifacts_path=artifacts --testproject={{ project.path }} architecture={% if platform.name == "switch" %}arm64{% else %}x64{% endif %} --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --suite=playmode --platform={{ platform.standalone }} --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testcategory=!Performance --scripting-backend=il2cpp
 {% endif %}
@@ -53,6 +50,59 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
         - testproject/Builds/*.log
         - build/test-results/**
         - build/players/**
+{% endfor -%}
+{% endfor -%}
+{% endfor -%}
+  
+  
+  
+# Executes PlayMode tests of the NGO package in the Standalone build for consoles
+{% for project in projects.default -%}
+{% for editor in validation_editors.all -%}
+{% for platform in test_platforms.console_build -%}
+run_{{ project.name }}_tests_{{ editor }}_{{ platform.name }}:
+  name: Run {{ project.name }} Tests - [{{ editor }}, {{ platform.name }}, il2cpp]
+  agent:
+    type: {{ platform.type }}
+    image: {{ platform.image }}
+    flavor: {{ platform.flavor }}
+{% if platform.model %}
+    model: {{ platform.model }}
+{% endif %}
+  commands:
+    # Platform specific Execution
+{% if platform.base == "win" %}
+      - utr --artifacts_path=build/logs --testproject={{ project.path }} --editor-location=.Editor --platform={{ platform.standalone }} --player-load-path=build/players --testCategory=!Performance --scripting-backend=il2cpp  
+{% else %}
+      - chmod +x ./utr
+      - utr --artifacts_path=build/logs --testproject={{ project.path }} --editor-location=.Editor --platform={{ platform.standalone }} --player-load-path=build/players --testCategory=!Performance --scripting-backend=il2cpp
+{% endif %}
+  variables:
+{% if platform.name == "ps4" %}
+    SCE_ORBIS_SDK_DIR: C:\\Users\\bokken\\SCE\\ps4_sdk_12_00
+{% else if platform.name == "ps5" %}
+    SCE_PROSPERO_SDK_DIR: 'C:\Program Files (x86)\SCE\Prospero SDKs\6.000'
+    SCE_ROOT_DIR: 'C:\Program Files (x86)\SCE'
+    PATH: '${SCE_PROSPERO_SDK_DIR}\bin;${PATH}'
+    SHADER_COMPILER_PATH: '${SCE_PROSPERO_SDK_DIR}\target\bins'
+{% else if platform.name == "switch" %}
+    UNITY_NINTENDOSDK_CLI_TOOLS: 'C:\Nintendo\nx_sdk-18_3_0\NintendoSDK\Tools\CommandLineTools'
+    NINTENDO_SDK_ROOT: 'C:\Nintendo\nx_sdk-19_3_0\NintendoSDK'
+{% endif %}
+  artifacts:
+    logs:
+      paths:
+        - '*.log'
+        - '*.xml'
+        - artifacts/**/*
+        - testproject/Logs/**
+        - testproject/Library/*.log
+        - testproject/*.log
+        - testproject/Builds/*.log
+        - build/test-results/**
+        - build/players/**
+  dependencies:
+    - .yamato/console-standalone-test.yml#build_{{ project.name }}_{{ editor }}_{{ platform.name }}
 {% endfor -%}
 {% endfor -%}
 {% endfor -%}
