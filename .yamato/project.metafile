@@ -110,7 +110,7 @@ test_platforms:
           type: Unity::VM
           image: package-ci/win10-xbox:v4
           flavor: b1.large
-          standalone: XboxSeriesX
+          standalone: GameCoreXboxSeries
     console_test:
         - name: ps4
           type: Unity::console::ps4
@@ -139,7 +139,7 @@ test_platforms:
           type: Unity::console::scarlett
           image: package-ci/win10-xbox:v4
           flavor: b1.large
-          standalone: XboxSeriesX
+          standalone: GameCoreXboxSeries
     
     
 # Editors to be used for testing.
