@@ -106,7 +106,7 @@ test_platforms:
           image: package-ci/win10-xbox:v4
           flavor: b1.large
           standalone: GameCoreXboxOne
-        - name: gamecorescarlett
+        - name: xboxseriesx
           type: Unity::VM
           image: package-ci/win10-xbox:v4
           flavor: b1.large
