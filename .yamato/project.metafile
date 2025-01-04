@@ -130,7 +130,7 @@ test_platforms:
           flavor: b1.large
           standalone: Switch
           base: win
-        - name: xboxOne
+        - name: gamecorexboxone
           type: Unity::console::xbox
           image: package-ci/win10-xbox:v4
           flavor: b1.large
