@@ -30,9 +30,8 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
     SCE_PROSPERO_SDK_DIR: 'C:\Program Files (x86)\SCE\Prospero SDKs\default'
     SHADER_COMPILER_PATH: '${SCE_PROSPERO_SDK_DIR}\target\bins'
     SCE_ROOT_DIR: 'C:\Program Files (x86)\SCE'
-    PATH: '${SCE_PROSPERO_SDK_DIR}\bin'
 {% else if platform.name == "switch" %}
-    NINTENDO_SDK_ROOT: 'C:\Nintendo\nx_sdk-18_3_0\NintendoSDK'
+    NINTENDO_SDK_ROOT: 'C:\Nintendo\nx_sdk-default\NintendoSDK'
     UNITY_NINTENDOSDK_CLI_TOOLS: '${NINTENDO_SDK_ROOT}\Tools\CommandLineTools'
 {% endif %}
   artifacts:
