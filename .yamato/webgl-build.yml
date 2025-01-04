@@ -13,7 +13,7 @@
 webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}:
   name: WebGl Build - {{ project.name }} [{{ platform.name }}, {{ editor }}, il2cpp]
   agent:
-    type: {% if platform.base == "mac" %} {{ platform.type }} {% else %} {{ platform.type }}::GPU {% endif %}
+    type: {% if platform.type == "Unity::VM::osx" %} {{ platform.type }} {% else %} {{ platform.type }}::GPU {% endif %}
     image: {{ platform.image }}
     flavor: {{ platform.flavor }}
 {% if platform.model %}
