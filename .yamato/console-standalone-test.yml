@@ -55,7 +55,7 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
 # Executes PlayMode tests of the NGO package in the Standalone build for consoles
 {% for project in projects.default -%}
 {% for editor in validation_editors.all -%}
-{% for platform in test_platforms.console_build -%}
+{% for platform in test_platforms.console_test -%}
 run_{{ project.name }}_tests_{{ editor }}_{{ platform.name }}:
   name: Run {{ project.name }} Tests - [{{ editor }}, {{ platform.name }}, il2cpp]
   agent:
@@ -71,12 +71,14 @@ run_{{ project.name }}_tests_{{ editor }}_{{ platform.name }}:
 
   variables:
 {% if platform.name == "ps4" %}
-    SCE_ORBIS_SDK_DIR: C:\\Users\\bokken\\SCE\\ps4_sdk_12_00
+    SCE_ORBIS_SDK_DIR: 'C:\Users\bokken\SCE\ps4_sdk_12_00'
 {% else if platform.name == "ps5" %}
-    SCE_PROSPERO_SDK_DIR: 'C:\Program Files (x86)\SCE\Prospero SDKs\6.000'
+    SCE_PROSPERO_SDK_DIR: 'C:\Program Files (x86)\SCE\Prospero SDKs\9.000'
+    SHADER_COMPILER_PATH: '${SCE_PROSPERO_SDK_DIR}\target\bins'
+    SCE_ROOT_DIR: 'C:\Program Files (x86)\SCE'
 {% else if platform.name == "switch" %}
-    UNITY_NINTENDOSDK_CLI_TOOLS: 'C:\Nintendo\nx_sdk-18_3_0\NintendoSDK\Tools\CommandLineTools'
     NINTENDO_SDK_ROOT: 'C:\Nintendo\nx_sdk-18_3_0\NintendoSDK'
+    UNITY_NINTENDOSDK_CLI_TOOLS: '${NINTENDO_SDK_ROOT}\Tools\CommandLineTools'
 {% endif %}
   artifacts:
     logs:
