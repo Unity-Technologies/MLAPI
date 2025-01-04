@@ -25,13 +25,13 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
 
   variables:
 {% if platform.name == "ps4" %}
-    SCE_ORBIS_SDK_DIR: 'C:\Users\bokken\SCE\\ps4_sdk_default'
+    SCE_ORBIS_SDK_DIR: 'C:\Users\bokken\SCE\ps4_sdk_12_00'
 {% else if platform.name == "ps5" %}
-    SCE_PROSPERO_SDK_DIR: 'C:\Program Files (x86)\SCE\Prospero SDKs\default'
+    SCE_PROSPERO_SDK_DIR: 'C:\Program Files (x86)\SCE\Prospero SDKs\9.000'
     SHADER_COMPILER_PATH: '${SCE_PROSPERO_SDK_DIR}\target\bins'
     SCE_ROOT_DIR: 'C:\Program Files (x86)\SCE'
 {% else if platform.name == "switch" %}
-    NINTENDO_SDK_ROOT: 'C:\Nintendo\nx_sdk-default\NintendoSDK'
+    NINTENDO_SDK_ROOT: 'C:\Nintendo\nx_sdk-19_3_0\NintendoSDK'
     UNITY_NINTENDOSDK_CLI_TOOLS: '${NINTENDO_SDK_ROOT}\Tools\CommandLineTools'
 {% endif %}
   artifacts:
