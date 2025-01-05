@@ -24,16 +24,15 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
     - utr --artifacts_path=build/logs --testproject={{ project.path }} architecture={% if platform.name == "switch" %}arm64{% else %}x64{% endif %} --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --suite=playmode --platform={{ platform.standalone }} --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testCategory=!Performance --scripting-backend=il2cpp
 
   variables:
-{% if platform.name == "ps4" %}
+# PS4 related
     SCE_ORBIS_SDK_DIR: 'C:\Users\bokken\SCE\ps4_sdk_12_00'
-{% else if platform.name == "ps5" %}
+# PS5 related
     SCE_PROSPERO_SDK_DIR: 'C:\Program Files (x86)\SCE\Prospero SDKs\9.000'
     SHADER_COMPILER_PATH: '${SCE_PROSPERO_SDK_DIR}\target\bins'
     SCE_ROOT_DIR: 'C:\Program Files (x86)\SCE'
-{% else if platform.name == "switch" %}
+# Switch related
     NINTENDO_SDK_ROOT: 'C:\Nintendo\nx_sdk-18_3_0\NintendoSDK'
     UNITY_NINTENDOSDK_CLI_TOOLS: '${NINTENDO_SDK_ROOT}\Tools\CommandLineTools'
-{% endif %}
   artifacts:
     logs:
       paths:
@@ -73,16 +72,15 @@ run_{{ project.name }}_tests_{{ editor }}_{{ platform.name }}:
     - utr --artifacts_path=build/logs --testproject={{ project.path }} --editor-location=.Editor --platform={{ platform.standalone }} --player-load-path=build/players --testCategory=!Performance --scripting-backend=il2cpp  
 
   variables:
-{% if platform.name == "ps4" %}
+# PS4 related
     SCE_ORBIS_SDK_DIR: 'C:\Users\bokken\SCE\ps4_sdk_12_00'
-{% else if platform.name == "ps5" %}
+# PS5 related
     SCE_PROSPERO_SDK_DIR: 'C:\Program Files (x86)\SCE\Prospero SDKs\9.000'
     SHADER_COMPILER_PATH: '${SCE_PROSPERO_SDK_DIR}\target\bins'
     SCE_ROOT_DIR: 'C:\Program Files (x86)\SCE'
-{% else if platform.name == "switch" %}
+# Switch related
     NINTENDO_SDK_ROOT: 'C:\Nintendo\nx_sdk-18_3_0\NintendoSDK'
     UNITY_NINTENDOSDK_CLI_TOOLS: '${NINTENDO_SDK_ROOT}\Tools\CommandLineTools'
-{% endif %}
   artifacts:
     logs:
       paths:
