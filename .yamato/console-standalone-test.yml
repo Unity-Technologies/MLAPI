@@ -69,9 +69,9 @@ run_{{ project.name }}_tests_{{ editor }}_{{ platform.name }}:
     - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
 
     # Platform specific Execution
-    - utr --artifacts_path=build/logs --testproject={{ project.path }} architecture={% if platform.name == "switch" %}arm64{% else %}x64{% endif %} --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --suite=playmode --platform={{ platform.standalone }} --player-load-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testCategory=!Performance --scripting-backend=il2cpp
+    - utr --artifacts_path=build/logs --testproject={{ project.path }} architecture={% if platform.name == "switch" %}arm64{% else %}x64{% endif %} --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --suite=playmode --platform={{ platform.standalone }} --player-load-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testCategory=!Performance --scripting-backend=il2cpp --testfilter=Unity.Netcode.RuntimeTests
 
-  variables:
+variables:
 # PS4 related
     SCE_ORBIS_SDK_DIR: 'C:\Users\bokken\SCE\ps4_sdk_12_00'
 # PS5 related

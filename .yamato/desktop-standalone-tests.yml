@@ -39,9 +39,9 @@ desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{
     # Build Player
     - |
 {% if platform.name == "win" %}
-      utr --suite=playmode --platform={{ platform.standalone }} --editor-location=.Editor --testproject={{ project.path }} --player-save-path=build/players --artifacts_path=build/logs --scripting-backend={{ backend }} --reruncount=1 --clean-library-on-rerun --build-only --testfilter=Unity.Netcode.RuntimeTests --extra-editor-arg=-batchmode --extra-editor-arg=-nographics
+      utr --suite=playmode --platform={{ platform.standalone }} --editor-location=.Editor --testproject={{ project.path }} --player-save-path=build/players --artifacts_path=build/logs --scripting-backend={{ backend }} --reruncount=1 --clean-library-on-rerun --build-only --extra-editor-arg=-batchmode --extra-editor-arg=-nographics
 {% else %}
-      ./utr --suite=playmode --platform={{ platform.standalone }} --editor-location=.Editor --testproject={{ project.path }} --player-save-path=build/players --artifacts_path=build/logs --scripting-backend={{ backend }} --reruncount=1 --clean-library-on-rerun --build-only --testfilter=Unity.Netcode.RuntimeTests --extra-editor-arg=-batchmode --extra-editor-arg=-nographics
+      ./utr --suite=playmode --platform={{ platform.standalone }} --editor-location=.Editor --testproject={{ project.path }} --player-save-path=build/players --artifacts_path=build/logs --scripting-backend={{ backend }} --reruncount=1 --clean-library-on-rerun --build-only --extra-editor-arg=-batchmode --extra-editor-arg=-nographics
 {% endif %} 
     
     # Run Standalone tests
