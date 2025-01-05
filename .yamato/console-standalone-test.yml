@@ -15,7 +15,7 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
     image: {{ platform.image }}
     flavor: {{ platform.flavor }}
   commands:
-    # Installing tools. unity-downloader-cli and utr is already preinstalled on the image
+    # Installing tools. unity-downloader-cli and utr should be already preinstalled on the image
     - sudo pip install unity-downloader-cli
     - unity-downloader-cli -u {{ editor }} -c Editor -c il2cpp -c {{ platform.name }} --fast --wait
     - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
@@ -66,8 +66,11 @@ run_{{ project.name }}_tests_{{ editor }}_{{ platform.name }}:
     model: {{ platform.model }}
 {% endif %}
   commands:
+    # Installing tools.
+    - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
+
     # Platform specific Execution
-      - utr --artifacts_path=build/logs --testproject={{ project.path }} --editor-location=.Editor --platform={{ platform.standalone }} --player-load-path=build/players --testCategory=!Performance --scripting-backend=il2cpp  
+    - utr --artifacts_path=build/logs --testproject={{ project.path }} --editor-location=.Editor --platform={{ platform.standalone }} --player-load-path=build/players --testCategory=!Performance --scripting-backend=il2cpp  
 
   variables:
 {% if platform.name == "ps4" %}

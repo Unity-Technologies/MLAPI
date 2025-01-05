@@ -101,12 +101,12 @@ test_platforms:
           image: package-ci/win10-switch:v4
           flavor: b1.large
           standalone: Switch
-        - name: gamecorexboxone
+        - name: GameCoreXboxOne
           type: Unity::VM
           image: package-ci/win10-xbox:v4
           flavor: b1.large
           standalone: GameCoreXboxOne
-        - name: xboxseriesx
+        - name: GameCoreScarlett
           type: Unity::VM
           image: package-ci/win10-xbox:v4
           flavor: b1.large
@@ -130,12 +130,12 @@ test_platforms:
           flavor: b1.large
           standalone: Switch
           base: win
-        - name: gamecorexboxone
+        - name: GameCoreXboxOne
           type: Unity::console::xbox
           image: package-ci/win10-xbox:v4
           flavor: b1.large
           standalone: GameCoreXboxOne
-        - name: xboxseriesx
+        - name: GameCoreScarlett
           type: Unity::console::scarlett
           image: package-ci/win10-xbox:v4
           flavor: b1.large
