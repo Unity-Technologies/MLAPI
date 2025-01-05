@@ -67,7 +67,7 @@ test_platforms:
           flavor: b1.large
           model: ShieldPro
           standalone: Android
-          base: ubuntu
+          base: win
           architecture: armv7
         - name: android-arm64
           type: Unity::mobile::shield
@@ -75,7 +75,7 @@ test_platforms:
           flavor: b1.large
           model: ShieldPro
           standalone: Android
-          base: ubuntu
+          base: win
           architecture: arm64
         - name: ios-arm64
           type: Unity::mobile::iPhone
