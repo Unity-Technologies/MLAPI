@@ -116,13 +116,11 @@ test_platforms:
           type: Unity::console::ps4
           image: package-ci/win10-ps4:v4
           flavor: b1.large
-          model: devkit
           standalone: PS4
         - name: ps5
           type:  Unity::console::ps5
           image: package-ci/win10-ps5:v4
           flavor: b1.large
-          model: devkit
           standalone: PS5
         - name: switch
           type: Unity::console::switch
