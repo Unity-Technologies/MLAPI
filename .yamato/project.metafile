@@ -55,12 +55,11 @@ test_platforms:
         # iOS modern builds are ARM64-only, thus no testing with armv7 (as in android case)
         - name: ios-arm64
           type: Unity::VM::osx
-          image: package-ci/macos-13-arm64:v4
+          image: package-ci/macos-13:v4
           flavor: m1.mac
           standalone: IOS
           base: mac
           architecture: arm64
-          model: M1
     mobile_test:
         - name: android-armV7
           type: Unity::mobile::shield

@@ -14,9 +14,6 @@ build_{{ project.name }}_{{ editor }}_{{ platform.name }}:
     type: {{ platform.type }}
     image: {{ platform.image }}
     flavor: {{ platform.flavor }}
-{% if platform.model %}
-    model: {{ platform.model }}
-{% endif %}
   commands:
     # Installing tools. unity-downloader-cli and utr should be already preinstalled on the image
     - sudo pip install unity-downloader-cli
