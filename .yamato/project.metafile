@@ -60,6 +60,7 @@ test_platforms:
           standalone: IOS
           base: mac
           architecture: arm64
+          model: M1
     mobile_test:
         - name: android-armV7
           type: Unity::mobile::shield
