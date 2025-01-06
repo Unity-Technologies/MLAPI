@@ -3,12 +3,13 @@
 
 # Packs Netcode for GameObjects together with performing initial checks. 
 # For this job no specific platform support and no running Unity instance is required so small agent (as per project.metafile definition) will be used to save resources and speed up the process
+{% for platform in small_agent_platform.all -%}
 package_pack_-_ngo:
-  name: Package Pack (and x-ray) - NGO [{{ small_agent_platform.name }}]
+  name: Package Pack (and x-ray) - NGO [{{ platform.name }}]
   agent:
-    type: {{ small_agent_platform.type }}
-    image: {{ small_agent_platform.image }}
-    flavor: {{ small_agent_platform.flavor }}
+    type: {{ platform.type }}
+    image: {{ platform.image }}
+    flavor: {{ platform.flavor }}
   timeout: 0.25
   commands:
       - npm install -g upm-ci-utils@stable --registry https://artifactory.prd.it.unity3d.com/artifactory/api/npm/upm-npm
@@ -19,3 +20,4 @@ package_pack_-_ngo:
     packages:
       paths:
         - "upm-ci~/**"
+{% endfor -%}

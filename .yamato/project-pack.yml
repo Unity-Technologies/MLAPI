@@ -4,12 +4,13 @@
 # Jobs that iterate through and packs all NGO projects listed (to use in different jobs)
 # For this job no specific platform support and no running Unity instance is required so small agent (as per project.metafile definition) will be used to save resources and speed up the process
 {% for project in projects.all -%}
+{% for platform in small_agent_platform.all -%}
 project_pack_-_{{ project.name }}:
-  name: Project Pack - {{ project.name }} [{{ small_agent_platform.name }}]
+  name: Project Pack - {{ project.name }} [{{ platform.name }}]
   agent:
-    type: {{ small_agent_platform.type }}
-    image: {{ small_agent_platform.image }}
-    flavor: {{ small_agent_platform.flavor }}
+    type: {{ platform.type }}
+    image: {{ platform.image }}
+    flavor: {{ platform.flavor }}
   commands:
     - npm install -g upm-ci-utils@stable --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - upm-ci project pack --project-path {{ project.path }}
@@ -17,4 +18,5 @@ project_pack_-_{{ project.name }}:
     packages:
       paths:
         - "upm-ci~/packages/**/*"
+{% endfor -%}
 {% endfor -%}
