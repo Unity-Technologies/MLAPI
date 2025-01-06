@@ -16,8 +16,8 @@ on:
         default: info
         required: false
   schedule:
-    # Daily scheduled run.
-    - cron: '0 0 * * *'
+    # Every 6 hours at the 6th minute.
+    - cron: '06 */6 * * *'
 
 jobs:
   renovate:

@@ -1,5 +1,3 @@
-# Refer to https://internaldocs.unity.com/renovate/ for more documentation
-
 # This workflow is for validating the Renovate configuration and docker image
 # updates for it.
 name: Renovate Validation
