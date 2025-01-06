@@ -1,80 +1,175 @@
-validation_editor: 6000.0
-mobile_validation_editor: 6000.0
+# The small agent was created to handle jobs that don't involve running Unity (for example pack job).
+# It uses ubuntu since Linux VMs are faster and cheaper to provision than Mac or Windows Virtual Machines (VMs).
+# The b1.small flavour is nearly always sufficient for jobs that don’t involve running Unity Editor.
+small_agent_platform: 
+    - name: ubuntu
+      type: Unity::VM
+      image: package-ci/ubuntu-22.04:v4
+      flavor: b1.small
 
-# Platforms that will be tested. The first entry in this array will also
-# be used for validation
+# Platforms that project will/can be tested on.
 test_platforms:
-  - name: win
-    type: Unity::VM
-    image: package-ci/win10:v4
-    flavor: b1.large
-    pathsep: \
-    standalone: StandaloneWindows64
-    editorpath: .Editor\Unity.exe
-    utr: .\utr.bat
-  - name: mac
-    type: Unity::VM::osx
-    image: package-ci/macos-13:v4
-    pathsep: /
-    standalone: StandaloneOSX
-    flavor: b1.large
-    editorpath: .Editor/Unity.app/Contents/MacOS/Unity
-    utr: ./utr
-  - name: ubuntu
-    type: Unity::VM
-    image: package-ci/ubuntu-22.04:v4
-    flavor: b1.large
-    pathsep: /
-    standalone: StandaloneLinux64
-    editorpath: .Editor/Unity
-    utr: ./utr
-
-# Projects within the repository that will be tested. Name will be used
-# for job ids, so it should not contain spaces/non-supported characters
-projects:
-  - name: testproject
-    path: testproject
-    validate: true
-    publish: true
-    has_tests: true
-    # Packages within a project that will be tested
-    packages:
-      - name: com.unity.netcode.gameobjects
-        path: com.unity.netcode.gameobjects
-    test_editors:
-      - 6000.0
-      - trunk
-  - name: minimalproject
-    path: minimalproject
-    validate: false
-    publish: false
-    has_tests: false
-    packages:
-      - name: com.unity.netcode.gameobjects
-        path: com.unity.netcode.gameobjects
-    test_editors:
-      - 6000.0
-  - name: testproject-tools-integration
-    path: testproject-tools-integration
-    validate: false
-    publish: false
-    has_tests: true
-    test_editors:
-      - 6000.0
-      - trunk
-
-# Package dependencies
-dependencies: 
-  - name: com.unity.transport
-    version: 2.2.1
-    test_editors:
-      - 6000.0
-      - trunk
-
-# Scripting backends used by Standalone Playmode Tests
+    # Default platform is used for all basic jobs. Ubuntu was chosen since it's fastest and most available
+    default:
+        - name: ubuntu
+          type: Unity::VM
+          image: package-ci/ubuntu-22.04:v4
+          flavor: b1.large
+          standalone: StandaloneLinux64
+    desktop:  
+        - name: ubuntu
+          type: Unity::VM
+          image: package-ci/ubuntu-22.04:v4
+          flavor: b1.large
+          standalone: StandaloneLinux64
+          model: rtx2080
+        - name: win
+          type: Unity::VM
+          image: package-ci/win10:v4
+          flavor: b1.large
+          standalone: StandaloneWindows64
+          model: rtx2080
+        - name: mac
+          type: Unity::VM::osx
+          image: package-ci/macos-13:v4
+          flavor: m1.mac
+          standalone: StandaloneOSX
+    # For mobile devices there is a split between the build and run phase so there is a need of splitting specification for both
+    mobile_build:
+        - name: android-armV7
+          type: Unity::VM
+          image: package-ci/win10:v4
+          flavor: b1.large
+          standalone: Android
+          base: win
+          architecture: armv7
+        - name: android-arm64
+          type: Unity::VM
+          image: package-ci/win11:v4
+          flavor: b1.large
+          standalone: Android
+          base: win
+          architecture: arm64
+        # iOS modern builds are ARM64-only, thus no testing with armv7 (as in android case)
+        - name: ios-arm64
+          type: Unity::VM::osx
+          image: package-ci/macos-13:v4
+          flavor: m1.mac
+          standalone: IOS
+          base: mac
+          architecture: arm64
+    mobile_test:
+        - name: android-armV7
+          type: Unity::mobile::shield
+          image: package-ci/win10:v4
+          flavor: b1.large
+          model: ShieldPro
+          standalone: Android
+          base: win
+          architecture: armv7
+        - name: android-arm64
+          type: Unity::mobile::shield
+          image: package-ci/win11-arm64:v4
+          flavor: b1.large
+          model: ShieldPro
+          standalone: Android
+          base: win
+          architecture: arm64
+        - name: ios-arm64
+          type: Unity::mobile::iPhone
+          image: package-ci/macos-13-arm64:v4
+          flavor: m1.mac
+          model: SE
+          standalone: IOS
+          base: mac
+          architecture: arm64
+    console_build:
+        - name: ps4
+          type: Unity::VM
+          image: package-ci/win10-ps4:v4
+          flavor: b1.large
+          standalone: PS4
+        - name: ps5
+          type: Unity::VM
+          image: package-ci/win10-ps5:v4
+          flavor: b1.large
+          standalone: PS5
+        - name: switch
+          type: Unity::VM
+          image: package-ci/win10-switch:v4
+          flavor: b1.large
+          standalone: Switch
+        - name: GameCoreXboxOne
+          type: Unity::VM
+          image: package-ci/win10-xbox:v4
+          flavor: b1.large
+          standalone: GameCoreXboxOne
+        - name: GameCoreScarlett
+          type: Unity::VM
+          image: package-ci/win10-xbox:v4
+          flavor: b1.large
+          standalone: GameCoreScarlett
+    console_test:
+        - name: ps4
+          type: Unity::console::ps4
+          image: package-ci/win10-ps4:v4
+          flavor: b1.large
+          standalone: PS4
+        - name: ps5
+          type:  Unity::console::ps5
+          image: package-ci/win10-ps5:v4
+          flavor: b1.large
+          standalone: PS5
+        - name: switch
+          type: Unity::console::switch
+          image: package-ci/win10-switch:v4
+          flavor: b1.large
+          standalone: Switch
+          base: win
+        - name: GameCoreXboxOne
+          type: Unity::console::xbox
+          image: package-ci/win10-xbox:v4
+          flavor: b1.large
+          standalone: GameCoreXboxOne
+        - name: GameCoreScarlett
+          type: Unity::console::scarlett
+          image: package-ci/win10-xbox:v4
+          flavor: b1.large
+          standalone: GameCoreScarlett
+    
+    
+# Editors to be used for testing.
+# Since NGOv2 official support started from U6 it means that only those editors should be used for testing
+validation_editors:
+    default:
+        - trunk
+    all:
+        - 6000.0
+        - 6000.1 
+        - trunk
+        
+        
+# Scripting backends used by Standalone RunTimeTests
 scripting_backends: 
   - mono
   - il2cpp
 
-# Images with build-tools installed required for Standalone Tests - IL2CPP
-win_il2cpp_test_image: dots-player/windows10:latest
+
+# Projects within the repository that will be tested. Name will be used
+# for job ids, so it should not contain spaces/non-supported characters
+# The default project will also be used for validation, code coverage etc.
+projects:
+    default:
+        - name: testproject
+          path: testproject
+          has_tests: true
+    all:
+        - name: testproject
+          path: testproject
+          has_tests: true
+        - name: minimalproject
+          path: minimalproject
+          has_tests: false
+        - name: testproject-tools-integration
+          path: testproject-tools-integration
+          has_tests: true
