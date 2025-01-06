@@ -43,7 +43,7 @@ webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}:
       ./utr --suite=playmode --platform=WebGL --scripting-backend=il2cpp --testproject={{ project.path }} --editor-location=.Editor --artifacts_path=build/test-results --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg="-cloudEnvironment staging" --extra-editor-arg=-nographics --reruncount=1 --clean-library-on-rerun  --build-only
 {% endif %} 
 
-artifacts:
+  artifacts:
     logs:
       paths:
         - '*.log'
