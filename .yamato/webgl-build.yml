@@ -37,7 +37,11 @@ webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}:
   
     # Build Player
     - |
-{% if platform.name == "win" %} utr.bat {% else %} ./utr {% endif %} --suite=playmode --platform=WebGL --scripting-backend=il2cpp --testproject={{ project.path }} --editor-location=.Editor --artifacts_path=build/test-results --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg="-cloudEnvironment staging" --extra-editor-arg=-nographics --reruncount=1 --clean-library-on-rerun  --build-only
+{% if platform.name == "win" %} 
+      utr.bat --suite=playmode --platform=WebGL --scripting-backend=il2cpp --testproject={{ project.path }} --editor-location=.Editor --artifacts_path=build/test-results --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg="-cloudEnvironment staging" --extra-editor-arg=-nographics --reruncount=1 --clean-library-on-rerun  --build-only
+{% else %} 
+      ./utr --suite=playmode --platform=WebGL --scripting-backend=il2cpp --testproject={{ project.path }} --editor-location=.Editor --artifacts_path=build/test-results --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg="-cloudEnvironment staging" --extra-editor-arg=-nographics --reruncount=1 --clean-library-on-rerun  --build-only
+{% endif %} 
 
 artifacts:
     logs:
