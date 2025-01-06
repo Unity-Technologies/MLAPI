@@ -1,39 +1,62 @@
 {% metadata_file .yamato/project.metafile %}
 ---
 
-{% for project in projects -%}
-{% if project.name == "testproject" -%}
-{% for editor in project.test_editors -%}
-build_{{ project.name }}_tests_{{ editor }}_webgl:
-  name: Build {{ project.name }} Tests - {{ editor }} - WebGL
+# Builds a player on WebGl standalone platform without executing any tests.
+# This setup performs build-only validation since WebGL runs in browser and for tests to be executed we would need to 
+# consider having a web server, browser automation and overall complex test setup.
+# Default project (testptoject) in this case is used as a context.
+# WebGL requires Il2cpp scripting backend so mono is not considered
+# ARM64 architectures are not considered since Windows_arm64 is recommended to use only after builds and when it comes to macOS_arm64 there is problem with OpenCL not being available
+# Builds are made on each desktop platform as in project.metafile declaration
+{% for project in projects.default -%}
+{% for platform in test_platforms.desktop -%}
+{% for editor in validation_editors.all -%}
+webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}:
+  name: WebGl Build - {{ project.name }} [{{ platform.name }}, {{ editor }}, il2cpp]
   agent:
-      type: Unity::VM
-      image: dots-ci/windows10:v1.493-auto
-      flavor: b1.xlarge
+    type: {% if platform.name == "mac" %} {{ platform.type }} {% else %} {{ platform.type }}::GPU {% endif %}
+    image: {{ platform.image }}
+    flavor: {{ platform.flavor }}
   commands:
+    # Installing tools
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
-    - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
-    - python .yamato/disable-burst-if-requested.py --project-path testproject --platform WebGL
-    - unity-downloader-cli -u {{ editor }} -c editor -c webgl -c il2cpp -w --fast
+    
+    # Platform specific UTR setup
     - |
-       set UTR_VERSION=0.12.0
-       utr.bat --artifacts_path=artifacts --timeout=1800 --testproject={{ project.name }} --editor-location=.Editor --suite=playmode --platform=WebGL --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging"
-  artifacts:
-    logs:
-      paths:
+{% if platform.name == "win" %}
+      curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
+{% else %}
+      curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr && chmod +x utr
+{% endif %}
+  
+    # Disabling Burst
+    - python .yamato/disable-burst-if-requested.py --project-path {{ project.path }} --platform WebGL
+  
+    # Installing editor
+    - unity-downloader-cli -u {{ editor }} -c Editor -c webgl -c il2cpp -w --fast
+  
+    # Build Player
+    - |
+{% if platform.name == "win" %}
+      utr.bat --suite=playmode --platform=WebGL --scripting-backend=il2cpp --testproject={{ project.path }} --editor-location=.Editor --artifacts_path=build/test-results --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg="-cloudEnvironment staging" --extra-editor-arg=-nographics --reruncount=1 --clean-library-on-rerun  --build-only
+{% else %}
+      ./utr --suite=playmode --platform=WebGL --scripting-backend=il2cpp --testproject={{ project.path }} --editor-location=.Editor --artifacts_path=build/test-results --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg="-cloudEnvironment staging" --extra-editor-arg=-nographics --reruncount=1 --clean-library-on-rerun  --build-only
+{% endif %}
+
+artifacts:
+  logs:
+    paths:
       - '*.log'
       - '*.xml'
-      - artifacts/**/*
-      - testproject/Logs/**
-      - testproject/Library/*.log
-      - testproject/*.log
-      - testproject/Builds/*.log
-      - build/test-results/**
-      - artifacts/**
+      - {{ project.path }}/Logs/**
+      - {{ project.path }}/Library/*.log
+      - {{ project.path }}/*.log
+      - {{ project.path }}/Builds/*.log
+      - build/test-results/**/*
       - build/players/**
-  variables:
-    CI: true
-    ENABLE_BURST_COMPILATION: False
+variables:
+  CI: true
+  ENABLE_BURST_COMPILATION: False
 {% endfor -%}
-{% endif -%}
+{% endfor -%}
 {% endfor -%}
