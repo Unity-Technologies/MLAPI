@@ -1,0 +1,23 @@
+{% metadata_file .yamato/project.metafile %}
+---
+
+# Packs Netcode for GameObjects together with performing initial checks. 
+# For this job no specific platform support and no running Unity instance is required so small agent (as per project.metafile definition) will be used to save resources and speed up the process
+{% for platform in small_agent_platform -%}
+package_pack_-_ngo:
+  name: Package Pack (and x-ray) - NGO [{{ platform.name }}]
+  agent:
+    type: {{ platform.type }}
+    image: {{ platform.image }}
+    flavor: {{ platform.flavor }}
+  timeout: 0.25
+  commands:
+    - npm install -g upm-ci-utils@stable --registry https://artifactory.prd.it.unity3d.com/artifactory/api/npm/upm-npm
+    - upm-ci package pack --package-path com.unity.netcode.gameobjects
+    - upm-pvp xray --packages "upm-ci~/packages/*.tgz" --results upm-ci~/xray
+    - upm-pvp require "supported rme" --allow-missing --results upm-ci~/xray --exemptions upm-ci~/xray/new-exemptions.json
+  artifacts:
+    packages:
+      paths:
+        - "upm-ci~/**"
+{% endfor -%}

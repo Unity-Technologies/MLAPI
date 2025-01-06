@@ -1,44 +1,22 @@
 {% metadata_file .yamato/project.metafile %}
 ---
-{% for project in projects -%}
-pack_{{ project.name }}:
-  name: Pack {{ project.name }}
-  agent:
-    type: Unity::VM
-    image: package-ci/ubuntu-22.04:v4
-    flavor: b1.small
-  commands:
-    - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
-    - upm-ci project pack --project-path {{ project.path }}
-  artifacts:
-    packages:
-      paths:
-        - "upm-ci~/packages/**/*"
-{% endfor -%}
 
-# Pack minimal project with different versions of dependencies
-{% for project in projects -%}
-{% if project.name == "minimalproject" -%}
-{% for dependency in dependencies -%}
-pack_{{ project.name }}_{{ dependency.name }}@{{ dependency.version }}:
-  name: Pack {{ project.name }} with {{ dependency.name }}@{{ dependency.version }}
+# Jobs that iterate through and packs all NGO projects listed (to use in different jobs)
+# For this job no specific platform support and no running Unity instance is required so small agent (as per project.metafile definition) will be used to save resources and speed up the process
+{% for project in projects.all -%}
+{% for platform in small_agent_platform -%}
+project_pack_-_{{ project.name }}:
+  name: Project Pack - {{ project.name }} [{{ platform.name }}]
   agent:
-    type: Unity::VM
-    image: package-ci/ubuntu-22.04:v4
-    flavor: b1.small
+    type: {{ platform.type }}
+    image: {{ platform.image }}
+    flavor: {{ platform.flavor }}
   commands:
-    - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
-    - curl -L https://artifactory.prd.it.unity3d.com/artifactory/api/gpg/key/public | sudo apt-key add -
-    - sudo sh -c "echo 'deb https://artifactory.prd.it.unity3d.com/artifactory/unity-apt-local bionic main' > /etc/apt/sources.list.d/unity.list"
-    - sudo apt update
-    - sudo apt install -y unity-config
-    - unity-config settings project-path {{ project.path }}
-    - unity-config project add dependency {{ dependency.name }}@{{ dependency.version }}
+    - npm install -g upm-ci-utils@stable --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - upm-ci project pack --project-path {{ project.path }}
   artifacts:
     packages:
       paths:
         - "upm-ci~/packages/**/*"
 {% endfor -%}
-{% endif -%}
 {% endfor -%}
