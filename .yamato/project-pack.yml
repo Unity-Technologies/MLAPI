@@ -5,7 +5,7 @@
 # For this job no specific platform support and no running Unity instance is required so small agent (as per project.metafile definition) will be used to save resources and speed up the process
 {% for project in projects.all -%}
 project_pack_-_{{ project.name }}:
-  name: Project Pack - {{ project.name }} [{{ platform.name }}]
+  name: Project Pack - {{ project.name }} [{{ small_agent_platform.name }}]
   agent:
     type: {{ small_agent_platform.type }}
     image: {{ small_agent_platform.image }}

@@ -32,7 +32,12 @@ performance_editor_tests_-_NGO_{{ platform.name }}_{{ editor }}_no_data_reportin
       - unity-downloader-cli -u {{ editor }} -c Editor --fast --wait
       
       # Build Player
-{% if platform.name == "win" %} utr.bat {% else %} ./utr {% endif %} --suite=editor --testproject={{ project.path }} --editor-location=.Editor --timeout=3600 --artifacts-path=artifacts --extra-editor-arg=-assemblyNames --extra-editor-arg=Unity.NetCode.* --extra-editor-arg=-testCategory --extra-editor-arg=Performance --extra-editor-arg=-enablePackageManagerTraces --reruncount=1 --clean-library-on-rerun --dontreportperformancedata
+      - |
+{% if platform.name == "win" %} 
+        utr.bat --suite=editor --testproject={{ project.path }} --editor-location=.Editor --timeout=3600 --artifacts-path=artifacts --extra-editor-arg=-assemblyNames --extra-editor-arg=Unity.NetCode.* --extra-editor-arg=-testCategory --extra-editor-arg=Performance --extra-editor-arg=-enablePackageManagerTraces --reruncount=1 --clean-library-on-rerun --dontreportperformancedata
+{% else %} 
+        ./utr --suite=editor --testproject={{ project.path }} --editor-location=.Editor --timeout=3600 --artifacts-path=artifacts --extra-editor-arg=-assemblyNames --extra-editor-arg=Unity.NetCode.* --extra-editor-arg=-testCategory --extra-editor-arg=Performance --extra-editor-arg=-enablePackageManagerTraces --reruncount=1 --clean-library-on-rerun --dontreportperformancedata  
+{% endif %} 
 
   artifacts:
     logs:

@@ -39,12 +39,20 @@ desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{
     
     # Build Player
     - |
-{% if platform.name == "win" %} utr.bat {% else %} ./utr {% endif %} --suite=playmode --platform={{ platform.standalone }} --editor-location=.Editor --testproject={{ project.path }} --scripting-backend={{ backend }} --player-save-path=build/players --artifacts_path=build/logs --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --reruncount=1 --clean-library-on-rerun
-    
+{% if platform.name == "win" %} 
+      utr.bat --suite=playmode --platform={{ platform.standalone }} --editor-location=.Editor --testproject={{ project.path }} --scripting-backend={{ backend }} --player-save-path=build/players --artifacts_path=build/logs --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --reruncount=1 --clean-library-on-rerun
+{% else %} 
+      ./utr --suite=playmode --platform={{ platform.standalone }} --editor-location=.Editor --testproject={{ project.path }} --scripting-backend={{ backend }} --player-save-path=build/players --artifacts_path=build/logs --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --reruncount=1 --clean-library-on-rerun
+{% endif %}  
+
     # Run Standalone tests
     - |
-{% if platform.name == "win" %} utr.bat {% else %} ./utr {% endif %} --suite=playmode --platform={{ platform.standalone }} --scripting-backend={{ backend }} --player-load-path=build/players --artifacts_path=build/test-results --testfilter=Unity.Netcode.RuntimeTests --playergraphicsapi=Null --reruncount=1 --clean-library-on-rerun
-      
+{% if platform.name == "win" %} 
+  utr.bat --suite=playmode --platform={{ platform.standalone }} --scripting-backend={{ backend }} --player-load-path=build/players --artifacts_path=build/test-results --testfilter=Unity.Netcode.RuntimeTests --playergraphicsapi=Null --reruncount=1 --clean-library-on-rerun
+{% else %} 
+  ./utr --suite=playmode --platform={{ platform.standalone }} --scripting-backend={{ backend }} --player-load-path=build/players --artifacts_path=build/test-results --testfilter=Unity.Netcode.RuntimeTests --playergraphicsapi=Null --reruncount=1 --clean-library-on-rerun
+{% endif %} 
+
   artifacts:
     logs:
       paths:
