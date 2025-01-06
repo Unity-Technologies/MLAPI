@@ -1,8 +1,10 @@
 {% metadata_file .yamato/project.metafile %}
 ---
 
-# Executes PlayMode and EditMode tests of the given project in the Editor context
+# Executes PlayMode and EditMode tests of the given project (ones that have tests) in the Editor context
 # Those tests don't include NGO package tests since they are handled on their respective jobs.
+# Those tests run in the editor so we don't need to consider different scripting backends or architectures
+# Tests are executed for all supported editors on each desktop platform as in project.metafile declaration
 {% for project in projects.all -%}
 {% if project.has_tests == "true" -%}
 {% for platform in test_platforms.desktop -%}

@@ -4,21 +4,19 @@
 # Builds a player on WebGl standalone platform without executing any tests.
 # This setup performs build-only validation since WebGL runs in browser and for tests to be executed we would need to 
 # consider having a web server, browser automation and overall complex test setup.
-# Default project in this case is used as a context.
-# WebGL requires Il2cpp scripting backend
+# Default project (testptoject) in this case is used as a context.
+# WebGL requires Il2cpp scripting backend so mono is not considered
+# ARM64 architectures are not considered since Windows_arm64 is recommended to use only after builds and when it comes to macOS_arm64 there is problem with OpenCL not being available
+# Builds are made on each desktop platform as in project.metafile declaration
 {% for project in projects.default -%}
 {% for platform in test_platforms.desktop -%}
-{% if platform.extension != "arm64" -%} # Windows_arm64 is recommended to use only after builds and when it comes to macOS_arm64 there is problem with OpenCL not being available
 {% for editor in validation_editors.all -%}
 webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}:
   name: WebGl Build - {{ project.name }} [{{ platform.name }}, {{ editor }}, il2cpp]
   agent:
-    type: {% if platform.type == "Unity::VM::osx" %} {{ platform.type }} {% else %} {{ platform.type }}::GPU {% endif %}
+    type: {% if platform.name == "mac" %} {{ platform.type }} {% else %} {{ platform.type }}::GPU {% endif %}
     image: {{ platform.image }}
     flavor: {{ platform.flavor }}
-{% if platform.model %}
-    model: {{ platform.model }}
-{% endif %}
   commands:
     # Installing tools
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
@@ -39,27 +37,22 @@ webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}:
   
     # Build Player
     - |
-{% if platform.name == "win" %}
-      utr.bat --suite=playmode --platform=WebGL --artifacts_path=build/test-results -reruncount=1 --clean-library-on-rerun --testproject={{ project.path }} --editor-location=.Editor --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging" --extra-editor-arg=-nographics
-{% else %}
-      ./utr --suite=playmode --platform=WebGL -reruncount=1 --clean-library-on-rerun --artifacts_path=build/test-results --testproject={{ project.path }} --editor-location=.Editor --build-only --player-save-path=build/players --extra-editor-arg=-batchmode --scripting-backend=il2cpp --extra-editor-arg="-cloudEnvironment staging" --extra-editor-arg=-nographics
-{% endif %}
-      
-  artifacts:
+{% if platform.name == "win" %} utr.bat {% else %} ./utr {% endif %} --suite=playmode --platform=WebGL --scripting-backend=il2cpp --testproject={{ project.path }} --editor-location=.Editor --artifacts_path=build/test-results --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg="-cloudEnvironment staging" --extra-editor-arg=-nographics --reruncount=1 --clean-library-on-rerun  --build-only
+
+artifacts:
     logs:
       paths:
         - '*.log'
         - '*.xml'
-        - testproject/Logs/**
-        - testproject/Library/*.log
-        - testproject/*.log
-        - testproject/Builds/*.log
+        - {{ project.path }}/Logs/**
+        - {{ project.path }}/Library/*.log
+        - {{ project.path }}/*.log
+        - {{ project.path }}/Builds/*.log
         - build/test-results/**/*
         - build/players/**
   variables:
     CI: true
     ENABLE_BURST_COMPILATION: False
 {% endfor -%}
-{% endif -%}
 {% endfor -%}
 {% endfor -%}

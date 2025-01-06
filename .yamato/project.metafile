@@ -1,13 +1,13 @@
 # The small agent was created to handle jobs that don't involve running Unity (for example pack job).
 # It uses ubuntu since Linux VMs are faster and cheaper to provision than Mac or Windows Virtual Machines (VMs).
-# The b1.small flavour is nearly always sufficient for jobs that don’t involve running Unity.
-small_agent: 
+# The b1.small flavour is nearly always sufficient for jobs that don’t involve running Unity Editor.
+small_agent_platform: 
     - name: ubuntu
       type: Unity::VM
       image: package-ci/ubuntu-22.04:v4
       flavor: b1.small
 
-# Platforms that project will/can be tested on. It would be immensely expensive to test on all possible platforms since subset of those was chosen to show the best overall representation
+# Platforms that project will/can be tested on.
 test_platforms:
     # Default platform is used for all basic jobs. Ubuntu was chosen since it's fastest and most available
     default:
@@ -16,8 +16,6 @@ test_platforms:
           image: package-ci/ubuntu-22.04:v4
           flavor: b1.large
           standalone: StandaloneLinux64
-    # Desktop platforms cover all main desktop platforms
-    # Windows_arm64 is recommended to use only after builds and when it comes to macOS_arm64 there is problem with OpenCL not being available. Other option would be to separate build and run phases but disabled for now
     desktop:  
         - name: ubuntu
           type: Unity::VM
@@ -36,7 +34,7 @@ test_platforms:
           image: package-ci/macos-13:v4
           flavor: m1.mac
           standalone: StandaloneOSX
-    # Mobile platforms cover all main mobile devices. There is a split between the build and run phase so there is a need of splitting specification for both (since its different)
+    # For mobile devices there is a split between the build and run phase so there is a need of splitting specification for both
     mobile_build:
         - name: android-armV7
           type: Unity::VM
@@ -151,7 +149,7 @@ validation_editors:
         - trunk
         
         
-# Scripting backends used by Standalone Playmode Tests
+# Scripting backends used by Standalone RunTimeTests
 scripting_backends: 
   - mono
   - il2cpp
@@ -159,8 +157,7 @@ scripting_backends:
 
 # Projects within the repository that will be tested. Name will be used
 # for job ids, so it should not contain spaces/non-supported characters
-# The first entry in this array will also
-# be used for validation, code coverage etc (windows) so it's important to be careful when changing order of projects!
+# The default project will also be used for validation, code coverage etc.
 projects:
     default:
         - name: testproject

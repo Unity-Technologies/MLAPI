@@ -12,7 +12,7 @@ run_all_package_tests:
 {% endfor -%}
 
 
-# Runs all package tests on trunk
+# Runs all package tests on trunk editor
 run_all_package_tests_trunk:
   name: Run All Package Tests [Trunk only]
   dependencies:
@@ -38,7 +38,7 @@ run_all_project_tests:
 {% endfor -%}
 
 
-# Runs all projects tests on trunk
+# Runs all projects tests on trunk editor
 run_all_project_tests_trunk:
   name: Run All Project Tests [Trunk only]
   dependencies:
@@ -66,34 +66,33 @@ run_all_projects_standards:
 {% endfor -%}
 
 
+# Runs all WebGL builds
 run_all_webgl_builds:
   name: Run All WebGl Build
   dependencies:
 {% for project in projects.default -%}
 {% for platform in test_platforms.desktop -%}
-{% if platform.architecture != "arm64" -%} # Windows_arm64 is recommended to use only after builds and when it comes to macOS_arm64 there is problem with OpenCL not being available
 {% for editor in validation_editors.all -%}
   - .yamato/webgl-build.yml#webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}
 {% endfor -%}
-{% endif -%}
 {% endfor -%}
 {% endfor -%}
 
 
+# Runs all WebGL builds on trunk editor
 run_all_webgl_builds_trunk:
   name: Run All WebGl Build [Trunk only]
   dependencies:
 {% for project in projects.default -%}
 {% for platform in test_platforms.desktop -%}
-{% if platform.architecture != "arm64" -%} # Windows_arm64 is recommended to use only after builds and when it comes to macOS_arm64 there is problem with OpenCL not being available
 {% for editor in validation_editors.default -%}
     - .yamato/webgl-build.yml#webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}
 {% endfor -%}
-{% endif -%}
 {% endfor -%}
 {% endfor -%}
 
 
+# Runs all Desktop tests
 run_all_project_tests_desktop_standalone:
   name: Run All Standalone Tests - Desktop
   dependencies:
@@ -108,6 +107,7 @@ run_all_project_tests_desktop_standalone:
 {% endfor -%}
 
 
+# Runs all Desktop tests on trunk editor
 run_all_project_tests_desktop_standalone_trunk:
   name: Run All Standalone Tests - Desktop [Trunk only]
   dependencies:
@@ -121,50 +121,53 @@ run_all_project_tests_desktop_standalone_trunk:
 {% endfor -%}
 {% endfor -%}
 
-
+# Runs all Mobile tests
 run_all_project_tests_mobile_standalone:
   name: Run All Standalone Tests - Mobile
   dependencies:
 {% for project in projects.default -%}
-{% for editor in validation_editors.all -%}
 {% for platform in test_platforms.mobile_test -%}
-    - .yamato/mobile-standalone-test.yml#run_{{ project.name }}_tests_{{ editor }}_{{ platform.name }}
+{% for editor in validation_editors.all -%}
+    - .yamato/mobile-standalone-test.yml#run_{{ project.name }}_tests_{{ platform.name }}_{{ editor }}
 {% endfor -%}
 {% endfor -%}
 {% endfor -%}
 
 
+# Runs all Mobile tests on trunk editor
 run_all_project_tests_mobile_standalone_trunk:
   name: Run All Standalone Tests - Mobile [Trunk only]
   dependencies:
 {% for project in projects.default -%}
-{% for editor in validation_editors.default -%}
 {% for platform in test_platforms.mobile_test -%}
-    - .yamato/mobile-standalone-test.yml#run_{{ project.name }}_tests_{{ editor }}_{{ platform.name }}
+{% for editor in validation_editors.default -%}
+    - .yamato/mobile-standalone-test.yml#run_{{ project.name }}_tests_{{ platform.name }}_{{ editor }}
 {% endfor -%}
 {% endfor -%}
 {% endfor -%}
 
 
+# Runs all Console tests
 run_all_project_tests_console_standalone:
   name: Run All Standalone Tests - Console
   dependencies:
 {% for project in projects.default -%}
-{% for editor in validation_editors.all -%}
 {% for platform in test_platforms.console_test -%}
-  - .yamato/console-standalone-test.yml#run_{{ project.name }}_tests_{{ editor }}_{{ platform.name }}
+{% for editor in validation_editors.all -%}
+  - .yamato/console-standalone-test.yml#run_{{ project.name }}_tests_{{ platform.name }}_{{ editor }}
 {% endfor -%}
 {% endfor -%}
 {% endfor -%}
 
 
+# Runs all Console tests on trunk editor
 run_all_project_tests_console_standalone_trunk:
   name: Run All Standalone Tests - Console [Trunk only]
   dependencies:
 {% for project in projects.default -%}
-{% for editor in validation_editors.default -%}
 {% for platform in test_platforms.console_test -%}
-    - .yamato/console-standalone-test.yml#run_{{ project.name }}_tests_{{ editor }}_{{ platform.name }}
+{% for editor in validation_editors.default -%}
+    - .yamato/console-standalone-test.yml#run_{{ project.name }}_tests_{{ platform.name }}_{{ editor }}
 {% endfor -%}
 {% endfor -%}
 {% endfor -%}

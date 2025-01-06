@@ -2,6 +2,7 @@
 ---
 
 # Performance tests for the `com.unity.netcode.gameobjects` package. No performance data will be reported.
+# Performance tests are executed within editor on desktop platforms in context of default project (testproject)
 {% for platform in test_platforms.desktop -%}
 {% for editor in validation_editors.all -%}
 {% for project in projects.default -%}
@@ -31,21 +32,18 @@ performance_editor_tests_-_NGO_{{ platform.name }}_{{ editor }}_no_data_reportin
       - unity-downloader-cli -u {{ editor }} -c Editor --fast --wait
       
       # Build Player
-{% if platform.name == "win" %}
-      - utr --artifacts-path=artifacts --timeout=3600 --testproject={{ project.path }} --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --suite=editor --dontreportperformancedata --extra-editor-arg=-assemblyNames --extra-editor-arg=Unity.NetCode.* --extra-editor-arg=-testCategory --extra-editor-arg=Performance --extra-editor-arg=-enablePackageManagerTraces
-{% else %}
-      - ./utr --artifacts-path=artifacts --timeout=3600 --testproject={{ project.path }} --editor-location=.Editor --reruncount=1 --clean-library-on-rerun --suite=editor --dontreportperformancedata --extra-editor-arg=-assemblyNames --extra-editor-arg=Unity.NetCode.* --extra-editor-arg=-testCategory --extra-editor-arg=Performance --extra-editor-arg=-enablePackageManagerTraces
-{% endif %}
+{% if platform.name == "win" %} utr.bat {% else %} ./utr {% endif %} --suite=editor --testproject={{ project.path }} --editor-location=.Editor --timeout=3600 --artifacts-path=artifacts --extra-editor-arg=-assemblyNames --extra-editor-arg=Unity.NetCode.* --extra-editor-arg=-testCategory --extra-editor-arg=Performance --extra-editor-arg=-enablePackageManagerTraces --reruncount=1 --clean-library-on-rerun --dontreportperformancedata
+
   artifacts:
     logs:
       paths:
         - '*.log'
         - '*.xml'
         - artifacts/**/*
-        - {{ project.path }}/Logs/**
-        - {{ project.path }}/Library/*.log
-        - {{ project.path }}/*.log
-        - {{ project.path }}/Builds/*.log
+        - {{ project.name }}/Logs/**
+        - {{ project.name }}/Library/*.log
+        - {{ project.name }}/*.log
+        - {{ project.name }}/Builds/*.log
         - build/test-results/**
 {% endfor -%}
 {% endfor -%}

@@ -27,6 +27,7 @@ pull_request_trigger:
 
 # Run all tests on trunk on nightly basis.
 # Same subset as pull_request_trigger with addition of mobile/desktop/console tests and webgl builds
+# Those tests are all running on trunk editor (since it's daily and running all of them would add a lot of overhead)
 develop_nightly:
   name: "\U0001F319 [Nightly] Run All Tests [Trunk]"
   triggers:
@@ -58,6 +59,7 @@ develop_nightly:
 # Run all tests on weekly bases
 # Same subset as develop_nightly but runs per all supported editors as well as executes code coverage test and runs project standards per project
 # It's not running wrench jobs since those will run either way in nightly test run
+# This in contrast to nightly checks will run tests on all editors (not only trunk). Running those on weekly basis and trunk tests nightly should be a good balance between making sure that tests are passing and overhead of running lots of tests
 develop_weekly_trunk:
   name: "\U0001F319 [Weekly] Run All Tests"
   triggers:

@@ -2,6 +2,8 @@
 ---
 
 # Executes PlayMode and EditMode tests of the NGO package in the Editor context
+# Those tests run in the editor so we don't need to consider different scripting backends or architectures
+# Tests are executed for all supported editors on each desktop platform as in project.metafile declaration
 {% for platform in test_platforms.desktop -%}
 {% for editor in validation_editors.all -%}
 package_test_-_ngo_{{ editor }}_{{ platform.name }}:

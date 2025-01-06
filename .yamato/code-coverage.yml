@@ -1,7 +1,17 @@
 {% metadata_file .yamato/project.metafile %}
 ---
 
-# It's ok for code coverage to be performed only on one platform since code coverage won't change much between those.
+
+  # This setup performs build-only validation since WebGL runs in browser and for tests to be executed we would need to 
+  # consider having a web server, browser automation and overall complex test setup.
+  # Default project (testptoject) in this case is used as a context.
+  # WebGL requires Il2cpp scripting backend so mono is not considered
+  # ARM64 architectures are not considered since Windows_arm64 is recommended to use only after builds and when it comes to macOS_arm64 there is problem with OpenCL not being available
+  # Builds are made on each desktop platform as in project.metafile declaration
+    
+# Runs package tests in order to determine code coverage of the NGO package.
+# In essence it's performing the same task as .yamato/package-test jobs with the overhead being the measured code coverage
+# It's ok for code coverage to be performed only on one platform (default) since code coverage won't change much between those.
 # Default platform was chosen (ubuntu) since it's the fastest and most resource friendly with default editor.
 {% for platform in test_platforms.default -%}
 {% for editor in validation_editors.default -%}
@@ -11,9 +21,6 @@ code_coverage_{{ platform.name }}_{{ editor }}:
     type: {{ platform.type }}
     image: {{ platform.image }}
     flavor: {{ platform.flavor }}
-{% if platform.model %}
-    model: {{ platform.model }}
-{% endif %}
   commands:
     - npm install -g upm-ci-utils@stable --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - unity-downloader-cli {% if platform.extension == "arm64" %} --arch arm64 {% endif %} -u {{ editor }} -c Editor --fast --wait
