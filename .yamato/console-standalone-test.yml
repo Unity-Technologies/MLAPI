@@ -1,0 +1,107 @@
+{% metadata_file .yamato/project.metafile %}
+---
+
+# Builds a player on console standalone platform and executes RuntimeTests (equivalent to PlayMode tests) of the NGO package in the Standalone build.
+# Default project (testptoject) in this case is used as a context.
+# Builds/Tests are made on each console platform (PS4, PS5, Switch, XboxOne, XboxSeriesX) as in project.metafile declaration
+# Builds/Tests are made on each supported editor as in project.metafile declaration
+  
+# For SOME of the console devices it's necessary to split build and run phases so it was split for all
+# For all consoles we need to use il2cpp scripting backend (so no testing with mono)
+# Switch works only with ARM64 and the rest with x64 architectures
+# For now all platforms used for building are windows based
+  
+# Builds are made with x64 architecture machines since those are compatible to run on ARM64 devices
+{% for project in projects.default -%}
+{% for platform in test_platforms.console_build -%}
+{% for editor in validation_editors.all -%}
+build_{{ project.name }}_{{ platform.name }}_{{ editor }}:
+  name: Build {{ project.name }} - [{{ platform.name }}, {{ editor }}, il2cpp{% if platform.name == "switch" %}, arm64{% endif %}]
+  agent:
+    type: {{ platform.type }}
+    image: {{ platform.image }}
+    flavor: {{ platform.flavor }}
+  commands:
+    # Installing tools. unity-downloader-cli and utr should be already preinstalled on the image
+    - sudo pip install unity-downloader-cli
+    - unity-downloader-cli -u {{ editor }} -c Editor -c il2cpp -c {{ platform.name }} --fast --wait
+    - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
+    
+    # Platform specific Build
+    - utr --testproject={{ project.path }} architecture={% if platform.name == "switch" %}arm64{% else %}x64{% endif %} --scripting-backend=il2cpp --suite=playmode --platform={{ platform.standalone }} --editor-location=.Editor  --artifacts_path=build/logs --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testCategory=!Performance --reruncount=1 --clean-library-on-rerun --build-only
+
+  variables:
+# PS4 related
+    SCE_ORBIS_SDK_DIR: 'C:\Users\bokken\SCE\ps4_sdk_12_00'
+# PS5 related
+    SCE_PROSPERO_SDK_DIR: 'C:\Program Files (x86)\SCE\Prospero SDKs\9.000'
+    SHADER_COMPILER_PATH: '${SCE_PROSPERO_SDK_DIR}\target\bins'
+    SCE_ROOT_DIR: 'C:\Program Files (x86)\SCE'
+# Switch related
+    NINTENDO_SDK_ROOT: 'C:\Nintendo\nx_sdk-18_3_0\NintendoSDK'
+    UNITY_NINTENDOSDK_CLI_TOOLS: '${NINTENDO_SDK_ROOT}\Tools\CommandLineTools'
+  artifacts:
+    logs:
+      paths:
+        - '*.log'
+        - '*.xml'
+        - artifacts/**/*
+        - {{ project.name }}/Logs/**
+        - {{ project.name }}/Library/*.log
+        - {{ project.name }}/*.log
+        - {{ project.name }}/Builds/*.log
+        - build/test-results/**
+        - build/players/**
+{% endfor -%}
+{% endfor -%}
+{% endfor -%}
+  
+  
+  
+# Executes RuntimeTests of the NGO package in the Standalone build for consoles
+{% for project in projects.default -%}
+{% for platform in test_platforms.console_test -%}
+{% for editor in validation_editors.all -%}
+run_{{ project.name }}_tests_{{ platform.name }}_{{ editor }}:
+  name: Run {{ project.name }} Tests - [{{ platform.name }}, {{ editor }}, il2cpp]
+  agent:
+    type: {{ platform.type }}
+    image: {{ platform.image }}
+    flavor: {{ platform.flavor }}
+{% if platform.model %}
+    model: {{ platform.model }}
+{% endif %}
+  commands:
+    # Installing tools.
+    - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
+
+    # Platform specific Execution
+    - utr --testproject={{ project.path }} architecture={% if platform.name == "switch" %}arm64{% else %}x64{% endif %} --editor-location=.Editor --suite=playmode --scripting-backend=il2cpp --platform={{ platform.standalone }} --artifacts_path=build/logs --player-load-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg=-nographics --testCategory=!Performance --testfilter=Unity.Netcode.RuntimeTests --reruncount=1 --clean-library-on-rerun
+
+  variables:
+# PS4 related
+    SCE_ORBIS_SDK_DIR: 'C:\Users\bokken\SCE\ps4_sdk_12_00'
+# PS5 related
+    SCE_PROSPERO_SDK_DIR: 'C:\Program Files (x86)\SCE\Prospero SDKs\9.000'
+    SHADER_COMPILER_PATH: '${SCE_PROSPERO_SDK_DIR}\target\bins'
+    SCE_ROOT_DIR: 'C:\Program Files (x86)\SCE'
+# Switch related
+    NINTENDO_SDK_ROOT: 'C:\Nintendo\nx_sdk-18_3_0\NintendoSDK'
+    UNITY_NINTENDOSDK_CLI_TOOLS: '${NINTENDO_SDK_ROOT}\Tools\CommandLineTools'
+  artifacts:
+    logs:
+      paths:
+        - '*.log'
+        - '*.xml'
+        - artifacts/**/*
+        - {{ project.name }}/Logs/**
+        - {{ project.name }}/Library/*.log
+        - {{ project.name }}/*.log
+        - {{ project.name }}/Builds/*.log
+        - build/test-results/**
+        - build/players/**
+  dependencies:
+    - .yamato/console-standalone-test.yml#build_{{ project.name }}_{{ platform.name }}_{{ editor }}
+{% endfor -%}
+{% endfor -%}
+{% endfor -%}

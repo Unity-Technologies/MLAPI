@@ -1,23 +1,27 @@
 {% metadata_file .yamato/project.metafile %}
 ---
-{% for project in projects -%}
-{% if project.has_tests == "true" -%}
-code_coverage_win_{{ project.name }}_{{ validation_editor }}:
-  name: Code Coverage Report - Windows - {{ project.name }} - {{ validation_editor }}
+
+# Runs package tests in order to determine code coverage of the NGO package.
+# In essence it's performing the same task as .yamato/package-test jobs with the overhead being the measured code coverage
+# It's ok for code coverage to be performed only on one platform (default) since code coverage won't change much between those.
+# Default platform was chosen (ubuntu) since it's the fastest and most resource friendly with default editor.
+{% for platform in test_platforms.default -%}
+{% for editor in validation_editors.default -%}
+code_coverage_{{ platform.name }}_{{ editor }}:
+  name: Code Coverage - NGO [{{ platform.name }}, {{ editor }}]
   agent:
-    type: Unity::VM
-    image: package-ci/win10:v4
-    flavor: b1.large
+    type: {{ platform.type }}
+    image: {{ platform.image }}
+    flavor: {{ platform.flavor }}
   commands:
-    - pip install unity-downloader-cli --upgrade --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
-    - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
-    - unity-downloader-cli -u {{ validation_editor }} -c editor --wait --fast
-    - upm-ci package test -u .Editor --package-path com.unity.netcode.gameobjects --enable-code-coverage --code-coverage-options 'enableCyclomaticComplexity;generateAdditionalMetrics;generateHtmlReport;assemblyFilters:+Unity.Netcode.Editor,+Unity.Netcode.Runtime,+Unity.Netcode.Components'
+    - npm install -g upm-ci-utils@stable --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
+    - unity-downloader-cli -u {{ editor }} -c Editor --fast --wait
+    - {% if platform.name == "ubuntu" %}DISPLAY=:0 {% endif %} upm-ci package test -u {{ editor }} --package-path com.unity.netcode.gameobjects --enable-code-coverage --code-coverage-options 'generateAdditionalMetrics;generateHtmlReport;assemblyFilters:+Unity.Netcode.Editor,+Unity.Netcode.Runtime' --extra-utr-arg="--extra-editor-arg=--burst-disable-compilation --extra-editor-arg=-testCategory --extra-editor-arg=!Performance --timeout=1800 --reruncount=1 --clean-library-on-rerun"
   artifacts:
     logs:
       paths:
         - "upm-ci~/test-results/**/*"
   dependencies:
-    - .yamato/project-pack.yml#pack_{{ project.name }}
-{% endif -%}
+    - .yamato/package-pack.yml#package_pack_-_ngo
+{% endfor -%}
 {% endfor -%}

@@ -1,161 +1,173 @@
 {% metadata_file .yamato/project.metafile %}
 ---
-run_all_tests:
-  name: Run All Package and Project Tests
-  dependencies:
-    # Pull in package and validate jobs through the badges job
-    - .yamato/_triggers.yml#badges_test_trigger
-    - .yamato/mobile-build-and-test.yml#run_{{ projects.first.name }}_tests_{{ mobile_validation_editor }}_iOS
-    - .yamato/mobile-build-and-test.yml#run_{{ projects.first.name }}_tests_{{ mobile_validation_editor }}_android
-    # - .yamato/_run-all.yml#all_project_tests_standalone
-{% for project in projects -%}
-{% if project.name == "testproject" -%}
-{% for editor in project.test_editors -%}
-    - .yamato/webgl-build.yml#build_{{ project.name }}_tests_{{ editor }}_webgl
-{% endfor -%}
-{% endif -%}
-{% endfor -%}
 
-{% for platform in test_platforms -%}
-{% for project in projects -%}
-{% for editor in project.test_editors -%}
-{% if editor != "trunk" -%}
-{% for package in project.packages -%}
-    - .yamato/package-tests.yml#test_{{ project.name}}_{{ package.name }}_{{ editor }}_{{ platform.name }}
-{% endfor -%}
-    - .yamato/project-tests.yml#test_{{ project.name }}_{{ editor }}_{{ platform.name }}
-{% endif -%}
-{% endfor -%}
-
-## Test minimal project with different versions of dependencies
-{% if project.name == "minimalproject" -%}
-{% for dependency in dependencies -%}
-{% for depeditor in dependency.test_editors -%}
-{% if depeditor != "trunk" -%}
-    - .yamato/package-tests.yml#test_compatibility_{{ project.name }}_{{ project.packages.first.name }}_with_{{ dependency.name }}@{{ dependency.version }}_{{ depeditor }}_{{ platform.name }}
-{% endif -%}
-{% endfor -%}
-{% endfor -%}
-{% endif -%}
-{% endfor -%}
-{% endfor -%}
-
-run_all_tests_trunk:
-  name: Run All Package and Project Tests [Trunk]
-  dependencies:
-{% for platform in test_platforms -%}
-{% for project in projects -%}
-{% for editor in project.test_editors -%}
-{% if editor == "trunk" -%}
-{% for package in project.packages -%}
-    - .yamato/package-tests.yml#test_{{ project.name}}_{{ package.name }}_{{ editor }}_{{ platform.name }}
-{% endfor -%}
-    - .yamato/project-tests.yml#test_{{ project.name }}_{{ editor }}_{{ platform.name }}
-{% endif -%}
-{% endfor -%}
-
-## Test minimal project with different versions of dependencies on trunk
-{% if project.name == "minimalproject" -%}
-{% for dependency in dependencies -%}
-{% for depeditor in dependency.test_editors -%}
-{% if depeditor == "trunk" -%}
-    - .yamato/package-tests.yml#test_compatibility_{{ project.name }}_{{ project.packages.first.name }}_with_{{ dependency.name }}@{{ dependency.version }}_{{ depeditor }}_{{ platform.name }}
-{% endif -%}
-{% endfor -%}
-{% endfor -%}
-{% endif -%}
-{% endfor -%}
-{% endfor -%}
-
-all_project_tests:
-  name: Run All Project Tests
-  dependencies:
-    - .yamato/_triggers.yml#badges_test_trigger
-{% for platform in test_platforms -%}
-{% for project in projects -%}
-{% for editor in project.test_editors -%}
-    - .yamato/project-tests.yml#test_{{ projects.first.name }}_{{ editor }}_{{ platform.name }}
-{% endfor -%}
-{% endfor -%}
-{% endfor -%}
-
-all_package_tests:
+# Runs all package tests
+run_all_package_tests:
   name: Run All Package Tests
   dependencies:
-    - .yamato/_triggers.yml#badges_test_trigger
-{% for platform in test_platforms -%}
-{% for project in projects -%}
-{% for editor in project.test_editors -%}
-{% for package in project.packages -%}
-    - .yamato/package-tests.yml#test_{{ project.name}}_{{ package.name }}_{{ editor }}_{{ platform.name }}
-{% endfor -%}
-{% endfor -%}
+{% for platform in test_platforms.desktop -%}
+{% for editor in validation_editors.all -%}
+    - .yamato/package-tests.yml#package_test_-_ngo_{{ editor }}_{{ platform.name }}
 {% endfor -%}
 {% endfor -%}
 
-# Test minimal project with different versions of dependencies
-all_compatibility_tests:
-  name: Run All Compatibility Tests
+
+# Runs all package tests on trunk editor
+run_all_package_tests_trunk:
+  name: Run All Package Tests [Trunk only]
   dependencies:
-{% for platform in test_platforms -%}
-{% for project in projects -%}
-{% if project.name == "minimalproject" -%}
-{% for dependency in dependencies -%}
-{% for editor in dependency.test_editors -%}
-    - .yamato/package-tests.yml#test_compatibility_{{ project.name }}_{{ project.packages.first.name }}_with_{{ dependency.name }}@{{ dependency.version }}_{{ editor }}_{{ platform.name }}
-{% endfor -%}
-{% endfor -%}
-{% endif -%}
+{% for platform in test_platforms.desktop -%}
+{% for editor in validation_editors.default -%}
+    - .yamato/package-tests.yml#package_test_-_ngo_{{ editor }}_{{ platform.name }}
 {% endfor -%}
 {% endfor -%}
 
-all_singlenode_multiprocess_tests:
-  name: Run All Multiprocess Tests - Single Node
-  dependencies:
-{% for platform in test_platforms -%}
-{% for project in projects -%}
-{% for editor in project.test_editors -%}
-{% if editor != "trunk" %}
-    - .yamato/multiprocess-project-tests.yml#singlenode_multiprocess_test_testproject_{{ editor }}_{{ platform.name }}
-{% endif %}
-{% endfor -%}
-{% endfor -%}
-{% endfor -%}
 
-all_project_tests_standalone:
-  name: Run All Project Tests - Standalone
+# Runs all projects tests
+run_all_project_tests:
+  name: Run All Project Tests
   dependencies:
-{% for platform in test_platforms -%}
-{% for project in projects -%}
+{% for project in projects.all -%}
 {% if project.has_tests == "true" -%}
-{% for editor in project.test_editors -%}
+{% for platform in test_platforms.desktop -%}
+{% for editor in validation_editors.all -%}
+    - .yamato/project-tests.yml#test_{{ project.name }}_{{ platform.name }}_{{ editor }}
+{% endfor -%}
+{% endfor -%}
+{% endif -%}
+{% endfor -%}
+
+
+# Runs all projects tests on trunk editor
+run_all_project_tests_trunk:
+  name: Run All Project Tests [Trunk only]
+  dependencies:
+{% for project in projects.all -%}
+{% if project.has_tests == "true" -%}
+{% for platform in test_platforms.desktop -%}
+{% for editor in validation_editors.default -%}
+    - .yamato/project-tests.yml#test_{{ project.name }}_{{ platform.name }}_{{ editor }}
+{% endfor -%}
+{% endfor -%}
+{% endif -%}
+{% endfor -%}
+
+
+# Runs all project standards check
+run_all_projects_standards:
+  name: Run All Projects Standards
+  dependencies:
+{% for platform in test_platforms.default -%}
+{% for project in projects.all -%}
+{% for editor in validation_editors.default -%}
+    - .yamato/project-standards.yml#standards_{{ platform.name }}_{{ project.name }}_{{ editor }}
+{% endfor -%}
+{% endfor -%}
+{% endfor -%}
+
+
+# Runs all WebGL builds
+run_all_webgl_builds:
+  name: Run All WebGl Build
+  dependencies:
+{% for project in projects.default -%}
+{% for platform in test_platforms.desktop -%}
+{% for editor in validation_editors.all -%}
+    - .yamato/webgl-build.yml#webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}
+{% endfor -%}
+{% endfor -%}
+{% endfor -%}
+
+
+# Runs all WebGL builds on trunk editor
+run_all_webgl_builds_trunk:
+  name: Run All WebGl Build [Trunk only]
+  dependencies:
+{% for project in projects.default -%}
+{% for platform in test_platforms.desktop -%}
+{% for editor in validation_editors.default -%}
+    - .yamato/webgl-build.yml#webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}
+{% endfor -%}
+{% endfor -%}
+{% endfor -%}
+
+
+# Runs all Desktop tests
+run_all_project_tests_desktop_standalone:
+  name: Run All Standalone Tests - Desktop
+  dependencies:
+{% for project in projects.default -%}
+{% for platform in test_platforms.desktop -%}
+{% for editor in validation_editors.all -%}
 {% for backend in scripting_backends -%}
-    - .yamato/standalone-project-tests.yml#standalone_tests_{{ project.name }}_{{ backend }}_{{ editor }}_{{ platform.name }}
+    - .yamato/desktop-standalone-tests.yml#desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{ editor }}
 {% endfor -%}
 {% endfor -%}
-{% endif -%}
 {% endfor -%}
 {% endfor -%}
 
-all_project_tests_mobile:
-  name: Run All Project Tests - Mobile
+
+# Runs all Desktop tests on trunk editor
+run_all_project_tests_desktop_standalone_trunk:
+  name: Run All Standalone Tests - Desktop [Trunk only]
   dependencies:
-{% for project in projects -%}
-{% if project.name == "testproject" -%}
-{% for editor in project.test_editors -%}
-    - .yamato/mobile-build-and-test.yml#run_{{ project.name }}_tests_{{ editor }}_android
-    - .yamato/mobile-build-and-test.yml#run_{{ project.name }}_tests_{{ editor }}_iOS
+{% for project in projects.default -%}
+{% for platform in test_platforms.desktop -%}
+{% for editor in validation_editors.default -%}
+{% for backend in scripting_backends -%}
+    - .yamato/desktop-standalone-tests.yml#desktop_standalone_tests_{{ project.name }}_{{ platform.name }}_{{ backend }}_{{ editor }}
 {% endfor -%}
-{% endif -%}
+{% endfor -%}
+{% endfor -%}
 {% endfor -%}
 
-all_project_tests_webgl:
-  name: Build All Project Tests - WebGL
+# Runs all Mobile tests
+run_all_project_tests_mobile_standalone:
+  name: Run All Standalone Tests - Mobile
   dependencies:
-{% for project in projects -%}
-{% if project.name == "testproject" -%}
-{% for editor in project.test_editors -%}
-    - .yamato/webgl-build.yml#build_{{ project.name }}_tests_{{ editor }}_webgl
+{% for project in projects.default -%}
+{% for platform in test_platforms.mobile_test -%}
+{% for editor in validation_editors.all -%}
+    - .yamato/mobile-standalone-test.yml#run_{{ project.name }}_tests_{{ platform.name }}_{{ editor }}
 {% endfor -%}
-{% endif -%}
+{% endfor -%}
+{% endfor -%}
+
+
+# Runs all Mobile tests on trunk editor
+run_all_project_tests_mobile_standalone_trunk:
+  name: Run All Standalone Tests - Mobile [Trunk only]
+  dependencies:
+{% for project in projects.default -%}
+{% for platform in test_platforms.mobile_test -%}
+{% for editor in validation_editors.default -%}
+    - .yamato/mobile-standalone-test.yml#run_{{ project.name }}_tests_{{ platform.name }}_{{ editor }}
+{% endfor -%}
+{% endfor -%}
+{% endfor -%}
+
+
+# Runs all Console tests
+run_all_project_tests_console_standalone:
+  name: Run All Standalone Tests - Console
+  dependencies:
+{% for project in projects.default -%}
+{% for platform in test_platforms.console_test -%}
+{% for editor in validation_editors.all -%}
+    - .yamato/console-standalone-test.yml#run_{{ project.name }}_tests_{{ platform.name }}_{{ editor }}
+{% endfor -%}
+{% endfor -%}
+{% endfor -%}
+
+
+# Runs all Console tests on trunk editor
+run_all_project_tests_console_standalone_trunk:
+  name: Run All Standalone Tests - Console [Trunk only]
+  dependencies:
+{% for project in projects.default -%}
+{% for platform in test_platforms.console_test -%}
+{% for editor in validation_editors.default -%}
+    - .yamato/console-standalone-test.yml#run_{{ project.name }}_tests_{{ platform.name }}_{{ editor }}
+{% endfor -%}
+{% endfor -%}
 {% endfor -%}
