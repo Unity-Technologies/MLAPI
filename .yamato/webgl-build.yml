@@ -43,20 +43,20 @@ webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}:
       ./utr --suite=playmode --platform=WebGL --scripting-backend=il2cpp --testproject={{ project.path }} --editor-location=.Editor --artifacts_path=build/test-results --player-save-path=build/players --extra-editor-arg=-batchmode --extra-editor-arg="-cloudEnvironment staging" --extra-editor-arg=-nographics --reruncount=1 --clean-library-on-rerun  --build-only
 {% endif %}
 
-artifacts:
-  logs:
-    paths:
-      - '*.log'
-      - '*.xml'
-      - {{ project.path }}/Logs/**
-      - {{ project.path }}/Library/*.log
-      - {{ project.path }}/*.log
-      - {{ project.path }}/Builds/*.log
-      - build/test-results/**/*
-      - build/players/**
-variables:
-  CI: true
-  ENABLE_BURST_COMPILATION: False
+  artifacts:
+    logs:
+      paths:
+        - '*.log'
+        - '*.xml'
+        - {{ project.path }}/Logs/**
+        - {{ project.path }}/Library/*.log
+        - {{ project.path }}/*.log
+        - {{ project.path }}/Builds/*.log
+        - build/test-results/**/*
+        - build/players/**
+  variables:
+    CI: true
+    ENABLE_BURST_COMPILATION: False
 {% endfor -%}
 {% endfor -%}
 {% endfor -%}
