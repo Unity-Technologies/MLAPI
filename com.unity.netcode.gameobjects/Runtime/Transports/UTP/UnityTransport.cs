@@ -177,14 +177,14 @@ namespace Unity.Netcode.Transports.UTP
             set => m_UseWebSockets = value;
         }
 
-        [Tooltip("Per default the client/server will communicate over UDP. Set to true to communicate locally using RPC.")]
+        [Tooltip("Per default the client/server will communicate over UDP. Set to true to communicate locally using IPC.")]
         [SerializeField]
-        private bool m_UseRPC = false;
+        private bool m_UseIPC = false;
 
-        public bool UseRPC
+        public bool UseIPC
         {
-            get => m_UseRPC;
-            set => m_UseRPC = value;
+            get => m_UseIPC;
+            set => m_UseIPC = value;
         }
 
         /// <summary>
@@ -1555,9 +1555,9 @@ namespace Unity.Netcode.Transports.UTP
                 heartbeatTimeoutMS: transport.m_HeartbeatTimeoutMS);
 
 #if UNITY_WEBGL && !UNITY_EDITOR
-            if (NetworkManager.IsServer && m_ProtocolType != ProtocolType.RelayUnityTransport && m_UseRPC == false)
+            if (NetworkManager.IsServer && m_ProtocolType != ProtocolType.RelayUnityTransport && m_UseIPC == false)
             {
-                throw new Exception("WebGL as a server is not supported by Unity Transport, outside the Editor. Use RPC or Relay instead.");
+                throw new Exception("WebGL as a server is not supported by Unity Transport, outside the Editor. Use IPC or Relay instead.");
             }
 #endif
 
@@ -1621,9 +1621,9 @@ namespace Unity.Netcode.Transports.UTP
 #endif
 
 #if UTP_TRANSPORT_2_0_ABOVE
-            if (m_UseRPC)
+            if (m_UseIPC)
             {
-                driver = NetworkDriver.Create(new RPCNetworkInterface(), m_NetworkSettings);
+                driver = NetworkDriver.Create(new IPCNetworkInterface(), m_NetworkSettings);
             }
             else if (m_UseWebSockets)
             {
