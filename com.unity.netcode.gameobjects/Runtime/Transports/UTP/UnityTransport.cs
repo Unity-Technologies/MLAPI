@@ -406,6 +406,7 @@ namespace Unity.Netcode.Transports.UTP
 
 #if UTP_TRANSPORT_2_0_ABOVE
         [Obsolete("DebugSimulator is no longer supported and has no effect. Use Network Simulator from the Multiplayer Tools package.", false)]
+        [HideInInspector]
 #endif
         public SimulatorParameters DebugSimulator = new SimulatorParameters
         {
@@ -1209,6 +1210,30 @@ namespace Unity.Netcode.Transports.UTP
         }
 
         /// <summary>
+        /// Provides the <see cref="NetworkEndpoint"/> for the NGO client identifier specified.
+        /// </summary>
+        /// <remarks>
+        /// - This is only really useful for direct connections.
+        /// - Relay connections and clients connected using a distributed authority network topology will not provide the client's actual endpoint information.
+        /// - For LAN topologies this should work as long as it is a direct connection and not a relay connection.
+        /// </remarks>
+        /// <param name="clientId">NGO client identifier to get endpoint information about.</param>
+        /// <returns><see cref="NetworkEndpoint"/></returns>
+        public NetworkEndpoint GetEndpoint(ulong clientId)
+        {
+            if (m_Driver.IsCreated && NetworkManager != null && NetworkManager.IsListening)
+            {
+                var transportId = NetworkManager.ConnectionManager.ClientIdToTransportId(clientId);
+                var networkConnection = ParseClientId(transportId);
+                if (m_Driver.GetConnectionState(networkConnection) == NetworkConnection.State.Connected)
+                {
+                    return m_Driver.RemoteEndPoint(networkConnection);
+                }
+            }
+            return new NetworkEndpoint();
+        }
+
+        /// <summary>
         /// Initializes the transport
         /// </summary>
         /// <param name="networkManager">The NetworkManager that initialized and owns the transport</param>
@@ -1417,6 +1442,11 @@ namespace Unity.Netcode.Transports.UTP
         /// </summary>
         public override void Shutdown()
         {
+            if (NetworkManager && !NetworkManager.ShutdownInProgress)
+            {
+                Debug.LogWarning("Directly calling `UnityTransport.Shutdown()` results in unexpected shutdown behaviour. All pending events will be lost. Use `NetworkManager.Shutdown()` instead.");
+            }
+
             if (m_Driver.IsCreated)
             {
                 // Flush all send queues to the network. NGO can be configured to flush its message
@@ -1436,6 +1466,7 @@ namespace Unity.Netcode.Transports.UTP
             DisposeInternals();
 
             m_ReliableReceiveQueues.Clear();
+            m_State = State.Disconnected;
 
             // We must reset this to zero because UTP actually re-uses clientIds if there is a clean disconnect
             m_ServerClientId = 0;

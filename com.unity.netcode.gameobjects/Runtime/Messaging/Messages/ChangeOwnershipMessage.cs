@@ -45,12 +45,6 @@ namespace Unity.Netcode
                 networkObject.InvokeBehaviourOnLostOwnership();
             }
 
-            // We are new owner.
-            if (OwnerClientId == networkManager.LocalClientId)
-            {
-                networkObject.InvokeBehaviourOnGainedOwnership();
-            }
-
             // For all other clients that are neither the former or current owner, update the behaviours' properties
             if (OwnerClientId != networkManager.LocalClientId && originalOwner != networkManager.LocalClientId)
             {
@@ -58,6 +52,21 @@ namespace Unity.Netcode
                 {
                     networkObject.ChildNetworkBehaviours[i].UpdateNetworkProperties();
                 }
+            }
+
+            // We are new owner.
+            if (OwnerClientId == networkManager.LocalClientId)
+            {
+                networkObject.InvokeBehaviourOnGainedOwnership();
+            }
+
+            if (originalOwner == networkManager.LocalClientId)
+            {
+                // Mark any owner read variables as dirty
+                networkObject.MarkOwnerReadVariablesDirty();
+                // Immediately queue any pending deltas and order the message before the
+                // change in ownership message.
+                networkManager.BehaviourUpdater.NetworkBehaviourUpdate(true);
             }
 
             networkObject.InvokeOwnershipChanged(originalOwner, OwnerClientId);

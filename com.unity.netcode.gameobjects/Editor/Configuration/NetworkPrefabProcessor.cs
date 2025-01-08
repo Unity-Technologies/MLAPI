@@ -132,7 +132,7 @@ namespace Unity.Netcode.Editor.Configuration
 
             // Process the imported and deleted assets
             var markDirty = ProcessImportedAssets(importedAssets);
-            markDirty &= ProcessDeletedAssets(deletedAssets);
+            markDirty |= ProcessDeletedAssets(deletedAssets);
 
             if (markDirty)
             {
