@@ -1,0 +1,79 @@
+name: Update issue labels
+
+on:
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+# Define labels here
+env:
+  AWAITING_RESPONSE: stat:awaiting response
+
+jobs:
+  setup:
+    name: Calculate Labels
+    if: ${{ !github.event.issue.pull_request  }} && ${{ github.event.issue.state == 'open' }}
+    runs-on: ubuntu-latest
+    outputs:
+      add_labels: ${{ steps.data.outputs.add_labels }}
+      remove_labels: ${{ steps.data.outputs.remove_labels }}
+
+    steps:
+      - name: Calculate Labels
+        id: data
+        run: |
+          ADD_LABELS=()
+          REMOVE_LABELS=()
+
+          if [[ "${{ github.event.comment.author_association }}" == "MEMBER" ]]; then
+            ADD_LABELS+=${{ env.AWAITING_RESPONSE}}
+          else
+            REMOVE_LABELS+=${{ env.AWAITING_RESPONSE}}
+          fi
+
+          echo "add_labels=$(IFS=,; echo "${ADD_LABELS[*]}")" >> $GITHUB_OUTPUT
+          echo "remove_labels=$(IFS=,; echo "${REMOVE_LABELS[*]}")" >> $GITHUB_OUTPUT
+
+  manage_labels:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    needs: [setup]
+    steps:
+      - name: Calculate add labels
+        id: add_labels
+        if: ${{ needs.setup.outputs.add_labels != '' }}
+        run: |
+          COMMAND=""
+          if [[ -n "${{ needs.setup.outputs.add_labels }}" ]]; then
+            COMMAND+="--add-label \"${{ needs.setup.outputs.add_labels }}\""
+          fi
+          echo "ADD_LABEL=$COMMAND" >> $GITHUB_ENV
+
+      - name: Calculate remove labels
+        id: remove_labels
+        if: ${{ needs.setup.outputs.remove_labels != '' }}
+        run: |
+          COMMAND=""
+          if [[ -n "${{ needs.setup.outputs.remove_labels }}" ]]; then
+            COMMAND+="--remove-label \"${{ needs.setup.outputs.remove_labels }}\""
+          fi
+          echo "REMOVE_LABEL=$COMMAND" >> $GITHUB_ENV
+
+      - name: Test Print Command
+        run: |
+          echo "gh issue edit "$NUMBER" $ADD_LABEL $REMOVE_LABEL"
+        env:
+          NUMBER: ${{ github.event.issue.number }}
+
+
+      # - run: gh issue edit "$NUMBER" --add-label "$ADD_LABELS" --remove-label "$REMOVE_LABELS"
+      #   env:
+      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     GH_REPO: ${{ github.repository }}
+      #     NUMBER: ${{ github.event.issue.number }}
+      #     ADD_LABELS: ${{ needs.setup.outputs.add_labels }}
+      #     REMOVE_LABELS: ${{ needs.setup.outputs.remove_labels }}
