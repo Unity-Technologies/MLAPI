@@ -7,5 +7,12 @@
     "dependencies": {
         "com.unity.nuget.mono-cecil": "1.10.1",
         "com.unity.transport": "1.4.0"
+    },
+    "samples": [
+    {
+      "displayName": "Bootstrap",
+      "description": "A lightweight sample to get started",
+      "path": "Samples~/Bootstrap"
     }
+  ]
 }

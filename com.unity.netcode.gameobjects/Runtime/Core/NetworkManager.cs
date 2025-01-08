@@ -16,6 +16,16 @@ namespace Unity.Netcode
     [AddComponentMenu("Netcode/Network Manager", -100)]
     public class NetworkManager : MonoBehaviour, INetworkUpdateSystem
     {
+        /// <summary>
+        /// Subscribe to this static event to get notifications when a <see cref="NetworkManager"/> instance has been instantiated.
+        /// </summary>
+        public static event Action<NetworkManager> OnInstantiated;
+
+        /// <summary>
+        /// Subscribe to this static event to get notifications when a <see cref="NetworkManager"/> instance is being destroyed.
+        /// </summary>
+        public static event Action<NetworkManager> OnDestroying;
+
         // TODO: Deprecate...
         // The following internal values are not used, but because ILPP makes them public in the assembly, they cannot
         // be removed thanks to our semver validation.
@@ -715,6 +725,8 @@ namespace Unity.Netcode
 #if UNITY_EDITOR
             EditorApplication.playModeStateChanged += ModeChanged;
 #endif
+            // Notify we have instantiated a new instance of NetworkManager.
+            OnInstantiated?.Invoke(this);
         }
 
         private void OnEnable()
@@ -1273,6 +1285,9 @@ namespace Unity.Netcode
             ShutdownInternal();
 
             UnityEngine.SceneManagement.SceneManager.sceneUnloaded -= OnSceneUnloaded;
+
+            // Notify we are destroying NetworkManager
+            OnDestroying?.Invoke(this);
 
             if (Singleton == this)
             {

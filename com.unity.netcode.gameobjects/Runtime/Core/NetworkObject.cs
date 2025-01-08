@@ -74,6 +74,7 @@ namespace Unity.Netcode
         internal void RefreshAllPrefabInstances()
         {
             var instanceGlobalId = GlobalObjectId.GetGlobalObjectIdSlow(this);
+            NetworkObjectRefreshTool.PrefabNetworkObject = this;
             if (!PrefabUtility.IsPartOfAnyPrefab(this) || instanceGlobalId.identifierType != k_ImportedAssetObjectType)
             {
                 EditorUtility.DisplayDialog("Network Prefab Assets Only", "This action can only be performed on a network prefab asset.", "Ok");
@@ -81,11 +82,6 @@ namespace Unity.Netcode
             }
 
             // Handle updating the currently active scene
-            var networkObjects = FindObjectsByType<NetworkObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            foreach (var networkObject in networkObjects)
-            {
-                networkObject.OnValidate();
-            }
             NetworkObjectRefreshTool.ProcessActiveScene();
 
             // Refresh all build settings scenes
@@ -98,14 +94,14 @@ namespace Unity.Netcode
                     continue;
                 }
                 // Add the scene to be processed
-                NetworkObjectRefreshTool.ProcessScene(editorScene.path, false);
+                NetworkObjectRefreshTool.ProcessScene(editorScene.path, true);
             }
 
             // Process all added scenes
             NetworkObjectRefreshTool.ProcessScenes();
         }
 
-        private void OnValidate()
+        internal void OnValidate()
         {
             // do NOT regenerate GlobalObjectIdHash for NetworkPrefabs while Editor is in PlayMode
             if (EditorApplication.isPlaying && !string.IsNullOrEmpty(gameObject.scene.name))
@@ -197,6 +193,7 @@ namespace Unity.Netcode
                 if (sourceAsset != null && sourceAsset.GlobalObjectIdHash != 0 && InScenePlacedSourceGlobalObjectIdHash != sourceAsset.GlobalObjectIdHash)
                 {
                     InScenePlacedSourceGlobalObjectIdHash = sourceAsset.GlobalObjectIdHash;
+                    EditorUtility.SetDirty(this);
                 }
                 IsSceneObject = true;
             }
@@ -274,6 +271,8 @@ namespace Unity.Netcode
         /// Gets the ClientId of the owner of this NetworkObject
         /// </summary>
         public ulong OwnerClientId { get; internal set; }
+
+        internal ulong PreviousOwnerId;
 
         /// <summary>
         /// If true, the object will always be replicated as root on clients and the parent will be ignored.
@@ -1487,6 +1486,14 @@ namespace Unity.Netcode
             }
         }
 
+        internal void MarkOwnerReadVariablesDirty()
+        {
+            for (int i = 0; i < ChildNetworkBehaviours.Count; i++)
+            {
+                ChildNetworkBehaviours[i].MarkOwnerReadVariablesDirty();
+            }
+        }
+
         // NGO currently guarantees that the client will receive spawn data for all objects in one network tick.
         //  Children may arrive before their parents; when they do they are stored in OrphanedChildren and then
         //  resolved when their parents arrived.  Because we don't send a partial list of spawns (yet), something
@@ -1728,11 +1735,11 @@ namespace Unity.Netcode
             }
         }
 
-        internal void PostNetworkVariableWrite()
+        internal void PostNetworkVariableWrite(bool forceSend)
         {
             for (int k = 0; k < ChildNetworkBehaviours.Count; k++)
             {
-                ChildNetworkBehaviours[k].PostNetworkVariableWrite();
+                ChildNetworkBehaviours[k].PostNetworkVariableWrite(forceSend);
             }
         }
 

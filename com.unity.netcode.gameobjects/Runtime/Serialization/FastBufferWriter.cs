@@ -700,7 +700,7 @@ namespace Unity.Netcode
             }
             if (Handle->Position + size > Handle->AllowedWriteMark)
             {
-                throw new OverflowException($"Attempted to write without first calling {nameof(TryBeginWrite)}()");
+                throw new OverflowException($"Attempted to write without first calling {nameof(TryBeginWrite)}(), Position+Size={Handle->Position + size} > AllowedWriteMark={Handle->AllowedWriteMark}");
             }
 #endif
             UnsafeUtility.MemCpy((Handle->BufferPointer + Handle->Position), value + offset, size);
@@ -729,7 +729,7 @@ namespace Unity.Netcode
 
             if (!TryBeginWriteInternal(size))
             {
-                throw new OverflowException("Writing past the end of the buffer");
+                throw new OverflowException($"Writing past the end of the buffer, size is {size} bytes but remaining capacity is {Handle->Capacity - Handle->Position} bytes");
             }
             UnsafeUtility.MemCpy((Handle->BufferPointer + Handle->Position), value + offset, size);
             Handle->Position += size;

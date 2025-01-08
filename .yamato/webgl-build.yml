@@ -11,7 +11,9 @@ build_{{ project.name }}_tests_{{ editor }}_webgl:
       image: dots-ci/windows10:v1.493-auto
       flavor: b1.xlarge
   commands:
+    - pip config set global.index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
+    - pip install unity-downloader-cli --upgrade
     - curl -s https://artifactory-slo.bf.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
     - python .yamato/disable-burst-if-requested.py --project-path testproject --platform WebGL
     - unity-downloader-cli -u {{ editor }} -c editor -c webgl -c il2cpp -w --fast

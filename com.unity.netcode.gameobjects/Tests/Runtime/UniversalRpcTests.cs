@@ -918,6 +918,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
         }
     }
 
+    [Timeout(1200000)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestSendingNoOverride : UniversalRpcTestsBase
@@ -948,6 +949,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
     }
 
+    [Timeout(1200000)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestSenderClientId : UniversalRpcTestsBase
@@ -978,6 +980,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
     }
 
+    [Timeout(1200000)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestSendingNoOverrideWithParams : UniversalRpcTestsBase
@@ -1020,6 +1023,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
     }
 
+    [Timeout(1200000)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestSendingNoOverrideWithParamsAndRpcParams : UniversalRpcTestsBase
@@ -1062,6 +1066,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
     }
 
+    [Timeout(1200000)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestRequireOwnership : UniversalRpcTestsBase
@@ -1098,6 +1103,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
         }
     }
 
+    [Timeout(1200000)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestDisallowedOverride : UniversalRpcTestsBase
@@ -1133,6 +1139,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
     }
 
+    [Timeout(1200000)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestSendingWithTargetOverride : UniversalRpcTestsBase
@@ -1166,6 +1173,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
     }
 
+    [Timeout(1200000)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestSendingWithSingleOverride : UniversalRpcTestsBase
@@ -1213,6 +1221,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
     }
 
+    [Timeout(1200000)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestSendingWithSingleNotOverride : UniversalRpcTestsBase
@@ -1260,6 +1269,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
     }
 
+    [Timeout(1200000)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestSendingWithGroupOverride : UniversalRpcTestsBase
@@ -1286,81 +1296,59 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
         }
 
         // Extending timeout since the added yield return causes this test to commonly timeout
-        [Timeout(600000)]
-        [UnityTest]
-        public IEnumerator TestSendingWithGroupOverride()
+        [Test]
+        public void TestSendingWithGroupOverride(
+            [Values] SendTo defaultSendTo,
+            [ValueSource(nameof(RecipientGroups))] ulong[] recipient,
+            [Values(0u, 1u, 2u)] ulong objectOwner,
+            [Values(0u, 1u, 2u)] ulong sender,
+            [Values] AllocationType allocationType
+        )
         {
-            var waitFor = new WaitForFixedUpdate();
-            foreach (var defaultSendTo in Enum.GetValues(typeof(SendTo)))
+            var sendMethodName = $"DefaultTo{defaultSendTo}AllowOverrideRpc";
+
+            var senderObject = GetPlayerObject(objectOwner, sender);
+            BaseRpcTarget target = null;
+            switch (allocationType)
             {
-                m_EnableVerboseDebug = true;
-                VerboseDebug($"Processing: {defaultSendTo}");
-                m_EnableVerboseDebug = false;
-
-                foreach (var recipient in RecipientGroups)
-                {
-                    for (ulong objectOwner = 0u; objectOwner <= 2u; ++objectOwner)
+                case AllocationType.Array:
+                    target = senderObject.RpcTarget.Group(recipient, RpcTargetUse.Temp);
+                    break;
+                case AllocationType.List:
+                    target = senderObject.RpcTarget.Group(recipient.ToList(), RpcTargetUse.Temp);
+                    break;
+                case AllocationType.NativeArray:
+                    var arr = new NativeArray<ulong>(recipient, Allocator.Temp);
+                    target = senderObject.RpcTarget.Group(arr, RpcTargetUse.Temp);
+                    arr.Dispose();
+                    break;
+                case AllocationType.NativeList:
+                    // For some reason on 2020.3, calling list.AsArray() and passing that to the next function
+                    // causes Allocator.Temp allocations to become invalid somehow. This is not an issue on later
+                    // versions of Unity.
+                    var list = new NativeList<ulong>(recipient.Length, Allocator.TempJob);
+                    foreach (var id in recipient)
                     {
-                        for (ulong sender = 0u; sender <= 2u; ++sender)
-                        {
-                            yield return waitFor;
-                            foreach (var allocationType in Enum.GetValues(typeof(AllocationType)))
-                            {
-                                //if (++YieldCheck % YieldCycleCount == 0)
-                                //{
-                                //    yield return null;
-                                //}
-                                OnInlineSetup();
-                                var sendMethodName = $"DefaultTo{defaultSendTo}AllowOverrideRpc";
-
-                                var senderObject = GetPlayerObject(objectOwner, sender);
-                                BaseRpcTarget target = null;
-                                switch (allocationType)
-                                {
-                                    case AllocationType.Array:
-                                        target = senderObject.RpcTarget.Group(recipient, RpcTargetUse.Temp);
-                                        break;
-                                    case AllocationType.List:
-                                        target = senderObject.RpcTarget.Group(recipient.ToList(), RpcTargetUse.Temp);
-                                        break;
-                                    case AllocationType.NativeArray:
-                                        var arr = new NativeArray<ulong>(recipient, Allocator.Temp);
-                                        target = senderObject.RpcTarget.Group(arr, RpcTargetUse.Temp);
-                                        arr.Dispose();
-                                        break;
-                                    case AllocationType.NativeList:
-                                        // For some reason on 2020.3, calling list.AsArray() and passing that to the next function
-                                        // causes Allocator.Temp allocations to become invalid somehow. This is not an issue on later
-                                        // versions of Unity.
-                                        var list = new NativeList<ulong>(recipient.Length, Allocator.TempJob);
-                                        foreach (var id in recipient)
-                                        {
-                                            list.Add(id);
-                                        }
-
-                                        target = senderObject.RpcTarget.Group(list, RpcTargetUse.Temp);
-                                        list.Dispose();
-                                        break;
-                                }
-
-                                var sendMethod = senderObject.GetType().GetMethod(sendMethodName);
-                                sendMethod.Invoke(senderObject, new object[] { (RpcParams)target });
-
-                                VerifyRemoteReceived(objectOwner, sender, sendMethodName, s_ClientIds.Where(c => recipient.Contains(c)).ToArray(), false);
-                                VerifyNotReceived(objectOwner, s_ClientIds.Where(c => !recipient.Contains(c)).ToArray());
-
-                                // Pass some time to make sure that no other client ever receives this
-                                TimeTravel(1f, 30);
-                                VerifyNotReceived(objectOwner, s_ClientIds.Where(c => !recipient.Contains(c)).ToArray());
-                                OnInlineTearDown();
-                            }
-                        }
+                        list.Add(id);
                     }
-                }
+                    target = senderObject.RpcTarget.Group(list, RpcTargetUse.Temp);
+                    list.Dispose();
+                    break;
             }
+            var sendMethod = senderObject.GetType().GetMethod(sendMethodName);
+            sendMethod.Invoke(senderObject, new object[] { (RpcParams)target });
+
+            VerifyRemoteReceived(objectOwner, sender, sendMethodName, s_ClientIds.Where(c => recipient.Contains(c)).ToArray(), false);
+            VerifyNotReceived(objectOwner, s_ClientIds.Where(c => !recipient.Contains(c)).ToArray());
+
+            // Pass some time to make sure that no other client ever receives this
+            TimeTravel(1f, 30);
+            VerifyNotReceived(objectOwner, s_ClientIds.Where(c => !recipient.Contains(c)).ToArray());
         }
     }
 
+
+    [Timeout(1200000)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestSendingWithGroupNotOverride : UniversalRpcTestsBase
@@ -1386,82 +1374,60 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
             List
         }
 
+
         // Extending timeout since the added yield return causes this test to commonly timeout
-        [Timeout(600000)]
-        [UnityTest]
-        public IEnumerator TestSendingWithGroupNotOverride()
+        [Test]
+        public void TestSendingWithGroupNotOverride(
+            [Values] SendTo defaultSendTo,
+            [ValueSource(nameof(RecipientGroups))] ulong[] recipient,
+            [Values(0u, 1u, 2u)] ulong objectOwner,
+            [Values(0u, 1u, 2u)] ulong sender,
+            [Values] AllocationType allocationType
+        )
         {
-            var waitFor = new WaitForFixedUpdate();
-            foreach (var defaultSendTo in Enum.GetValues(typeof(SendTo)))
+            var sendMethodName = $"DefaultTo{defaultSendTo}AllowOverrideRpc";
+
+            var senderObject = GetPlayerObject(objectOwner, sender);
+            BaseRpcTarget target = null;
+            switch (allocationType)
             {
-                m_EnableVerboseDebug = true;
-                VerboseDebug($"Processing: {defaultSendTo}");
-                m_EnableVerboseDebug = false;
-                foreach (var recipient in RecipientGroups)
-                {
-                    for (ulong objectOwner = 0u; objectOwner <= 2u; ++objectOwner)
+                case AllocationType.Array:
+                    target = senderObject.RpcTarget.Not(recipient, RpcTargetUse.Temp);
+                    break;
+                case AllocationType.List:
+                    target = senderObject.RpcTarget.Not(recipient.ToList(), RpcTargetUse.Temp);
+                    break;
+                case AllocationType.NativeArray:
+                    var arr = new NativeArray<ulong>(recipient, Allocator.Temp);
+                    target = senderObject.RpcTarget.Not(arr, RpcTargetUse.Temp);
+                    arr.Dispose();
+                    break;
+                case AllocationType.NativeList:
+                    // For some reason on 2020.3, calling list.AsArray() and passing that to the next function
+                    // causes Allocator.Temp allocations to become invalid somehow. This is not an issue on later
+                    // versions of Unity.
+                    var list = new NativeList<ulong>(recipient.Length, Allocator.TempJob);
+                    foreach (var id in recipient)
                     {
-                        for (ulong sender = 0u; sender <= 2u; ++sender)
-                        {
-                            yield return waitFor;
-
-                            foreach (var allocationType in Enum.GetValues(typeof(AllocationType)))
-                            {
-                                //if (++YieldCheck % YieldCycleCount == 0)
-                                //{
-                                //    yield return waitFor;
-                                //}
-
-                                OnInlineSetup();
-                                var sendMethodName = $"DefaultTo{defaultSendTo}AllowOverrideRpc";
-
-                                var senderObject = GetPlayerObject(objectOwner, sender);
-                                BaseRpcTarget target = null;
-                                switch (allocationType)
-                                {
-                                    case AllocationType.Array:
-                                        target = senderObject.RpcTarget.Not(recipient, RpcTargetUse.Temp);
-                                        break;
-                                    case AllocationType.List:
-                                        target = senderObject.RpcTarget.Not(recipient.ToList(), RpcTargetUse.Temp);
-                                        break;
-                                    case AllocationType.NativeArray:
-                                        var arr = new NativeArray<ulong>(recipient, Allocator.Temp);
-                                        target = senderObject.RpcTarget.Not(arr, RpcTargetUse.Temp);
-                                        arr.Dispose();
-                                        break;
-                                    case AllocationType.NativeList:
-                                        // For some reason on 2020.3, calling list.AsArray() and passing that to the next function
-                                        // causes Allocator.Temp allocations to become invalid somehow. This is not an issue on later
-                                        // versions of Unity.
-                                        var list = new NativeList<ulong>(recipient.Length, Allocator.TempJob);
-                                        foreach (var id in recipient)
-                                        {
-                                            list.Add(id);
-                                        }
-                                        target = senderObject.RpcTarget.Not(list, RpcTargetUse.Temp);
-                                        list.Dispose();
-                                        break;
-                                }
-                                var sendMethod = senderObject.GetType().GetMethod(sendMethodName);
-                                sendMethod.Invoke(senderObject, new object[] { (RpcParams)target });
-
-                                VerifyRemoteReceived(objectOwner, sender, sendMethodName, s_ClientIds.Where(c => !recipient.Contains(c)).ToArray(), false);
-                                VerifyNotReceived(objectOwner, s_ClientIds.Where(c => recipient.Contains(c)).ToArray());
-
-                                // Pass some time to make sure that no other client ever receives this
-                                TimeTravel(1f, 30);
-                                VerifyNotReceived(objectOwner, s_ClientIds.Where(c => recipient.Contains(c)).ToArray());
-                                OnInlineTearDown();
-                            }
-                        }
+                        list.Add(id);
                     }
-                }
+                    target = senderObject.RpcTarget.Not(list, RpcTargetUse.Temp);
+                    list.Dispose();
+                    break;
             }
-        }
+            var sendMethod = senderObject.GetType().GetMethod(sendMethodName);
+            sendMethod.Invoke(senderObject, new object[] { (RpcParams)target });
 
+            VerifyRemoteReceived(objectOwner, sender, sendMethodName, s_ClientIds.Where(c => !recipient.Contains(c)).ToArray(), false);
+            VerifyNotReceived(objectOwner, s_ClientIds.Where(c => recipient.Contains(c)).ToArray());
+
+            // Pass some time to make sure that no other client ever receives this
+            TimeTravel(1f, 30);
+            VerifyNotReceived(objectOwner, s_ClientIds.Where(c => recipient.Contains(c)).ToArray());
+        }
     }
 
+    [Timeout(1200000)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestDefaultSendToSpecifiedInParamsSendingToServerAndOwner : UniversalRpcTestsBase
@@ -1472,6 +1438,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
         }
     }
 
+    [Timeout(1200000)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestDeferLocal : UniversalRpcTestsBase
@@ -1659,6 +1626,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
     }
 
+    [Timeout(1200000)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestMutualRecursion : UniversalRpcTestsBase
@@ -1708,6 +1676,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
     }
 
+    [Timeout(1200000)]
     [TestFixture(HostOrServer.Host)]
     [TestFixture(HostOrServer.Server)]
     internal class UniversalRpcTestSelfRecursion : UniversalRpcTestsBase
@@ -1747,6 +1716,7 @@ namespace Unity.Netcode.RuntimeTests.UniversalRpcTests
 
     }
 
+    [Timeout(1200000)]
     [TestFixture(ObjType.Server)]
     [TestFixture(ObjType.Client)]
     internal class UniversalRpcTestRpcTargetUse : UniversalRpcTestsBase

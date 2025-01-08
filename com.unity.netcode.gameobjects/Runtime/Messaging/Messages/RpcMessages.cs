@@ -61,7 +61,13 @@ namespace Unity.Netcode
             var networkManager = (NetworkManager)context.SystemOwner;
             if (!networkManager.SpawnManager.SpawnedObjects.TryGetValue(metadata.NetworkObjectId, out var networkObject))
             {
-                throw new InvalidOperationException($"An RPC called on a {nameof(NetworkObject)} that is not in the spawned objects list. Please make sure the {nameof(NetworkObject)} is spawned before calling RPCs.");
+                // If the NetworkObject no longer exists then just log a warning when developer mode logging is enabled and exit.
+                // This can happen if NetworkObject is despawned and a client sends an RPC before receiving the despawn message.
+                if (networkManager.LogLevel == LogLevel.Developer)
+                {
+                    NetworkLog.LogWarning($"[{metadata.NetworkObjectId}, {metadata.NetworkBehaviourId}, {metadata.NetworkRpcMethodId}] An RPC called on a {nameof(NetworkObject)} that is not in the spawned objects list. Please make sure the {nameof(NetworkObject)} is spawned before calling RPCs.");
+                }
+                return;
             }
             var networkBehaviour = networkObject.GetNetworkBehaviourAtOrderIndex(metadata.NetworkBehaviourId);
 

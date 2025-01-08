@@ -400,6 +400,103 @@ namespace TestProject.RuntimeTests
             AssertOnTimeout($"Timed out waiting for all clients to transition from synchronized cross fade!");
         }
 
+        private bool AllTriggersDetectedOnObserversOnly(OwnerShipMode ownerShipMode, ulong nonObserverId)
+        {
+            if (ownerShipMode == OwnerShipMode.ClientOwner)
+            {
+                if (!TriggerTest.ClientsThatTriggered.Contains(m_ServerNetworkManager.LocalClientId))
+                {
+                    return false;
+                }
+            }
+
+            foreach (var animatorTestHelper in AnimatorTestHelper.ClientSideInstances)
+            {
+                var currentClientId = animatorTestHelper.Value.NetworkManager.LocalClientId;
+                if (currentClientId == nonObserverId || (ownerShipMode == OwnerShipMode.ClientOwner && currentClientId == animatorTestHelper.Value.OwnerClientId))
+                {
+                    continue;
+                }
+
+                if (!TriggerTest.ClientsThatTriggered.Contains(currentClientId))
+                {
+                    return false;
+                }
+            }
+
+            // Should return false always
+            return !TriggerTest.ClientsThatTriggered.Contains(nonObserverId);
+        }
+
+        private bool AllObserversSameLayerWeight(OwnerShipMode ownerShipMode, int layer, float targetWeight, ulong nonObserverId)
+        {
+
+            if (ownerShipMode == OwnerShipMode.ClientOwner)
+            {
+                if (AnimatorTestHelper.ServerSideInstance.GetLayerWeight(layer) != targetWeight)
+                {
+                    return false;
+                }
+            }
+
+            foreach (var animatorTestHelper in AnimatorTestHelper.ClientSideInstances)
+            {
+                var currentClientId = animatorTestHelper.Value.NetworkManager.LocalClientId;
+                if (ownerShipMode == OwnerShipMode.ClientOwner && animatorTestHelper.Value.OwnerClientId == currentClientId)
+                {
+                    continue;
+                }
+                if (currentClientId == nonObserverId)
+                {
+                    if (animatorTestHelper.Value.GetLayerWeight(layer) == targetWeight)
+                    {
+                        return false;
+                    }
+                }
+                else
+                if (animatorTestHelper.Value.GetLayerWeight(layer) != targetWeight)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        [UnityTest]
+        public IEnumerator OnlyObserversAnimateTest([Values] OwnerShipMode ownerShipMode, [Values(AuthoritativeMode.ServerAuth, AuthoritativeMode.OwnerAuth)] AuthoritativeMode authoritativeMode)
+        {
+            // Spawn our test animator object
+            var objectInstance = SpawnPrefab(ownerShipMode == OwnerShipMode.ClientOwner, authoritativeMode);
+            var networkObject = objectInstance.GetComponent<NetworkObject>();
+            // Wait for it to spawn server-side
+            var success = WaitForConditionOrTimeOutWithTimeTravel(() => AnimatorTestHelper.ServerSideInstance != null);
+            Assert.True(success, $"Timed out waiting for the server-side instance of {GetNetworkAnimatorName(authoritativeMode)} to be spawned!");
+
+            // Wait for it to spawn client-side
+            success = WaitForConditionOrTimeOutWithTimeTravel(WaitForClientsToInitialize);
+            Assert.True(success, $"Timed out waiting for the server-side instance of {GetNetworkAnimatorName(authoritativeMode)} to be spawned!");
+
+            var animatorTestHelper = ownerShipMode == OwnerShipMode.ClientOwner ? AnimatorTestHelper.ClientSideInstances[m_ClientNetworkManagers[0].LocalClientId] : AnimatorTestHelper.ServerSideInstance;
+
+            networkObject.NetworkHide(m_ClientNetworkManagers[1].LocalClientId);
+
+            yield return WaitForConditionOrTimeOut(() => !m_ClientNetworkManagers[1].SpawnManager.SpawnedObjects.ContainsKey(networkObject.NetworkObjectId));
+            AssertOnTimeout($"Client-{m_ClientNetworkManagers[1].LocalClientId} timed out waiting to hide {networkObject.name}!");
+
+            if (authoritativeMode == AuthoritativeMode.ServerAuth)
+            {
+                animatorTestHelper = AnimatorTestHelper.ServerSideInstance;
+            }
+            animatorTestHelper.SetTrigger();
+            // Wait for all triggers to fire
+            yield return WaitForConditionOrTimeOut(() => AllTriggersDetectedOnObserversOnly(ownerShipMode, m_ClientNetworkManagers[1].LocalClientId));
+            AssertOnTimeout($"Timed out waiting for all triggers to match!");
+
+            animatorTestHelper.SetLayerWeight(1, 0.75f);
+            // Wait for all instances to update their weight value for layer 1
+            success = WaitForConditionOrTimeOutWithTimeTravel(() => AllObserversSameLayerWeight(ownerShipMode, 1, 0.75f, m_ClientNetworkManagers[1].LocalClientId));
+            Assert.True(success, $"Timed out waiting for all instances to match weight 0.75 on layer 1!");
+        }
 
         /// <summary>
         /// Verifies that triggers are synchronized with currently connected clients

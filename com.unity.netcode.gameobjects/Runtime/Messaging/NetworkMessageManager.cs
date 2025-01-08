@@ -730,7 +730,11 @@ namespace Unity.Netcode
                 }
 
                 ref var writeQueueItem = ref sendQueueItem.ElementAt(sendQueueItem.Length - 1);
-                writeQueueItem.Writer.TryBeginWrite(tmpSerializer.Length + headerSerializer.Length);
+                if (!writeQueueItem.Writer.TryBeginWrite(tmpSerializer.Length + headerSerializer.Length))
+                {
+                    Debug.LogError($"Not enough space to write message, size={tmpSerializer.Length + headerSerializer.Length} space used={writeQueueItem.Writer.Position} total size={writeQueueItem.Writer.Capacity}");
+                    continue;
+                }
 
                 writeQueueItem.Writer.WriteBytes(headerSerializer.GetUnsafePtr(), headerSerializer.Length);
                 writeQueueItem.Writer.WriteBytes(tmpSerializer.GetUnsafePtr(), tmpSerializer.Length);

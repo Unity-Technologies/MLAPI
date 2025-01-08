@@ -15,7 +15,9 @@ test_{{ project.name }}_{{ editor }}_{{ platform.name }}:
     flavor: {{ platform.flavor}}
   commands:
     - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
+    - pip config set global.index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
+    - pip install unity-downloader-cli --upgrade
     - unity-downloader-cli -u {{ editor }} -c editor -w --fast
     - {% if platform.name == "ubuntu" %}DISPLAY=:0 && {% endif %}upm-ci project test -u {{ editor }} --project-path {{ project.path }} --type project-tests
   artifacts:

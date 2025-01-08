@@ -228,6 +228,12 @@ namespace Unity.Netcode
         }
 
         /// <summary>
+        /// Only used during the NetworkBehaviourUpdater pass and only used for NetworkVariable.
+        /// This is to bypass duplication of the "original internal value" for collections.
+        /// </summary>
+        internal bool NetworkUpdaterCheck;
+
+        /// <summary>
         /// Gets Whether or not the container is dirty
         /// </summary>
         /// <returns>Whether or not the container is dirty</returns>
@@ -312,6 +318,32 @@ namespace Unity.Netcode
         /// <param name="reader">The stream to read the delta from</param>
         /// <param name="keepDirtyDelta">Whether or not the delta should be kept as dirty or consumed</param>
         public abstract void ReadDelta(FastBufferReader reader, bool keepDirtyDelta);
+
+        /// <summary>
+        /// This should be always invoked (client & server) to assure the previous values are set
+        /// !! IMPORTANT !!
+        /// When a server forwards delta updates to connected clients, it needs to preserve the previous dirty value(s)
+        /// until it is done serializing all valid NetworkVariable field deltas (relative to each client). This is invoked 
+        /// after it is done forwarding the deltas at the end of the <see cref="NetworkVariableDeltaMessage.Handle(ref NetworkContext)"/> method.
+        /// </summary>
+        internal virtual void PostDeltaRead()
+        {
+        }
+
+        /// <summary>
+        /// There are scenarios, specifically with collections, where a client could be synchronizing and
+        /// some NetworkVariables have pending updates. To avoid duplicating entries, this is invoked only
+        /// when sending the full synchronization information.
+        /// </summary>
+        /// <remarks>
+        /// Derrived classes should send the previous value for synchronization so when the updated value
+        /// is sent (after synchronizing the client) it will apply the updates.
+        /// </remarks>
+        /// <param name="writer"></param>
+        internal virtual void WriteFieldSynchronization(FastBufferWriter writer)
+        {
+            WriteField(writer);
+        }
 
         /// <summary>
         /// Virtual <see cref="IDisposable"/> implementation

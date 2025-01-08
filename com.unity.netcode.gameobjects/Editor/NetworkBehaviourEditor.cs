@@ -352,6 +352,12 @@ namespace Unity.Netcode.Editor
                 return;
             }
 
+            // If this automatic check is disabled, then do not perform this check.
+            if (!NetcodeForGameObjectsEditorSettings.GetCheckForNetworkObjectSetting())
+            {
+                return;
+            }
+
             // Now get the root parent transform to the current GameObject (or itself)
             var rootTransform = GetRootParentTransform(gameObject.transform);
             if (!rootTransform.TryGetComponent<NetworkManager>(out var networkManager))

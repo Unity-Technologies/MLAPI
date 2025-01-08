@@ -173,11 +173,11 @@ namespace Unity.Netcode.RuntimeTests
             var otherClient = m_ServerNetworkManager.ConnectedClientsList[2];
             m_NetSpawnedObject = SpawnObject(m_TestNetworkPrefab, m_ClientNetworkManagers[1]).GetComponent<NetworkObject>();
 
-            yield return RefreshGameObects(4);
+            yield return RefreshGameObects(NumberOfClients);
 
             // === Check spawn occurred
             yield return WaitForSpawnCount(NumberOfClients + 1);
-            Debug.Assert(HiddenVariableObject.SpawnCount == NumberOfClients + 1);
+            AssertOnTimeout($"Timed out waiting for all clients to spawn {m_NetSpawnedObject.name}");
             Debug.Log("Objects spawned");
 
             // ==== Set the NetworkVariable value to 2
@@ -210,7 +210,7 @@ namespace Unity.Netcode.RuntimeTests
             Debug.Log("Object spawned");
 
             // ==== We need a refresh for the newly re-spawned object
-            yield return RefreshGameObects(4);
+            yield return RefreshGameObects(NumberOfClients);
 
             currentValueSet = 4;
             m_NetSpawnedObject.GetComponent<HiddenVariableObject>().MyNetworkVariable.Value = currentValueSet;

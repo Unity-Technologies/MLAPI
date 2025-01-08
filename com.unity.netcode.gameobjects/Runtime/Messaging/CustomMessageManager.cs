@@ -73,6 +73,8 @@ namespace Unity.Netcode
                 throw new ArgumentNullException(nameof(clientIds), "You must pass in a valid clientId List");
             }
 
+            ValidateMessageSize(messageBuffer, networkDelivery, isNamed: false);
+
             if (m_NetworkManager.IsHost)
             {
                 for (var i = 0; i < clientIds.Count; ++i)
@@ -108,6 +110,8 @@ namespace Unity.Netcode
         /// <param name="networkDelivery">The delivery type (QoS) to send data with</param>
         public void SendUnnamedMessage(ulong clientId, FastBufferWriter messageBuffer, NetworkDelivery networkDelivery = NetworkDelivery.ReliableSequenced)
         {
+            ValidateMessageSize(messageBuffer, networkDelivery, isNamed: false);
+
             if (m_NetworkManager.IsHost)
             {
                 if (clientId == m_NetworkManager.LocalClientId)
@@ -263,6 +267,8 @@ namespace Unity.Netcode
         /// <param name="networkDelivery">The delivery type (QoS) to send data with</param>
         public void SendNamedMessage(string messageName, ulong clientId, FastBufferWriter messageStream, NetworkDelivery networkDelivery = NetworkDelivery.ReliableSequenced)
         {
+            ValidateMessageSize(messageStream, networkDelivery, isNamed: true);
+
             ulong hash = 0;
             switch (m_NetworkManager.NetworkConfig.RpcHashSize)
             {
@@ -321,6 +327,8 @@ namespace Unity.Netcode
                 throw new ArgumentNullException(nameof(clientIds), "You must pass in a valid clientId List");
             }
 
+            ValidateMessageSize(messageStream, networkDelivery, isNamed: true);
+
             ulong hash = 0;
             switch (m_NetworkManager.NetworkConfig.RpcHashSize)
             {
@@ -358,6 +366,33 @@ namespace Unity.Netcode
             {
                 m_NetworkManager.NetworkMetrics.TrackNamedMessageSent(clientIds, messageName, size);
             }
+        }
+
+        /// <summary>
+        /// Validate the size of the message. If it's a non-fragmented delivery type the message must fit within the
+        /// max allowed size with headers also subtracted. Named messages also include the hash
+        /// of the name string. Only validates in editor and development builds.
+        /// </summary>
+        /// <param name="messageStream">The named message payload</param>
+        /// <param name="networkDelivery">Delivery method</param>
+        /// <param name="isNamed">Is the message named (or unnamed)</param>
+        /// <exception cref="OverflowException">Exception thrown in case validation fails</exception>
+        private unsafe void ValidateMessageSize(FastBufferWriter messageStream, NetworkDelivery networkDelivery, bool isNamed)
+        {
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            var maxNonFragmentedSize = m_NetworkManager.MessageManager.NonFragmentedMessageMaxSize - FastBufferWriter.GetWriteSize<NetworkMessageHeader>() - sizeof(NetworkBatchHeader);
+            if (isNamed)
+            {
+                maxNonFragmentedSize -= sizeof(ulong); // MessageName hash
+            }
+            if (networkDelivery != NetworkDelivery.ReliableFragmentedSequenced
+                && messageStream.Length > maxNonFragmentedSize)
+            {
+                throw new OverflowException($"Given message size ({messageStream.Length} bytes) is greater than " +
+                    $"the maximum allowed for the selected delivery method ({maxNonFragmentedSize} bytes). Try using " +
+                    $"ReliableFragmentedSequenced delivery method instead.");
+            }
+#endif
         }
     }
 }

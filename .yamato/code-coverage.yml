@@ -9,7 +9,9 @@ code_coverage_win_{{ project.name }}_{{ validation_editor }}:
     image: package-ci/win10:v4
     flavor: b1.large
   commands:
-    - pip install unity-downloader-cli --upgrade --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
+    - pip config set global.index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
+    - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
+    - pip install unity-downloader-cli --upgrade
     - npm install upm-ci-utils@stable -g --registry https://artifactory.prd.cds.internal.unity3d.com/artifactory/api/npm/upm-npm
     - unity-downloader-cli -u {{ validation_editor }} -c editor --wait --fast
     - upm-ci package test -u .Editor --package-path com.unity.netcode.gameobjects --enable-code-coverage --code-coverage-options 'enableCyclomaticComplexity;generateAdditionalMetrics;generateHtmlReport;assemblyFilters:+Unity.Netcode.Editor,+Unity.Netcode.Runtime,+Unity.Netcode.Components'

@@ -81,6 +81,7 @@ namespace Unity.Netcode.Editor.Configuration
 
         internal static NetcodeSettingsLabel NetworkObjectsSectionLabel;
         internal static NetcodeSettingsToggle AutoAddNetworkObjectToggle;
+        internal static NetcodeSettingsToggle CheckForNetworkObjectToggle;
         internal static NetcodeSettingsLabel MultiplayerToolsLabel;
         internal static NetcodeSettingsToggle MultiplayerToolTipStatusToggle;
 
@@ -103,6 +104,11 @@ namespace Unity.Netcode.Editor.Configuration
                 AutoAddNetworkObjectToggle = new NetcodeSettingsToggle("Auto-Add NetworkObject Component", "When enabled, NetworkObject components are automatically added to GameObjects when NetworkBehaviour components are added first.", 20);
             }
 
+            if (CheckForNetworkObjectToggle == null)
+            {
+                CheckForNetworkObjectToggle = new NetcodeSettingsToggle("Check for NetworkObject Component", "When disabled, the automatic check on NetworkBehaviours for an associated NetworkObject component will not be performed and Auto-Add NetworkObject Component will be disabled.", 20);
+            }
+
             if (MultiplayerToolsLabel == null)
             {
                 MultiplayerToolsLabel = new NetcodeSettingsLabel("Multiplayer Tools", 20);
@@ -120,6 +126,7 @@ namespace Unity.Netcode.Editor.Configuration
             CheckForInitialize();
 
             var autoAddNetworkObjectSetting = NetcodeForGameObjectsEditorSettings.GetAutoAddNetworkObjectSetting();
+            var checkForNetworkObjectSetting = NetcodeForGameObjectsEditorSettings.GetCheckForNetworkObjectSetting();
             var multiplayerToolsTipStatus = NetcodeForGameObjectsEditorSettings.GetNetcodeInstallMultiplayerToolTips() == 0;
             var settings = NetcodeForGameObjectsProjectSettings.instance;
             var generateDefaultPrefabs = settings.GenerateDefaultNetworkPrefabs;
@@ -134,7 +141,12 @@ namespace Unity.Netcode.Editor.Configuration
             {
                 GUILayout.BeginVertical("Box");
                 NetworkObjectsSectionLabel.DrawLabel();
-                autoAddNetworkObjectSetting = AutoAddNetworkObjectToggle.DrawToggle(autoAddNetworkObjectSetting);
+                autoAddNetworkObjectSetting = AutoAddNetworkObjectToggle.DrawToggle(autoAddNetworkObjectSetting, checkForNetworkObjectSetting);
+                checkForNetworkObjectSetting = CheckForNetworkObjectToggle.DrawToggle(checkForNetworkObjectSetting);
+                if (autoAddNetworkObjectSetting && !checkForNetworkObjectSetting)
+                {
+                    autoAddNetworkObjectSetting = false;
+                }
                 GUILayout.EndVertical();
 
                 GUILayout.BeginVertical("Box");
@@ -184,6 +196,7 @@ namespace Unity.Netcode.Editor.Configuration
             if (EditorGUI.EndChangeCheck())
             {
                 NetcodeForGameObjectsEditorSettings.SetAutoAddNetworkObjectSetting(autoAddNetworkObjectSetting);
+                NetcodeForGameObjectsEditorSettings.SetCheckForNetworkObjectSetting(checkForNetworkObjectSetting);
                 NetcodeForGameObjectsEditorSettings.SetNetcodeInstallMultiplayerToolTips(multiplayerToolsTipStatus ? 0 : 1);
                 settings.GenerateDefaultNetworkPrefabs = generateDefaultPrefabs;
                 settings.TempNetworkPrefabsPath = networkPrefabsPath;
@@ -213,10 +226,13 @@ namespace Unity.Netcode.Editor.Configuration
     {
         private GUIContent m_ToggleContent;
 
-        public bool DrawToggle(bool currentSetting)
+        public bool DrawToggle(bool currentSetting, bool enabled = true)
         {
             EditorGUIUtility.labelWidth = m_LabelSize;
-            return EditorGUILayout.Toggle(m_ToggleContent, currentSetting, m_LayoutWidth);
+            GUI.enabled = enabled;
+            var returnValue = EditorGUILayout.Toggle(m_ToggleContent, currentSetting, m_LayoutWidth);
+            GUI.enabled = true;
+            return returnValue;
         }
 
         public NetcodeSettingsToggle(string labelText, string toolTip, float layoutOffset)

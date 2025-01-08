@@ -1,65 +1,135 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 using NUnit.Framework;
 using Unity.Netcode.TestHelpers.Runtime;
-using UnityEngine;
 using UnityEngine.TestTools;
 
 namespace Unity.Netcode.RuntimeTests
 {
-    public class ConnectionApprovalTests
+    [TestFixture(PlayerCreation.Prefab)]
+    [TestFixture(PlayerCreation.PrefabHash)]
+    [TestFixture(PlayerCreation.NoPlayer)]
+    [TestFixture(PlayerCreation.FailValidation)]
+    internal class ConnectionApprovalTests : NetcodeIntegrationTest
     {
-        private Guid m_ValidationToken;
-        private bool m_IsValidated;
-
-        [SetUp]
-        public void Setup()
+        private const string k_InvalidToken = "Invalid validation token!";
+        public enum PlayerCreation
         {
-            // Create, instantiate, and host
-            Assert.IsTrue(NetworkManagerHelper.StartNetworkManager(out _, NetworkManagerHelper.NetworkManagerOperatingMode.None));
+            Prefab,
+            PrefabHash,
+            NoPlayer,
+            FailValidation
+        }
+        private PlayerCreation m_PlayerCreation;
+        private bool m_ClientDisconnectReasonValidated;
+
+        private Dictionary<ulong, bool> m_Validated = new Dictionary<ulong, bool>();
+
+        public ConnectionApprovalTests(PlayerCreation playerCreation)
+        {
+            m_PlayerCreation = playerCreation;
+        }
+
+        protected override int NumberOfClients => 1;
+
+        private Guid m_ValidationToken;
+
+        protected override bool ShouldCheckForSpawnedPlayers()
+        {
+            return m_PlayerCreation != PlayerCreation.NoPlayer;
+        }
+
+        protected override void OnServerAndClientsCreated()
+        {
+            m_ClientDisconnectReasonValidated = false;
+            m_BypassConnectionTimeout = m_PlayerCreation == PlayerCreation.FailValidation;
+            m_Validated.Clear();
             m_ValidationToken = Guid.NewGuid();
+            var validationToken = Encoding.UTF8.GetBytes(m_ValidationToken.ToString());
+            m_ServerNetworkManager.ConnectionApprovalCallback = NetworkManagerObject_ConnectionApprovalCallback;
+            m_ServerNetworkManager.NetworkConfig.PlayerPrefab = m_PlayerCreation == PlayerCreation.Prefab ? m_PlayerPrefab : null;
+            if (m_PlayerCreation == PlayerCreation.PrefabHash)
+            {
+                m_ServerNetworkManager.NetworkConfig.Prefabs.Add(new NetworkPrefab() { Prefab = m_PlayerPrefab });
+            }
+            m_ServerNetworkManager.NetworkConfig.ConnectionApproval = true;
+            m_ServerNetworkManager.NetworkConfig.ConnectionData = validationToken;
+
+            foreach (var client in m_ClientNetworkManagers)
+            {
+                client.NetworkConfig.PlayerPrefab = m_PlayerCreation == PlayerCreation.Prefab ? m_PlayerPrefab : null;
+                if (m_PlayerCreation == PlayerCreation.PrefabHash)
+                {
+                    client.NetworkConfig.Prefabs.Add(new NetworkPrefab() { Prefab = m_PlayerPrefab });
+                }
+                client.NetworkConfig.ConnectionApproval = true;
+                client.NetworkConfig.ConnectionData = m_PlayerCreation == PlayerCreation.FailValidation ? Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()) : validationToken;
+                if (m_PlayerCreation == PlayerCreation.FailValidation)
+                {
+                    client.OnClientDisconnectCallback += Client_OnClientDisconnectCallback;
+                }
+            }
+
+            base.OnServerAndClientsCreated();
+        }
+
+        private void Client_OnClientDisconnectCallback(ulong clientId)
+        {
+            m_ClientNetworkManagers[0].OnClientDisconnectCallback -= Client_OnClientDisconnectCallback;
+            m_ClientDisconnectReasonValidated = m_ClientNetworkManagers[0].LocalClientId == clientId && m_ClientNetworkManagers[0].DisconnectReason == k_InvalidToken;
+        }
+
+        private bool ClientAndHostValidated()
+        {
+            if (!m_Validated.ContainsKey(m_ServerNetworkManager.LocalClientId) || !m_Validated[m_ServerNetworkManager.LocalClientId])
+            {
+                return false;
+            }
+            if (m_PlayerCreation == PlayerCreation.FailValidation)
+            {
+                return m_ClientDisconnectReasonValidated;
+            }
+            else
+            {
+                foreach (var client in m_ClientNetworkManagers)
+                {
+                    if (!m_Validated.ContainsKey(client.LocalClientId) || !m_Validated[client.LocalClientId])
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
         [UnityTest]
         public IEnumerator ConnectionApproval()
         {
-            NetworkManagerHelper.NetworkManagerObject.ConnectionApprovalCallback = NetworkManagerObject_ConnectionApprovalCallback;
-            NetworkManagerHelper.NetworkManagerObject.NetworkConfig.ConnectionApproval = true;
-            NetworkManagerHelper.NetworkManagerObject.NetworkConfig.PlayerPrefab = null;
-            NetworkManagerHelper.NetworkManagerObject.NetworkConfig.ConnectionData = Encoding.UTF8.GetBytes(m_ValidationToken.ToString());
-            m_IsValidated = false;
-            NetworkManagerHelper.NetworkManagerObject.StartHost();
-
-            var timeOut = Time.realtimeSinceStartup + 3.0f;
-            var timedOut = false;
-            while (!m_IsValidated)
-            {
-                yield return new WaitForSeconds(0.01f);
-                if (timeOut < Time.realtimeSinceStartup)
-                {
-                    timedOut = true;
-                }
-            }
-
-            //Make sure we didn't time out
-            Assert.False(timedOut);
-            Assert.True(m_IsValidated);
+            yield return WaitForConditionOrTimeOut(ClientAndHostValidated);
+            AssertOnTimeout("Timed out waiting for all clients to be approved!");
         }
 
         private void NetworkManagerObject_ConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
         {
             var stringGuid = Encoding.UTF8.GetString(request.Payload);
+
             if (m_ValidationToken.ToString() == stringGuid)
             {
-                m_IsValidated = true;
+                m_Validated.Add(request.ClientNetworkId, true);
+                response.Approved = true;
+            }
+            else
+            {
+                response.Approved = false;
+                response.Reason = "Invalid validation token!";
             }
 
-            response.Approved = m_IsValidated;
-            response.CreatePlayerObject = false;
+            response.CreatePlayerObject = ShouldCheckForSpawnedPlayers();
             response.Position = null;
             response.Rotation = null;
-            response.PlayerPrefabHash = null;
+            response.PlayerPrefabHash = m_PlayerCreation == PlayerCreation.PrefabHash ? m_PlayerPrefab.GetComponent<NetworkObject>().GlobalObjectIdHash : null;
         }
 
 
@@ -78,13 +148,5 @@ namespace Unity.Netcode.RuntimeTests
 
             Assert.True(currentHash != newHash, $"Hashed {nameof(NetworkConfig)} values {currentHash} and {newHash} should not be the same!");
         }
-
-        [TearDown]
-        public void TearDown()
-        {
-            // Stop, shutdown, and destroy
-            NetworkManagerHelper.ShutdownNetworkManager();
-        }
-
     }
 }

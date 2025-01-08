@@ -11,7 +11,9 @@ build_{{ project.name }}_tests_{{ editor }}_android:
       image: desktop/android-execution-r19:v0.1.1-860408
       flavor: b1.xlarge
   commands:
+    - pip config set global.index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
+    - pip install unity-downloader-cli --upgrade
     - curl -s https://artifactory-slo.bf.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr.bat --output utr.bat
     - python .yamato/disable-burst-if-requested.py --project-path testproject --platform Android
     - unity-downloader-cli -u {{ editor }} -c editor -c Android -w --fast
@@ -49,7 +51,9 @@ build_{{ project.name }}_tests_{{ editor }}_iOS:
     image: mobile/ios-macos-11:stable
     flavor: b1.large
   commands:
+    - pip config set global.index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
     - pip install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
+    - pip install unity-downloader-cli --upgrade
     - unity-downloader-cli -u {{ editor }} -c editor -c iOS -w --fast
     - curl -s https://artifactory-slo.bf.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr
     - chmod +x ./utr

@@ -9,7 +9,12 @@ standards_{{ projects.first.name }}:
   commands:
     - dotnet --version
     - dotnet format --version
-    - pip install unity-downloader-cli --upgrade --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
+    - sudo add-apt-repository -y ppa:deadsnakes/ppa
+    - sudo apt update
+    - sudo apt install -y python3.9
+    - pip3 config set global.index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
+    - pip3 install unity-downloader-cli --index-url https://artifactory.prd.it.unity3d.com/artifactory/api/pypi/pypi/simple
+    - pip3 install unity-downloader-cli --upgrade
     - unity-downloader-cli -u {{ projects.first.test_editors.first }} -c editor --wait --fast
     - .Editor/Unity -batchmode -nographics -logFile - -executeMethod Packages.Rider.Editor.RiderScriptEditor.SyncSolution -projectPath {{ projects.first.path }} -quit
     - dotnet run --project dotnet-tools/netcode.standards -- --project={{ projects.first.path }} --check
