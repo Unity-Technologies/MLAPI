@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 Additional documentation and release notes are available at [Multiplayer Documentation](https://docs-multiplayer.unity3d.com).
 
+## [Unreleased]
+
+### Added
+
+### Fixed
+- Fixed issue where an exception was thrown when calling `NetworkManager.Shutdown` after calling `UnityTransport.Shutdown`. (#3118)
+
+### Changed
+
 ## [1.12.0] - 2024-11-19
 
 ### Added
@@ -210,7 +219,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 ### Added
 
 - Added a protected virtual method `NetworkTransform.OnInitialize(ref NetworkTransformState replicatedState)` that just returns the replicated state reference.
-  
+
 ### Fixed
 
 - Fixed issue where invoking `NetworkManager.Shutdown` within `NetworkManager.OnClientStopped` or `NetworkManager.OnServerStopped` would force `NetworkManager.ShutdownInProgress` to remain true after completing the shutdown process. (#2661)

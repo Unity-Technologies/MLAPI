@@ -31,8 +31,11 @@ For general questions, networking advice or discussions about Netcode for GameOb
 
 ### Compatibility
 
-Netcode for GameObjects targets the following Unity versions:
-- Unity 2021.3(LTS), 2022.3(LTS), and Unity 6 (6000.0)
+Netcode for GameObjects v1.x.x targets the following Unity versions:
+- Unity 2021.3(LTS), 2022.3(LTS), and is Unity 6 compatible.
+
+[Netcode for GameObjects v2.x.x](https://github.com/Unity-Technologies/com.unity.netcode.gameobjects/tree/develop-2.0.0) targets the following Unity versions:
+- Unity 6 (LTS)
 
 On the following runtime platforms:
 - Windows, MacOS, and Linux
