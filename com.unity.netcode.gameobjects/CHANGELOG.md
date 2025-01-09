@@ -11,6 +11,8 @@ Additional documentation and release notes are available at [Multiplayer Documen
 ### Added
 
 ### Fixed
+
+- Fixed issue where `NetworkRigidBody2D` was still using the deprecated `isKinematic` property in Unity versions 2022.3 and newer.
 - Fixed issue where an exception was thrown when calling `NetworkManager.Shutdown` after calling `UnityTransport.Shutdown`. (#3118)
 
 ### Changed
