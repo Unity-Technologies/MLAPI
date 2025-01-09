@@ -97,27 +97,21 @@ namespace TestProject.RuntimeTests
             Assert.True(serverClientPlayerNetworkRigidbody2d.WasKinematicBeforeSpawn);
             Assert.True(clientServerPlayerNetworkRigidbody2d.WasKinematicBeforeSpawn);
 
-            // Validate kinematic settings after spawn
-            var serverLocalPlayerRigidbody2d = m_ServerNetworkManager.LocalClient.PlayerObject.GetComponent<Rigidbody2D>();
-            var clientLocalPlayerRigidbody2d = m_ClientNetworkManagers[0].LocalClient.PlayerObject.GetComponent<Rigidbody2D>();
-            var serverClientPlayerRigidbody2d = m_PlayerNetworkObjects[m_ServerNetworkManager.LocalClientId][m_ClientNetworkManagers[0].LocalClientId].GetComponent<Rigidbody2D>();
-            var clientServerPlayerRigidbody2d = m_PlayerNetworkObjects[m_ClientNetworkManagers[0].LocalClientId][m_ServerNetworkManager.LocalClientId].GetComponent<Rigidbody2D>();
-
             var isOwnerAuthority = m_AuthorityMode == NetworkTransformRigidBodyTestComponent.AuthorityModes.Owner;
             if (isOwnerAuthority)
             {
                 // can commit player has authority and should have a kinematic mode of false (or true in case body was already kinematic).
-                Assert.True(!serverLocalPlayerRigidbody2d.isKinematic);
-                Assert.True(!clientLocalPlayerRigidbody2d.isKinematic);
-                Assert.True(serverClientPlayerRigidbody2d.isKinematic);
-                Assert.True(clientServerPlayerRigidbody2d.isKinematic);
+                Assert.True(!serverLocalPlayerNetworkRigidbody2d.IsKinematic());
+                Assert.True(!clientLocalPlayerNetworkRigidbody2d.IsKinematic());
+                Assert.True(serverClientPlayerNetworkRigidbody2d.IsKinematic());
+                Assert.True(clientServerPlayerNetworkRigidbody2d.IsKinematic());
             }
             else
             {
-                Assert.True(!serverLocalPlayerRigidbody2d.isKinematic);
-                Assert.True(clientLocalPlayerRigidbody2d.isKinematic);
-                Assert.True(!serverClientPlayerRigidbody2d.isKinematic);
-                Assert.True(clientServerPlayerRigidbody2d.isKinematic);
+                Assert.True(!serverLocalPlayerNetworkRigidbody2d.IsKinematic());
+                Assert.True(clientLocalPlayerNetworkRigidbody2d.IsKinematic());
+                Assert.True(!serverClientPlayerNetworkRigidbody2d.IsKinematic());
+                Assert.True(clientServerPlayerNetworkRigidbody2d.IsKinematic());
             }
         }
 #endif
