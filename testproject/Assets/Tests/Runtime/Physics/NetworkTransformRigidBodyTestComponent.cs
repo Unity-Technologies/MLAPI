@@ -26,9 +26,19 @@ namespace TestProject.RuntimeTests
     {
         public bool WasKinematicBeforeSpawn;
 
+
+        internal bool IsKinematic()
+        {
+#if UNITY_2022_3_OR_NEWER
+            return GetComponent<Rigidbody2D>().bodyType == RigidbodyType2D.Kinematic;
+#else
+            return GetComponent<Rigidbody2D>().isKinematic;
+#endif
+        }
+
         protected override void OnNetworkPreSpawn(ref NetworkManager networkManager)
         {
-            WasKinematicBeforeSpawn = GetComponent<Rigidbody2D>().isKinematic;
+            WasKinematicBeforeSpawn = IsKinematic();
             base.OnNetworkPreSpawn(ref networkManager);
         }
     }
