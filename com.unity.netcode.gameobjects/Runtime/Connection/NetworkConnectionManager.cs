@@ -967,6 +967,11 @@ namespace Unity.Netcode
                     {
                         if (NetworkManager.PrefabHandler.ContainsHandler(ConnectedClients[clientId].PlayerObject.GlobalObjectIdHash))
                         {
+                            // If the player is spawned, then despawn before invoking HandleNetworkPrefabDestroy
+                            if (playerObject.IsSpawned)
+                            {
+                                NetworkManager.SpawnManager.DespawnObject(ConnectedClients[clientId].PlayerObject, false);
+                            }
                             NetworkManager.PrefabHandler.HandleNetworkPrefabDestroy(ConnectedClients[clientId].PlayerObject);
                         }
                         else if (playerObject.IsSpawned)
@@ -984,38 +989,31 @@ namespace Unity.Netcode
 
                 // Get the NetworkObjects owned by the disconnected client
                 var clientOwnedObjects = NetworkManager.SpawnManager.GetClientOwnedObjects(clientId);
-                if (clientOwnedObjects == null)
+
+                // Handle despawn & destroy or change ownership
+                for (int i = clientOwnedObjects.Count - 1; i >= 0; i--)
                 {
-                    // This could happen if a client is never assigned a player object and is disconnected
-                    // Only log this in verbose/developer mode
-                    if (NetworkManager.LogLevel == LogLevel.Developer)
+                    var ownedObject = clientOwnedObjects[i];
+                    if (ownedObject != null)
                     {
-                        NetworkLog.LogWarning($"ClientID {clientId} disconnected with (0) zero owned objects!  Was a player prefab not assigned?");
-                    }
-                }
-                else
-                {
-                    // Handle changing ownership and prefab handlers
-                    for (int i = clientOwnedObjects.Count - 1; i >= 0; i--)
-                    {
-                        var ownedObject = clientOwnedObjects[i];
-                        if (ownedObject != null)
+                        if (!ownedObject.DontDestroyWithOwner)
                         {
-                            if (!ownedObject.DontDestroyWithOwner)
+                            if (NetworkManager.PrefabHandler.ContainsHandler(clientOwnedObjects[i].GlobalObjectIdHash))
                             {
-                                if (NetworkManager.PrefabHandler.ContainsHandler(clientOwnedObjects[i].GlobalObjectIdHash))
+                                if (ownedObject.IsSpawned)
                                 {
-                                    NetworkManager.PrefabHandler.HandleNetworkPrefabDestroy(clientOwnedObjects[i]);
+                                    NetworkManager.SpawnManager.DespawnObject(ownedObject, false);
                                 }
-                                else
-                                {
-                                    Object.Destroy(ownedObject.gameObject);
-                                }
+                                NetworkManager.PrefabHandler.HandleNetworkPrefabDestroy(clientOwnedObjects[i]);
                             }
-                            else if (!NetworkManager.ShutdownInProgress)
+                            else
                             {
-                                ownedObject.RemoveOwnership();
+                                Object.Destroy(ownedObject.gameObject);
                             }
+                        }
+                        else if (!NetworkManager.ShutdownInProgress)
+                        {
+                            ownedObject.RemoveOwnership();
                         }
                     }
                 }
