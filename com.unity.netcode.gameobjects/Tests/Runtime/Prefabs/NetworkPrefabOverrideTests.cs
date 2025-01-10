@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using NUnit.Framework;
@@ -61,6 +62,46 @@ namespace Unity.Netcode.RuntimeTests
             }
         }
 
+
+        internal class SpawnDespawnDestroyNotifications : NetworkBehaviour
+        {
+
+            public int Despawned { get; private set; }
+            public int Destroyed { get; private set; }
+
+            private bool m_WasSpawned;
+
+            private ulong m_LocalClientId;
+
+            public override void OnNetworkSpawn()
+            {
+                m_WasSpawned = true;
+                m_LocalClientId = NetworkManager.LocalClientId;
+                base.OnNetworkSpawn();
+            }
+
+            public override void OnNetworkDespawn()
+            {
+                Assert.True(Destroyed == 0, $"{name} on client-{m_LocalClientId} should have a destroy invocation count of 0 but it is {Destroyed}!");
+                Assert.True(Despawned == 0, $"{name} on client-{m_LocalClientId} should have a despawn invocation count of 0 but it is {Despawned}!");
+                Despawned++;
+                base.OnNetworkDespawn();
+            }
+
+            public override void OnDestroy()
+            {
+                // When the original prefabs are destroyed, we want to ignore this check (those instances are never spawned)
+                if (m_WasSpawned)
+                {
+                    Assert.True(Despawned == 1, $"{name} on client-{m_LocalClientId} should have a despawn invocation count of 1 but it is {Despawned}!");
+                    Assert.True(Destroyed == 0, $"{name} on client-{m_LocalClientId} should have a destroy invocation count of 0 but it is {Destroyed}!");
+                }
+                Destroyed++;
+
+                base.OnDestroy();
+            }
+        }
+
         /// <summary>
         /// Mock component for testing that the client-side player is using the right
         /// network prefab.
@@ -95,7 +136,9 @@ namespace Unity.Netcode.RuntimeTests
         {
             // Create a NetworkPrefab with an override
             var basePrefab = NetcodeIntegrationTestHelpers.CreateNetworkObject($"{k_PrefabRootName}-base", m_ServerNetworkManager, true);
+            basePrefab.AddComponent<SpawnDespawnDestroyNotifications>();
             var targetPrefab = NetcodeIntegrationTestHelpers.CreateNetworkObject($"{k_PrefabRootName}-over", m_ServerNetworkManager, true);
+            targetPrefab.AddComponent<SpawnDespawnDestroyNotifications>();
             m_PrefabOverride = new NetworkPrefab()
             {
                 Prefab = basePrefab,
@@ -223,6 +266,7 @@ namespace Unity.Netcode.RuntimeTests
             {
                 networkManagerOwner = m_ClientNetworkManagers[0];
             }
+
             // Clients and Host will spawn the OverridingTargetPrefab while a dedicated server will spawn the SourcePrefabToOverride
             var expectedServerGlobalObjectIdHash = networkManagerOwner.IsClient ? m_PrefabOverride.OverridingTargetPrefab.GetComponent<NetworkObject>().GlobalObjectIdHash : m_PrefabOverride.SourcePrefabToOverride.GetComponent<NetworkObject>().GlobalObjectIdHash;
             var expectedClientGlobalObjectIdHash = m_PrefabOverride.OverridingTargetPrefab.GetComponent<NetworkObject>().GlobalObjectIdHash;
@@ -263,6 +307,40 @@ namespace Unity.Netcode.RuntimeTests
 
             yield return WaitForConditionOrTimeOut(ObjectSpawnedOnAllNetworkMangers);
             AssertOnTimeout($"The spawned prefab override validation failed!\n {builder}");
+
+            // Verify that the despawn and destroy order of operations is correct for client owned NetworkObjects and the nunmber of times each is invoked is correct
+            expectedServerGlobalObjectIdHash = networkManagerOwner.IsClient ? m_PrefabOverride.OverridingTargetPrefab.GetComponent<NetworkObject>().GlobalObjectIdHash : m_PrefabOverride.SourcePrefabToOverride.GetComponent<NetworkObject>().GlobalObjectIdHash;
+            expectedClientGlobalObjectIdHash = m_PrefabOverride.OverridingTargetPrefab.GetComponent<NetworkObject>().GlobalObjectIdHash;
+
+            spawnedInstance = NetworkObject.InstantiateAndSpawn(m_PrefabOverride.SourcePrefabToOverride, networkManagerOwner, m_ClientNetworkManagers[0].LocalClientId);
+
+
+            yield return WaitForConditionOrTimeOut(ObjectSpawnedOnAllNetworkMangers);
+            AssertOnTimeout($"The spawned prefab override validation failed!\n {builder}");
+            var clientId = m_ClientNetworkManagers[0].LocalClientId;
+            m_ClientNetworkManagers[0].Shutdown();
+
+            // Wait until all of the client's owned objects are destroyed
+            // If no asserts occur, then the despawn & destroy order of operations and invocation count is correct
+            /// For more information look at: <see cref="SpawnDespawnDestroyNotifications"/>
+            bool ClientDisconnected(ulong clientId)
+            {
+                var clientOwnedObjects = m_ServerNetworkManager.SpawnManager.SpawnedObjects.Where((c) => c.Value.OwnerClientId == clientId).ToList();
+                if (clientOwnedObjects.Count > 0)
+                {
+                    return false;
+                }
+
+                clientOwnedObjects = m_ClientNetworkManagers[1].SpawnManager.SpawnedObjects.Where((c) => c.Value.OwnerClientId == clientId).ToList();
+                if (clientOwnedObjects.Count > 0)
+                {
+                    return false;
+                }
+                return true;
+            }
+
+            yield return WaitForConditionOrTimeOut(() => ClientDisconnected(clientId));
+            AssertOnTimeout($"Timed out waiting for client to disconnect!");
         }
     }
 }
