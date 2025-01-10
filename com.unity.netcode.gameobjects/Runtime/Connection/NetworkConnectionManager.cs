@@ -1260,7 +1260,7 @@ namespace Unity.Netcode
                         }
                     }
                 }
-                
+
 
                 // TODO: Could(should?) be replaced with more memory per client, by storing the visibility
                 foreach (var sobj in NetworkManager.SpawnManager.SpawnedObjectsList)
