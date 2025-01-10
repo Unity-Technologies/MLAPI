@@ -23,8 +23,10 @@ public class ConnectionModeScript : MonoBehaviour
     [SerializeField]
     private GameObject m_JoinCodeInput;
 
+#if ENABLE_RELAY_SERVICE
     [SerializeField]
     private int m_MaxConnections = 10;
+#endif
 
     [SerializeField]
     private LoadSceneMode m_ClientSynchronizationMode;
@@ -126,8 +128,10 @@ public class ConnectionModeScript : MonoBehaviour
         if (HasRelaySupport())
         {
             m_JoinCodeInput.SetActive(true);
+#if ENABLE_RELAY_SERVICE
             m_ConnectionModeButtons?.SetActive(false || AuthenticationService.Instance.IsSignedIn);
             m_AuthenticationButtons?.SetActive(NetworkManager.Singleton && !NetworkManager.Singleton.IsListening && !AuthenticationService.Instance.IsSignedIn);
+#endif
         }
     }
 
@@ -138,11 +142,13 @@ public class ConnectionModeScript : MonoBehaviour
     {
         if (NetworkManager.Singleton && !NetworkManager.Singleton.IsListening && m_ConnectionModeButtons)
         {
+#if ENABLE_RELAY_SERVICE
             if (HasRelaySupport())
             {
                 StartCoroutine(StartRelayServer(StartServer));
             }
             else
+#endif
             {
                 StartServer();
             }
@@ -170,13 +176,13 @@ public class ConnectionModeScript : MonoBehaviour
         }
     }
 
-
+#if ENABLE_RELAY_SERVICE
     /// <summary>
     /// Coroutine that handles starting MLAPI in server mode if Relay is enabled
     /// </summary>
     private IEnumerator StartRelayServer(Action postAllocationAction)
     {
-#if ENABLE_RELAY_SERVICE
+
         m_ConnectionModeButtons?.SetActive(false);
 
         var serverRelayUtilityTask = RelayUtility.AllocateRelayServerAndGetJoinCode(m_MaxConnections);
@@ -198,11 +204,8 @@ public class ConnectionModeScript : MonoBehaviour
         NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(ipv4address, port, allocationIdBytes, key, connectionData);
 
         postAllocationAction();
-#else
-        yield return null;
-#endif
     }
-
+#endif
 
     /// <summary>
     /// Handles starting netcode in host mode
@@ -211,11 +214,13 @@ public class ConnectionModeScript : MonoBehaviour
     {
         if (NetworkManager.Singleton && !NetworkManager.Singleton.IsListening && m_ConnectionModeButtons)
         {
+#if ENABLE_RELAY_SERVICE
             if (HasRelaySupport())
             {
                 StartCoroutine(StartRelayServer(StartHost));
             }
             else
+#endif
             {
                 StartHost();
             }
