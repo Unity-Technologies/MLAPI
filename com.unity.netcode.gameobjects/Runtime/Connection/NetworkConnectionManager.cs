@@ -1195,7 +1195,7 @@ namespace Unity.Netcode
                             {
                                 if (NetworkManager.PrefabHandler.ContainsHandler(clientOwnedObjects[i].GlobalObjectIdHash))
                                 {
-                                    NetworkManager.SpawnManager.DespawnObject(ownedObject, true, true);
+                                    NetworkManager.SpawnManager.DespawnObject(ownedObject, false, true);
                                     NetworkManager.PrefabHandler.HandleNetworkPrefabDestroy(clientOwnedObjects[i]);
                                 }
                                 else
