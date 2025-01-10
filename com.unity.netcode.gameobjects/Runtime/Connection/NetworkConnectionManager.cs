@@ -994,27 +994,28 @@ namespace Unity.Netcode
                 for (int i = clientOwnedObjects.Count - 1; i >= 0; i--)
                 {
                     var ownedObject = clientOwnedObjects[i];
-                    if (ownedObject != null)
+                    if (!ownedObject)
                     {
-                        if (!ownedObject.DontDestroyWithOwner)
+                        continue;
+                    }
+                    if (!ownedObject.DontDestroyWithOwner)
+                    {
+                        if (NetworkManager.PrefabHandler.ContainsHandler(clientOwnedObjects[i].GlobalObjectIdHash))
                         {
-                            if (NetworkManager.PrefabHandler.ContainsHandler(clientOwnedObjects[i].GlobalObjectIdHash))
+                            if (ownedObject.IsSpawned)
                             {
-                                if (ownedObject.IsSpawned)
-                                {
-                                    NetworkManager.SpawnManager.DespawnObject(ownedObject, false);
-                                }
-                                NetworkManager.PrefabHandler.HandleNetworkPrefabDestroy(clientOwnedObjects[i]);
+                                NetworkManager.SpawnManager.DespawnObject(ownedObject, false);
                             }
-                            else
-                            {
-                                Object.Destroy(ownedObject.gameObject);
-                            }
+                            NetworkManager.PrefabHandler.HandleNetworkPrefabDestroy(clientOwnedObjects[i]);
                         }
-                        else if (!NetworkManager.ShutdownInProgress)
+                        else
                         {
-                            ownedObject.RemoveOwnership();
+                            Object.Destroy(ownedObject.gameObject);
                         }
+                    }
+                    else if (!NetworkManager.ShutdownInProgress)
+                    {
+                        ownedObject.RemoveOwnership();
                     }
                 }
 
