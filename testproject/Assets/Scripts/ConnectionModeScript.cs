@@ -1,13 +1,16 @@
-using System.Collections;
-using UnityEngine;
-using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
-using UnityEngine.SceneManagement;
 #if ENABLE_RELAY_SERVICE
 using System;
+#endif
+using System.Collections;
+using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
+#if ENABLE_RELAY_SERVICE
 using Unity.Services.Core;
 using Unity.Services.Authentication;
 #endif
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
 
 /// <summary>
 /// Used in tandem with the ConnectModeButtons prefab asset in test project
