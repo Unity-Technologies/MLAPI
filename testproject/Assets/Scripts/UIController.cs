@@ -49,10 +49,10 @@ public class UIController : MonoBehaviour
         ButtonsRoot.SetActive(false);
     }
 
-
+#if ENABLE_RELAY_SERVICE
     public async void OnSignIn()
     {
-#if ENABLE_RELAY_SERVICE
+
         await UnityServices.InitializeAsync();
         Debug.Log("OnSignIn");
         await AuthenticationService.Instance.SignInAnonymouslyAsync();
@@ -64,6 +64,7 @@ public class UIController : MonoBehaviour
             JoinCode.SetActive(true);
             AuthButton.SetActive(false);
         }
-#endif
+
     }
+#endif
 }
