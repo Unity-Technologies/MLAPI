@@ -1,10 +1,11 @@
-using UnityEngine;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 #if ENABLE_RELAY_SERVICE
 using Unity.Services.Core;
 using Unity.Services.Authentication;
 #endif
+using UnityEngine;
+
 
 public class UIController : MonoBehaviour
 {
@@ -49,10 +50,10 @@ public class UIController : MonoBehaviour
         ButtonsRoot.SetActive(false);
     }
 
-
+#if ENABLE_RELAY_SERVICE
     public async void OnSignIn()
     {
-#if ENABLE_RELAY_SERVICE
+
         await UnityServices.InitializeAsync();
         Debug.Log("OnSignIn");
         await AuthenticationService.Instance.SignInAnonymouslyAsync();
@@ -64,6 +65,7 @@ public class UIController : MonoBehaviour
             JoinCode.SetActive(true);
             AuthButton.SetActive(false);
         }
-#endif
+
     }
+#endif
 }

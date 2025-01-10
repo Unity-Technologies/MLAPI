@@ -1,3 +1,4 @@
+#if ENABLE_RELAY_SERVICE
 using System;
 using System.Threading.Tasks;
 using Unity.Services.Relay;
@@ -56,3 +57,4 @@ public class RelayUtility
         return (allocation.RelayServer.IpV4, (ushort)allocation.RelayServer.Port, allocation.AllocationIdBytes, allocation.ConnectionData, allocation.HostConnectionData, allocation.Key);
     }
 }
+#endif
