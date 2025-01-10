@@ -52,7 +52,16 @@ namespace Unity.Netcode.Components
             // Turn off physics for the rigid body until spawned, otherwise
             // clients can run fixed update before the first full
             // NetworkTransform update
-            m_Rigidbody.isKinematic = true;
+            SetIsKinematic(true);
+        }
+
+        private void SetIsKinematic(bool isKinematic)
+        {
+#if UNITY_2022_3_OR_NEWER
+            m_Rigidbody.bodyType = isKinematic ? RigidbodyType2D.Kinematic : RigidbodyType2D.Dynamic;
+#else
+            m_Rigidbody.isKinematic = isKinematic;
+#endif
         }
 
         /// <summary>
@@ -89,7 +98,7 @@ namespace Unity.Netcode.Components
             }
 
             // If you have authority then you are not kinematic
-            m_Rigidbody.isKinematic = !m_IsAuthority;
+            SetIsKinematic(!m_IsAuthority);
 
             // Set interpolation of the Rigidbody2D based on authority
             // With authority: let local transform handle interpolation

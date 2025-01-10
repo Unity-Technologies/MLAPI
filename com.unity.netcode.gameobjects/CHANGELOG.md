@@ -6,7 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 Additional documentation and release notes are available at [Multiplayer Documentation](https://docs-multiplayer.unity3d.com).
 
-[Unreleased]
+## [Unreleased]
+
+### Added
+
+### Fixed
+
+- Fixed issue where a spawned `NetworkObject` that was registered with a prefab handler and owned by a client would invoke destroy more than once on the host-server side if the client disconnected while the `NetworkObject` was still spawned. (#3202)
+- Fixed issue where `NetworkRigidBody2D` was still using the deprecated `isKinematic` property in Unity versions 2022.3 and newer. (#3199)
+- Fixed issue where an exception was thrown when calling `NetworkManager.Shutdown` after calling `UnityTransport.Shutdown`. (#3118)
+
+### Changed
+
+## [1.12.0] - 2024-11-19
 
 ### Added
 
@@ -18,7 +30,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Fixed
 
-- Fixed issue where an exception was thrown when calling `NetworkManager.Shutdown` after calling `UnityTransport.Shutdown`. (#3118)
+- Fixed issue where `NetworkList` properties on in-scene placed `NetworkObject`s could cause small memory leaks when entering playmode. (#3148)
 - Fixed issue where a newly synchronizing client would be synchronized with the current `NetworkVariable` values always which could cause issues with collections if there were any pending state updates. Now, when initially synchronizing a client, if a `NetworkVariable` has a pending state update it will serialize the previously known value(s) to the synchronizing client so when the pending updates are sent they aren't duplicate values on the newly connected client side. (#3126)
 - Fixed issue where changing ownership would mark every `NetworkVariable` dirty. Now, it will only mark any `NetworkVariable` with owner read permissions as dirty and will send/flush any pending updates to all clients prior to sending the change in ownership message.  (#3126)
 - Fixed issue with `NetworkVariable` collections where transferring ownership to another client would not update the new owner's previous value to the most current value which could cause the last/previous added value to be detected as a change when adding or removing an entry (as long as the entry removed was not the last/previously added value).  (#3126)
