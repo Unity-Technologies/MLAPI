@@ -623,6 +623,8 @@ namespace TestProject.ManualTests
             var genericBehaviour = networkObject.gameObject.GetComponent<GenericNetworkObjectBehaviour>();
             if (genericBehaviour.IsRegisteredPoolObject)
             {
+                networkObject.transform.position = transform.position;
+                networkObject.transform.rotation = transform.rotation;
                 networkObject.gameObject.SetActive(false);
             }
             else

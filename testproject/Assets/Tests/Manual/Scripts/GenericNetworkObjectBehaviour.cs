@@ -149,6 +149,18 @@ namespace TestProject.ManualTests
             }
         }
 
+        public override void OnNetworkDespawn()
+        {
+            if (m_RigidBody != null)
+            {
+                m_RigidBody.Sleep();
+                m_RigidBody.transform.position = Vector3.zero;
+            }
+            m_Direction = Vector3.zero;
+
+            base.OnNetworkDespawn();
+        }
+
         [HideInInspector]
         public bool HasHandler;
 
