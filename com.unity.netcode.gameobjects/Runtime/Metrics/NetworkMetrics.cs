@@ -5,6 +5,8 @@ using Unity.Multiplayer.Tools;
 using Unity.Multiplayer.Tools.MetricTypes;
 using Unity.Multiplayer.Tools.NetStats;
 using Unity.Profiling;
+using UnityEditor;
+using UnityEngine;
 
 namespace Unity.Netcode
 {
@@ -12,10 +14,12 @@ namespace Unity.Netcode
     {
         private const ulong k_MaxMetricsPerFrame = 1000L;
         private static Dictionary<uint, string> s_SceneEventTypeNames;
-        private static ProfilerMarker s_FrameDispatch = new ProfilerMarker($"{nameof(NetworkMetrics)}.DispatchFrame");
+        private static ProfilerMarker s_FrameDispatch = new($"{nameof(NetworkMetrics)}.DispatchFrame");
 
         static NetworkMetrics()
         {
+            sTransportBytesSent.Value = 0;
+
             s_SceneEventTypeNames = new Dictionary<uint, string>();
             foreach (SceneEventType type in Enum.GetValues(typeof(SceneEventType)))
             {
@@ -33,6 +37,7 @@ namespace Unity.Netcode
             return name;
         }
 
+        internal static ProfilerCounterValue<float> sTransportBytesSent = new ProfilerCounterValue<float>(ProfilerCategory.Network, "Norbi TransportBytesSent", ProfilerMarkerDataUnit.Bytes);
         private readonly Counter m_TransportBytesSent = new Counter(NetworkMetricTypes.TotalBytesSent.Id)
         {
             ShouldResetOnDispatch = true,
@@ -91,6 +96,10 @@ namespace Unity.Netcode
 
         public NetworkMetrics()
         {
+            sTransportBytesSent.Value = 0;
+            MonobehaviourHelper.InitMonoBehaviourHelper();
+            MonobehaviourHelper.OnLateUpdate += ResetCounters;
+
             Dispatcher = new MetricDispatcherBuilder()
                 .WithCounters(m_TransportBytesSent, m_TransportBytesReceived)
                 .WithMetricEvents(m_NetworkMessageSentEvent, m_NetworkMessageReceivedEvent)
@@ -127,6 +136,10 @@ namespace Unity.Netcode
         public void TrackTransportBytesSent(long bytesCount)
         {
             m_TransportBytesSent.Increment(bytesCount);
+            sTransportBytesSent.Value += bytesCount;
+            // sTransportBytesSent.Value = bytesCount;
+
+            Debug.Log($"NGO NetworkMetrics, Frame: {Time.frameCount} TrackTransportBytesSent: {bytesCount}, total: {sTransportBytesSent.Value}");
         }
 
         public void TrackTransportBytesReceived(long bytesCount)
@@ -507,6 +520,14 @@ namespace Unity.Netcode
 
             m_PacketLossGauge.Set(packetLoss);
 #endif
+        }
+
+        [InitializeOnLoadMethod]
+        private static void ResetCounters()
+        {
+            Debug.Log($"Counter reseted in frame: {Time.frameCount}, old value: {sTransportBytesSent.Value}");
+            sTransportBytesSent.Value = 0;
+            Debug.Log($"Counter reseted in frame: {Time.frameCount}, new value: {sTransportBytesSent.Value}");
         }
 
         public void DispatchFrame()
