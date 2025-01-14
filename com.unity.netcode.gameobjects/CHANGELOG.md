@@ -12,6 +12,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Fixed
 
+- Fixed issue with distributing parented children that have the distributable and/or transferrable permissions set and have the same owner as the root parent, that has the distributable permission set, upon the owning client disconnecting when using a distributed authority network topology.
 - Fixed issue where a spawned `NetworkObject` that was registered with a prefab handler and owned by a client would invoke destroy more than once on the host-server side if the client disconnected while the `NetworkObject` was still spawned. (#3200)
 
 ### Changed
