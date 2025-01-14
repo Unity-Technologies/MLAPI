@@ -1755,8 +1755,11 @@ namespace Unity.Netcode
 
                 if (networkObject.IsOwnershipDistributable && !networkObject.IsOwnershipLocked)
                 {
+                    // Check for a parent
                     if (networkObject.transform.parent != null)
                     {
+                        // If the parent has the same owner, then skip this child
+                        // (later we determine if all children with the same owner will be transferred together)
                         var parentNetworkObject = networkObject.transform.parent.GetComponent<NetworkObject>();
                         if (parentNetworkObject != null && parentNetworkObject.OwnerClientId == networkObject.OwnerClientId)
                         {
@@ -1877,8 +1880,29 @@ namespace Unity.Netcode
                     {
                         if ((i % offsetCount) == 0)
                         {
+                            var children = ownerList.Value[i].GetComponentsInChildren<NetworkObject>();
+                            // Since the ownerList.Value[i] has to be distributable, then transfer all child NetworkObjects
+                            // with the same owner clientId and are marked as distributable also to the same client to keep
+                            // the owned distributable parent with the owned distributable children
+                            foreach (var child in children)
+                            {
+                                // Ignore the parent and any child that does not have the same owner or that is already owned by the currently targeted client
+                                if (child == ownerList.Value[i] || child.OwnerClientId != ownerList.Value[i].OwnerClientId || child.OwnerClientId == clientId)
+                                {
+                                    continue;
+                                }
+                                if ((!child.IsOwnershipDistributable || !child.IsOwnershipTransferable) && NetworkManager.LogLevel == LogLevel.Developer)
+                                {
+                                    NetworkLog.LogWarning($"Sibling {child.name} of root parent {ownerList.Value[i].name} is neither transferrable or distributable! Object distribution skipped and could lead to a potentially un-owned or owner-mismatched {nameof(NetworkObject)}!");
+                                    continue;
+                                }
+                                // Transfer ownership of all distributable =or= transferrable children with the same owner to the same client to preserve the sibling ownership tree.
+                                ChangeOwnership(child, clientId, true);
+                                // Note: We don't increment the distributed count for these children as they are skipped when getting the object distribution
+                            }
+                            // Finally, transfer ownership of the root parent
                             ChangeOwnership(ownerList.Value[i], clientId, true);
-                            //if (EnableDistributeLogging)
+                            if (EnableDistributeLogging)
                             {
                                 Debug.Log($"[Client-{ownerList.Key}][NetworkObjectId-{ownerList.Value[i].NetworkObjectId} Distributed to Client-{clientId}");
                             }
