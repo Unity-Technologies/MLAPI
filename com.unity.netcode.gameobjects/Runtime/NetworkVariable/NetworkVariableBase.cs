@@ -35,6 +35,12 @@ namespace Unity.Netcode
 
         private NetworkManager m_InternalNetworkManager;
 
+        // Determines if this NetworkVariable has been "initialized" to prevent initializing more than once which can happen when first
+        // instantiated and spawned. If this NetworkVariable instance is on an in-scene placed NetworkObject =or= a pooled NetworkObject
+        // that can persist between sessions and/or be recycled we need to reset the LastUpdateSent value prior to spawning otherwise
+        // this NetworkVariableBase property instance will not update until the last session time used.
+        internal bool HasBeenInitialized { get; private set; }
+
         internal string GetWritePermissionError()
         {
             return $"|Client-{m_NetworkManager.LocalClientId}|{m_NetworkBehaviour.name}|{Name}| Write permissions ({WritePerm}) for this client instance is not allowed!";
@@ -45,17 +51,7 @@ namespace Unity.Netcode
             Debug.LogError(GetWritePermissionError());
         }
 
-        private protected NetworkManager m_NetworkManager
-        {
-            get
-            {
-                if (m_InternalNetworkManager == null && m_NetworkBehaviour && m_NetworkBehaviour.NetworkObject?.NetworkManager)
-                {
-                    m_InternalNetworkManager = m_NetworkBehaviour.NetworkObject?.NetworkManager;
-                }
-                return m_InternalNetworkManager;
-            }
-        }
+        private protected NetworkManager m_NetworkManager => m_InternalNetworkManager;
 
         public NetworkBehaviour GetBehaviour()
         {
@@ -68,21 +64,82 @@ namespace Unity.Netcode
         /// <param name="networkBehaviour">The NetworkBehaviour the NetworkVariable belongs to</param>
         public void Initialize(NetworkBehaviour networkBehaviour)
         {
-            m_InternalNetworkManager = null;
-            m_NetworkBehaviour = networkBehaviour;
-            if (m_NetworkBehaviour && m_NetworkBehaviour.NetworkObject?.NetworkManager)
+            // If we have already been initialized, then exit early.
+            // This can happen on the very first instantiation and spawning of the associated NetworkObject
+            if (HasBeenInitialized)
             {
-                m_InternalNetworkManager = m_NetworkBehaviour.NetworkObject?.NetworkManager;
-                // When in distributed authority mode, there is no such thing as server write permissions
-                InternalWritePerm = m_InternalNetworkManager.DistributedAuthorityMode ? NetworkVariableWritePermission.Owner : InternalWritePerm;
-
-                if (m_NetworkBehaviour.NetworkManager.NetworkTimeSystem != null)
-                {
-                    UpdateLastSentTime();
-                }
+                return;
             }
 
-            OnInitialize();
+            // Throw an exception if there is an invalid NetworkBehaviour parameter
+            if (!networkBehaviour)
+            {
+                throw new Exception($"[{GetType().Name}][Initialize] {nameof(NetworkBehaviour)} parameter passed in is null!");
+            }
+            m_NetworkBehaviour = networkBehaviour;
+
+            // Throw an exception if there is no NetworkManager available
+            if (!m_NetworkBehaviour.NetworkManager)
+            {
+                // Exit early if there has yet to be a NetworkManager assigned.
+                // This is ok because Initialize is invoked multiple times until
+                // it is considered "initialized".
+                return;
+            }
+
+            if (!m_NetworkBehaviour.NetworkObject)
+            {
+                // Exit early if there has yet to be a NetworkObject assigned.
+                // This is ok because Initialize is invoked multiple times until
+                // it is considered "initialized".
+                return;
+            }
+
+            if (!m_NetworkBehaviour.NetworkObject.NetworkManagerOwner)
+            {
+                // Exit early if there has yet to be a NetworkManagerOwner assigned
+                // to the NetworkObject. This is ok because Initialize is invoked 
+                // multiple times until it is considered "initialized".
+                return;
+            }
+            m_InternalNetworkManager = m_NetworkBehaviour.NetworkObject.NetworkManagerOwner;
+
+            // Throw an exception if there is no valid NetworkTimeSystem 
+            if (m_InternalNetworkManager.NetworkTimeSystem == null)
+            {
+                throw new Exception($"[{m_NetworkBehaviour.name}][{m_NetworkBehaviour.GetType().Name}][{GetType().Name}][Initialize] {nameof(NetworkManager)} has no {nameof(NetworkTimeSystem)} assigned!");
+            }
+
+            // When in distributed authority mode, there is no such thing as server write permissions
+            InternalWritePerm = m_InternalNetworkManager.DistributedAuthorityMode ? NetworkVariableWritePermission.Owner : InternalWritePerm;
+
+            // Update our last sent time relative to when this was initialized
+            UpdateLastSentTime();
+
+            // Wrap potential user script override to catch and log any exceptions
+            try
+            {
+                OnInitialize();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+
+            // At this point, this instance is considered initialized
+            HasBeenInitialized = true;
+        }
+
+        /// <summary>
+        /// Deinitialize is invoked when a NetworkObject is despawned.
+        /// This allows for a recyled NetworkObject (in-scene or pooled)
+        /// to be properly initialized upon the next use/spawn.
+        /// </summary>
+        internal void Deinitialize()
+        {
+            // When despawned, reset the HasBeenInitialized so if the associated NetworkObject instance
+            // is recylced (i.e. in-scene placed or pooled) it will re-initialize the LastUpdateSent time.
+            HasBeenInitialized = false;
         }
 
         /// <summary>

@@ -815,6 +815,13 @@ namespace Unity.Netcode
             {
                 Debug.LogException(e);
             }
+
+            // Deinitialize all NetworkVariables in the event the associated
+            // NetworkObject is recylced (in-scene placed or pooled).
+            for (int i = 0; i < NetworkVariableFields.Count; i++)
+            {
+                NetworkVariableFields[i].Deinitialize();
+            }
         }
 
         /// <summary>
@@ -933,6 +940,11 @@ namespace Unity.Netcode
                 // that is being repurposed.
                 for (int i = 0; i < NetworkVariableFields.Count; i++)
                 {
+                    // If already initialized, then skip
+                    if (NetworkVariableFields[i].HasBeenInitialized)
+                    {
+                        continue;
+                    }
                     NetworkVariableFields[i].Initialize(this);
                 }
                 // Exit early as we don't need to run through the rest of this initialization
