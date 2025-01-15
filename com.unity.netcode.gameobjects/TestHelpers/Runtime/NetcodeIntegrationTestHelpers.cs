@@ -527,6 +527,29 @@ namespace Unity.Netcode.TestHelpers.Runtime
             }
         }
 
+        /// <summary>
+        /// Creates a <see cref="NetworkObject"/> to be used with integration testing
+        /// </summary>
+        /// <param name="baseName">namr of the object</param>
+        /// <param name="owner">owner of the object</param>
+        /// <param name="moveToDDOL">when true, the instance is automatically migrated into the DDOL</param>
+        /// <returns></returns>
+        internal static GameObject CreateNetworkObject(string baseName, NetworkManager owner, bool moveToDDOL = false)
+        {
+            var gameObject = new GameObject
+            {
+                name = baseName
+            };
+            var networkObject = gameObject.AddComponent<NetworkObject>();
+            networkObject.NetworkManagerOwner = owner;
+            MakeNetworkObjectTestPrefab(networkObject);
+            if (moveToDDOL)
+            {
+                Object.DontDestroyOnLoad(gameObject);
+            }
+            return gameObject;
+        }
+
         public static GameObject CreateNetworkObjectPrefab(string baseName, NetworkManager server, params NetworkManager[] clients)
         {
             void AddNetworkPrefab(NetworkConfig config, NetworkPrefab prefab)
@@ -538,13 +561,7 @@ namespace Unity.Netcode.TestHelpers.Runtime
             Assert.IsNotNull(server, prefabCreateAssertError);
             Assert.IsFalse(server.IsListening, prefabCreateAssertError);
 
-            var gameObject = new GameObject
-            {
-                name = baseName
-            };
-            var networkObject = gameObject.AddComponent<NetworkObject>();
-            networkObject.NetworkManagerOwner = server;
-            MakeNetworkObjectTestPrefab(networkObject);
+            var gameObject = CreateNetworkObject(baseName, server);
             var networkPrefab = new NetworkPrefab() { Prefab = gameObject };
 
             // We could refactor this test framework to share a NetworkPrefabList instance, but at this point it's
