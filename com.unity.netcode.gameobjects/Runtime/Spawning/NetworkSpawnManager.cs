@@ -1753,19 +1753,24 @@ namespace Unity.Netcode
                     continue;
                 }
 
+                // We first check for a parent and then if the parent is a NetworkObject
+                if (networkObject.transform.parent != null)
+                {
+                    // If the parent is a NetworkObject, has the same owner, and this NetworkObject has the distributable =or= transferable permission
+                    // then skip this child (NetworkObjects are always parented directly under other NetworkObjects)
+                    // (later we determine if all children with the same owner will be transferred together as a group)
+                    var parentNetworkObject = networkObject.transform.parent.GetComponent<NetworkObject>();
+                    if (parentNetworkObject != null && parentNetworkObject.OwnerClientId == networkObject.OwnerClientId
+                        && (networkObject.IsOwnershipDistributable || networkObject.IsOwnershipTransferable))
+                    {
+                        continue;
+                    }
+                }
+
+                // At this point we only allow things marked with the distributable permission and is not locked to be distributed
                 if (networkObject.IsOwnershipDistributable && !networkObject.IsOwnershipLocked)
                 {
-                    // Check for a parent
-                    if (networkObject.transform.parent != null)
-                    {
-                        // If the parent has the same owner, then skip this child
-                        // (later we determine if all children with the same owner will be transferred together)
-                        var parentNetworkObject = networkObject.transform.parent.GetComponent<NetworkObject>();
-                        if (parentNetworkObject != null && parentNetworkObject.OwnerClientId == networkObject.OwnerClientId)
-                        {
-                            continue;
-                        }
-                    }
+
                     // We have to check if it is an in-scene placed NetworkObject and if it is get the source prefab asset GlobalObjectIdHash value of the in-scene placed instance
                     // since all in-scene placed instances use unique GlobalObjectIdHash values.
                     var globalOjectIdHash = networkObject.IsSceneObject.HasValue && networkObject.IsSceneObject.Value ? networkObject.InScenePlacedSourceGlobalObjectIdHash : networkObject.GlobalObjectIdHash;
