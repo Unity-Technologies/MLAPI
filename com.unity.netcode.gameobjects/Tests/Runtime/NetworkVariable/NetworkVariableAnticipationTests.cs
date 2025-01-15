@@ -248,25 +248,25 @@ namespace Unity.Netcode.RuntimeTests
 
             WaitForMessageReceivedWithTimeTravel<NetworkVariableDeltaMessage>(m_ClientNetworkManagers.ToList());
 
-            Assert.AreEqual(15 + 1f / 60f * 15, testComponent.SmoothOnAnticipationFailVariable.Value, Mathf.Epsilon);
+            Assert.AreEqual(15 + 1f / 60f * 5, testComponent.SmoothOnAnticipationFailVariable.Value, Mathf.Epsilon);
             Assert.AreEqual(20, testComponent.SmoothOnAnticipationFailVariable.AuthoritativeValue, Mathf.Epsilon);
 
-            Assert.AreEqual(1f, otherClientComponent.SmoothOnAnticipationFailVariable.Value, 0.000015f);
+            Assert.AreEqual(0 + 1f / 60f * 20, otherClientComponent.SmoothOnAnticipationFailVariable.Value, Mathf.Epsilon);
             Assert.AreEqual(20, otherClientComponent.SmoothOnAnticipationFailVariable.AuthoritativeValue, Mathf.Epsilon);
 
-            for (var i = 1; i < 15; ++i)
+            for (var i = 1; i < 60; ++i)
             {
                 TimeTravel(1f / 60f, 1);
 
-                Assert.AreEqual(15 + 1f / 60f * 15 * (i + 1), testComponent.SmoothOnAnticipationFailVariable.Value, 0.00001);
+                Assert.AreEqual(15 + 1f / 60f * 5 * (i + 1), testComponent.SmoothOnAnticipationFailVariable.Value, 0.00001);
                 Assert.AreEqual(20, testComponent.SmoothOnAnticipationFailVariable.AuthoritativeValue, Mathf.Epsilon);
 
-                Assert.AreEqual(1.0f + i, otherClientComponent.SmoothOnAnticipationFailVariable.Value, 0.00001);
+                Assert.AreEqual(0 + 1f / 60f * 20 * (i + 1), otherClientComponent.SmoothOnAnticipationFailVariable.Value, 0.00001);
                 Assert.AreEqual(20, otherClientComponent.SmoothOnAnticipationFailVariable.AuthoritativeValue, Mathf.Epsilon);
             }
             TimeTravel(1f / 60f, 1);
-            Assert.AreEqual(19, testComponent.SmoothOnAnticipationFailVariable.Value, Mathf.Epsilon);
-            Assert.AreEqual(16, otherClientComponent.SmoothOnAnticipationFailVariable.Value, 0.00001);
+            Assert.AreEqual(20, testComponent.SmoothOnAnticipationFailVariable.Value, Mathf.Epsilon);
+            Assert.AreEqual(20, otherClientComponent.SmoothOnAnticipationFailVariable.Value, Mathf.Epsilon);
         }
 
         [Test]
