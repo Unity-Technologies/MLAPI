@@ -174,7 +174,9 @@ public class MoverScriptNoRigidbody : NetworkTransform
         }
 
         m_ParentedText?.gameObject.SetActive(true);
+#if !DEDICATED_SERVER
         UpdateParentedText();
+#endif
         base.OnNetworkPostSpawn();
     }
 
@@ -201,7 +203,9 @@ public class MoverScriptNoRigidbody : NetworkTransform
         {
             Debug.Log($"Parented under {parentNetworkObject.name}");
         }
+#if !DEDICATED_SERVER
         UpdateParentedText();
+#endif
         base.OnNetworkObjectParentChanged(parentNetworkObject);
     }
 
@@ -334,6 +338,7 @@ public class MoverScriptNoRigidbody : NetworkTransform
         m_PlayerBallMotion.HasMotion(moveMotion);
     }
 
+#if !DEDICATED_SERVER
     /// <summary>
     /// Updates player TextMesh relative to each client's camera view
     /// </summary>
@@ -373,4 +378,5 @@ public class MoverScriptNoRigidbody : NetworkTransform
             }
         }
     }
+#endif
 }

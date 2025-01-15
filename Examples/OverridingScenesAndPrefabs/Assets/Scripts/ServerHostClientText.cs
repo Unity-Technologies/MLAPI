@@ -63,7 +63,9 @@ public class ServerHostClientText : NetworkBehaviour
         base.OnNetworkDespawn();
     }
 
+#if !DEDICATED_SERVER
     private bool m_LastFocusedValue;
+
     private void OnGUI()
     {
         if (!IsSpawned || m_LastFocusedValue == Application.isFocused)
@@ -82,4 +84,5 @@ public class ServerHostClientText : NetworkBehaviour
             m_DisplayText.color = m_ColorAlpha;
         }
     }
+#endif
 }
