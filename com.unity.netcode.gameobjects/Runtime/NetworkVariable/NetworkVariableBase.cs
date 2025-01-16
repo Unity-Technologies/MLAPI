@@ -104,17 +104,8 @@ namespace Unity.Netcode
             }
             m_InternalNetworkManager = m_NetworkBehaviour.NetworkObject.NetworkManagerOwner;
 
-            // Throw an exception if there is no valid NetworkTimeSystem 
-            if (m_InternalNetworkManager.NetworkTimeSystem == null)
-            {
-                throw new Exception($"[{m_NetworkBehaviour.name}][{m_NetworkBehaviour.GetType().Name}][{GetType().Name}][Initialize] {nameof(NetworkManager)} has no {nameof(NetworkTimeSystem)} assigned!");
-            }
-
             // When in distributed authority mode, there is no such thing as server write permissions
             InternalWritePerm = m_InternalNetworkManager.DistributedAuthorityMode ? NetworkVariableWritePermission.Owner : InternalWritePerm;
-
-            // Update our last sent time relative to when this was initialized
-            UpdateLastSentTime();
 
             // Wrap potential user script override to catch and log any exceptions
             try
@@ -126,8 +117,20 @@ namespace Unity.Netcode
                 Debug.LogException(ex);
             }
 
-            // At this point, this instance is considered initialized
-            HasBeenInitialized = true;
+            // Some unit tests don't operate with a running NetworkManager.
+            // Only update the last time if there is a NetworkTimeSystem.
+            if (m_InternalNetworkManager.NetworkTimeSystem != null)
+            {
+                // Update our last sent time relative to when this was initialized
+                UpdateLastSentTime();
+
+                // At this point, this instance is considered initialized
+                HasBeenInitialized = true;
+            }
+            else if (m_InternalNetworkManager.LogLevel == LogLevel.Developer)
+            {
+                Debug.LogWarning($"[{m_NetworkBehaviour.name}][{m_NetworkBehaviour.GetType().Name}][{GetType().Name}][Initialize] {nameof(NetworkManager)} has no {nameof(NetworkTimeSystem)} assigned!");
+            }
         }
 
         /// <summary>
