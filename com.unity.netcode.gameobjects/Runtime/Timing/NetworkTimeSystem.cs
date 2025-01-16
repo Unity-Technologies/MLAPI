@@ -248,6 +248,8 @@ namespace Unity.Netcode
             var timeDif = serverTimeSec - m_TimeSec;
 
             m_DesiredServerTimeOffset = timeDif - ServerBufferSec;
+            // We adjust our desired local time offset to be half RTT since the delivery of
+            // the TimeSyncMessage should only take half of the RTT time (legacy was using 1 full RTT)
             m_DesiredLocalTimeOffset = timeDif + (rttSec * 0.5d) + LocalBufferSec;
         }
     }
