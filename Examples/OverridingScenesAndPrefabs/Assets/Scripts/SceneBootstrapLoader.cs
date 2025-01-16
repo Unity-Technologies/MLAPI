@@ -3,7 +3,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
-
 using UnityEngine;
 using UnityEngine.SceneManagement;
 #if UNITY_EDITOR
@@ -105,6 +104,8 @@ public class SceneBootstrapLoader : MonoBehaviour
         m_NetworkManager = GetComponent<NetworkManagerBootstrapper>();
     }
 
+    public event Action OnMainMenuLoaded;
+
     /// <summary>
     /// Should be invoked by bootstrap when first starting the applicaiton and should be loaded upon exiting
     /// a session and shutting down the <see cref="NetworkManagerBootstrapper"/>.
@@ -114,6 +115,7 @@ public class SceneBootstrapLoader : MonoBehaviour
         if (!m_NetworkManager.IsListening)
         {
             SceneManager.LoadScene(m_MainMenuScene, LoadSceneMode.Single);
+            OnMainMenuLoaded?.Invoke();
         }
         else
         {
@@ -147,9 +149,6 @@ public class SceneBootstrapLoader : MonoBehaviour
     }
 
     #region SCENE PRE & POST START LOADING METHODS
-
-
-
     private IEnumerator PreSceneLoading(StartAsTypes startAsType)
     {
         var sceneDefines = startAsType == StartAsTypes.Client ? ClientSceneDefines : ServerSceneDefines;
@@ -188,11 +187,14 @@ public class SceneBootstrapLoader : MonoBehaviour
             {
                 m_NetworkManager.StartServer();
             }
+#if !DEDICATED_SERVER
             else
             {
                 m_NetworkManager.StartHost();
             }
+#endif
         }
+#if !DEDICATED_SERVER
         else
         {
             m_NetworkManager.OnClientStopped += OnNetworkManagerShutdown;
@@ -209,6 +211,7 @@ public class SceneBootstrapLoader : MonoBehaviour
                 m_NetworkManager.StartClient();
             }
         }
+#endif
     }
 
     /// <summary>
@@ -265,7 +268,7 @@ public class SceneBootstrapLoader : MonoBehaviour
     {
         m_SceneJustLoaded = scene.name;
     }
-    #endregion
+#endregion
 
     #region SERVER POST START CONFIGURATION AND ADDITIONAL SHARED SCENE LOADING
     /// <summary>

@@ -1,13 +1,23 @@
+#if !DEDICATED_SERVER || (DEDICATED_SERVER && !UNITY_EDITOR)
 using System;
+#endif
 using System.Collections.Generic;
 using System.Linq;
+#if !DEDICATED_SERVER
 using System.Threading.Tasks;
+#endif
 using Unity.Netcode;
+#if !DEDICATED_SERVER
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Multiplayer;
+#else
+using Unity.Netcode.Transports.UTP;
+#endif
 using UnityEngine;
+#if !DEDICATED_SERVER
 using SessionState = Unity.Services.Multiplayer.SessionState;
+#endif
 
 #region NetworkManagerBootstrapperEditor
 #if UNITY_EDITOR
@@ -67,7 +77,7 @@ public class NetworkManagerBootstrapper : NetworkManager
         base.OnValidateComponent();
     }
 #endif
-    #endregion
+#endregion
 
     #region Properties
     public static NetworkManagerBootstrapper Instance;
@@ -98,12 +108,13 @@ public class NetworkManagerBootstrapper : NetworkManager
 
     [SerializeField]
     private bool m_ServicesRegistered;
+#if !DEDICATED_SERVER
     private ISession m_CurrentSession;
     private string m_SessionName;
     private string m_ProfileName;
     private Task m_SessionTask;
-
-    #endregion
+#endif
+#endregion
 
     #region Initialization and Destroy
     public static string GetRandomString(int length)
@@ -120,12 +131,27 @@ public class NetworkManagerBootstrapper : NetworkManager
 
     private void Awake()
     {
+#if !DEDICATED_SERVER
         Screen.SetResolution((int)(Screen.currentResolution.width * 0.40f), (int)(Screen.currentResolution.height * 0.40f), FullScreenMode.Windowed);
         SetFrameRate(TargetFrameRate, EnableVSync);
+#endif
         SetSingleton();
         m_SceneBootstrapLoader = GetComponent<SceneBootstrapLoader>();
     }
 
+#if DEDICATED_SERVER
+    private void Start()
+    {
+        m_SceneBootstrapLoader.OnMainMenuLoaded += OnMainMenuLoaded;
+        m_SceneBootstrapLoader.LoadMainMenu();
+    }
+
+    private void OnMainMenuLoaded()
+    {
+        m_SceneBootstrapLoader.OnMainMenuLoaded -= OnMainMenuLoaded;
+        StartDedicatedServer();
+    }
+#else
     private async void Start()
     {
         OnClientConnectedCallback += OnClientConnected;
@@ -152,17 +178,20 @@ public class NetworkManagerBootstrapper : NetworkManager
             }
         }
         m_SceneBootstrapLoader.LoadMainMenu();
-    }
 
+    }
     private void OnDestroy()
     {
         OnClientConnectedCallback -= OnClientConnected;
         OnClientDisconnectCallback -= OnClientDisconnect;
         OnConnectionEvent -= OnClientConnectionEvent;
     }
-    #endregion
+#endif
+#endregion
 
     #region Session and Connection Event Handling
+
+#if !DEDICATED_SERVER
     private void OnClientConnectionEvent(NetworkManager networkManager, ConnectionEventData eventData)
     {
         LogMessage($"[{Time.realtimeSinceStartup}] Connection event {eventData.EventType} for Client-{eventData.ClientId}.");
@@ -235,9 +264,11 @@ public class NetworkManagerBootstrapper : NetworkManager
         }
         return null;
     }
-    #endregion
+#endif
+#endregion
 
     #region GUI Menu
+#if !DEDICATED_SERVER
     public void StartOrConnectToDistributedAuthoritySession()
     {
         m_SessionTask = ConnectThroughLiveService();
@@ -364,9 +395,11 @@ public class NetworkManagerBootstrapper : NetworkManager
         }
         GUILayout.EndArea();
     }
-    #endregion
+#endif
+#endregion
 
     #region Server Camera Handling
+#if !DEDICATED_SERVER
     private Vector3 m_CameraOriginalPosition;
     private Quaternion m_CameraOriginalRotation;
     private int m_CurrentFollowPlayerIndex = -1;
@@ -438,9 +471,159 @@ public class NetworkManagerBootstrapper : NetworkManager
             SetCameraDefaults();
         }
     }
-    #endregion
+#endif
+#endregion
 
     #region Update Methods and Properties
+#if DEDICATED_SERVER
+    private UnityTransport m_UnityTransport;
+    /// <summary>
+    /// All of the dedicated server specific script logic is contained and only compiled when DEDICATED_SERVER is defined
+    /// </summary>
+
+    private void StartDedicatedServer()
+    {
+        m_UnityTransport = NetworkConfig.NetworkTransport as UnityTransport;
+        if (m_UnityTransport != null)
+        {
+            // Always good to know what scenes are currently loaded since you might have
+            // different scenes to load for a DGS vs client
+            var scenesPreloaded = new System.Text.StringBuilder();
+            scenesPreloaded.Append("Scenes Preloaded: ");
+            for (int i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCount; i++)
+            {
+                var scene = UnityEngine.SceneManagement.SceneManager.GetSceneAt(i);
+                scenesPreloaded.Append($"[{scene.name}]");
+            }
+            Debug.Log(scenesPreloaded.ToString());
+
+            // Set the application frame rate to like 30 to reduce frame processing overhead
+            Application.targetFrameRate = 30;
+
+            Debug.Log($"[Pre-Init] Server Address Endpoint: {m_UnityTransport.ConnectionData.ServerEndPoint}");
+            Debug.Log($"[Pre-Init] Server Listen Endpoint: {m_UnityTransport.ConnectionData.ListenEndPoint}");
+            // Setup your IP and port sepcific to your DGS
+            //unityTransport.SetConnectionData(ListenAddress, ListenPort, ListenAddress);
+
+            //Debug.Log($"[Post-Init] Server Address Endpoint: {unityTransport.ConnectionData.ServerEndPoint}");
+            //Debug.Log($"[Post-Init] Server Listen Endpoint: {unityTransport.ConnectionData.ListenEndPoint}");
+
+            // Get the server started notification
+            OnServerStarted += ServerStarted;
+
+            // Start the server listening
+            m_SceneBootstrapLoader.StartSession(SceneBootstrapLoader.StartAsTypes.Server);
+        }
+        else
+        {
+            Debug.LogError("Failed to get the UnityTransport!");
+        }
+    }
+
+    /// <summary>
+    /// Register callbacks when the OnServerStarted callback is invoked.
+    /// This makes it easier to know you are registering for events only 
+    /// when the server successfully has started.
+    /// </summary>
+    private void ServerStarted()
+    {
+        Debug.Log("Dedicated Server Started!");
+        Debug.Log($"[Started] Server Address Endpoint: {m_UnityTransport.ConnectionData.ServerEndPoint}");
+        Debug.Log($"[Started] Server Listen Endpoint: {m_UnityTransport.ConnectionData.ListenEndPoint}");
+        Debug.Log("===============================================================");
+        Debug.Log("[X] Exits session (Shutdown) | [ESC] Exits application instance");
+        Debug.Log("===============================================================");
+        OnServerStarted -= ServerStarted;
+        OnClientConnectedCallback += ClientConnectedCallback;
+        OnClientDisconnectCallback += ClientDisconnectCallback;
+        // Register for OnServerStopped
+        OnServerStopped += ServerStopped;
+    }
+
+    private void ServerStopped(bool obj)
+    {
+        OnClientConnectedCallback -= ClientConnectedCallback;
+        OnClientDisconnectCallback -= ClientDisconnectCallback;
+        OnServerStopped -= ServerStopped;
+        Debug.Log("Dedicated Server Stopped!");
+        Debug.Log("===============================================================");
+        Debug.Log("[S] Starts new session (StartServer) | [ESC] Exits application");
+        Debug.Log("===============================================================");
+    }
+
+    private void ClientConnectedCallback(ulong clientId)
+    {
+        Debug.Log($"Client-{clientId} connected and approved.");
+    }
+
+    private void ClientDisconnectCallback(ulong clientId)
+    {
+        Debug.Log($"Client-{clientId} disconnected.");
+    }
+
+#if UNITY_EDITOR
+    private void HandleEditorKeyCommands()
+    {
+        // Shutdown/Stop the server
+        if (Input.GetKeyDown(KeyCode.X) && IsListening && !ShutdownInProgress)
+        {
+            Shutdown();
+        }
+        else // Start the server (this example makes it automatically start when the application first starts)
+        if (Input.GetKeyDown(KeyCode.S) && !IsListening)
+        {
+            StartDedicatedServer();
+        }
+    }
+#else
+    private void HandleConsoleKeyCommands()
+    {
+        if (Console.KeyAvailable) 
+        {
+            var networkManager = NetworkManager.Singleton;
+            var keyPressed = Console.ReadKey(true);
+            switch(keyPressed.Key) 
+            {
+                case ConsoleKey.X:
+                    {
+                        if(networkManager.IsListening && !networkManager.ShutdownInProgress)
+                        {
+                            networkManager.Shutdown();
+                        }
+                        break;
+                    }
+                case ConsoleKey.S:
+                    {
+                        if (!networkManager.IsListening && !networkManager.ShutdownInProgress)
+                        {
+                            StartDedicatedServer();
+                        }
+                        break;
+                    }
+                case ConsoleKey.Escape:
+                    {
+                        Application.Quit();
+                        break;
+                    }
+            }
+        }
+    }
+#endif
+
+    /// <summary>
+    /// Update that is only included in the build and invoked when running as a dedicated server
+    /// </summary>
+    private void DedicatedServerUpdate()
+    {
+#if UNITY_EDITOR
+        HandleEditorKeyCommands();
+#else
+        HandleConsoleKeyCommands();
+#endif
+    }
+
+#else // End of DEDICATED_SERVER defined region
+
     /// <summary>
     /// General update for server-side
     /// </summary>
@@ -459,9 +642,13 @@ public class NetworkManagerBootstrapper : NetworkManager
     {
 
     }
+#endif
 
     private void Update()
     {
+#if DEDICATED_SERVER
+        DedicatedServerUpdate();
+#else
         if (IsListening)
         {
             if (IsServer)
@@ -473,6 +660,7 @@ public class NetworkManagerBootstrapper : NetworkManager
                 ClientSideUpdate();
             }
         }
+#endif
 
         if (m_MessageLogs.Count == 0)
         {
@@ -487,6 +675,7 @@ public class NetworkManagerBootstrapper : NetworkManager
             }
         }
     }
+
     #endregion
 
     #region Message Logging

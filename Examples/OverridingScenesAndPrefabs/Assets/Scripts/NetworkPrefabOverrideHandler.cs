@@ -52,6 +52,7 @@ public class NetworkPrefabOverrideHandler : MonoBehaviour, INetworkPrefabInstanc
 
     public void Destroy(NetworkObject networkObject)
     {
+#if !DEDICATED_SERVER
         // Another useful thing about handling this instantiation and destruction of a NetworkObject is that you can do house cleaning
         // prior to the object being destroyed. This handles the scenario where the server is following a player and the player disconnects.
         // Before destroying the player object, we want to unparent the camera and reset the player being followed.
@@ -59,6 +60,7 @@ public class NetworkPrefabOverrideHandler : MonoBehaviour, INetworkPrefabInstanc
         {
             m_NetworkManager.ClearFollowPlayer();
         }
+#endif
         Destroy(networkObject.gameObject);
     }
 }
