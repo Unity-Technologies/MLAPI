@@ -87,15 +87,12 @@ namespace Unity.Netcode.Editor
         /// </summary>
         private static void ScenesInBuildActiveSceneCheck()
         {
-            var scenesList = EditorBuildSettings.scenes.ToList();
-            var activeScene = SceneManager.GetActiveScene();
-            var isSceneInBuildSettings = scenesList.Count((c) => c.path == activeScene.path) == 1;
 #if UNITY_2023_1_OR_NEWER
             var networkManager = Object.FindFirstObjectByType<NetworkManager>();
 #else
             var networkManager = Object.FindObjectOfType<NetworkManager>();
 #endif
-            if (!isSceneInBuildSettings && networkManager != null)
+            if (!IsActiveSceneInBuildList() && networkManager != null)
             {
                 if (networkManager.NetworkConfig != null && networkManager.NetworkConfig.EnableSceneManagement)
                 {
@@ -104,11 +101,50 @@ namespace Unity.Netcode.Editor
                         $"to synchronize to this scene unless it is added to the scenes in build list.\n\nWould you like to add it now?",
                         "Yes", "No - Continue"))
                     {
-                        scenesList.Add(new EditorBuildSettingsScene(activeScene.path, true));
-                        EditorBuildSettings.scenes = scenesList.ToArray();
+                        // Double check that the scene hasn't already been added to the scenes in build list (potential issue with Parrel Sync)
+                        if (!IsActiveSceneInBuildList())
+                        {
+                            var scenesList = EditorBuildSettings.scenes.ToList();
+                            scenesList.Add(new EditorBuildSettingsScene(SceneManager.GetActiveScene().path, true));
+                            EditorBuildSettings.scenes = scenesList.ToArray();
+                        }
                     }
                 }
             }
+        }
+
+        private static bool IsActiveSceneInBuildList()
+        {
+            var scenesList = EditorBuildSettings.scenes.ToList();
+            var activeScene = SceneManager.GetActiveScene();
+            var activeSceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(activeScene.path);
+            var activeSceneHash = activeSceneAsset.GetHashCode();
+
+            foreach (var scene in scenesList)
+            {
+                var sceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(scene.path);
+                var sceneAssetHash = sceneAsset.GetHashCode();
+                if (activeSceneHash == sceneAssetHash)
+                {
+                    return true;
+                }
+                if (sceneAsset.name == activeSceneAsset.name)
+                {
+                    if (scene.path != activeScene.path)
+                    {
+                        Debug.LogError($"Active scene {activeScene.name} with path ({activeScene.path}) is potentially a duplicate of " +
+                            $"scene {sceneAsset.name} with a path of ({scene.path})! Excluding from automatically adding to the scenes in build list!");
+                    }
+                    else
+                    {
+                        Debug.LogError($"Active scene {activeScene.name} was found but the active scene asset hash value ({activeSceneHash}) was " +
+                            $"not the same as the the one in the scenes in build list ({sceneAssetHash})! Excluding from automatically adding to the scenes in build list!");
+                    }
+                    // Exit as if it did find a perfect match
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>
