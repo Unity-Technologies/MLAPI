@@ -107,15 +107,7 @@ namespace Unity.Netcode
             // When in distributed authority mode, there is no such thing as server write permissions
             InternalWritePerm = m_InternalNetworkManager.DistributedAuthorityMode ? NetworkVariableWritePermission.Owner : InternalWritePerm;
 
-            // Wrap potential user script override to catch and log any exceptions
-            try
-            {
-                OnInitialize();
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-            }
+            OnInitialize();
 
             // Some unit tests don't operate with a running NetworkManager.
             // Only update the last time if there is a NetworkTimeSystem.
