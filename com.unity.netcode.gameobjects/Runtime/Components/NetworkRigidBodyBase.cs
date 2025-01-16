@@ -668,7 +668,7 @@ namespace Unity.Netcode.Components
             if (UseRigidBodyForMotion && HasAuthority)
             {
                 DetachFromFixedJoint();
-                NetworkRigidbodyConnections.Clear();
+                NetworkTransformConnections.Clear();
             }
 
             // If we are automatically handling the kinematic state...
@@ -690,7 +690,7 @@ namespace Unity.Netcode.Components
         public FixedJoint FixedJoint { get; private set; }
         public FixedJoint2D FixedJoint2D { get; private set; }
 
-        internal System.Collections.Generic.List<NetworkRigidbodyBase> NetworkRigidbodyConnections = new System.Collections.Generic.List<NetworkRigidbodyBase>();
+        internal System.Collections.Generic.List<NetworkTransform> NetworkTransformConnections = new System.Collections.Generic.List<NetworkTransform>();
         internal NetworkRigidbodyBase ParentBody;
 
         private bool m_FixedJoint2DUsingGravity;
@@ -816,7 +816,7 @@ namespace Unity.Netcode.Components
                 }
 
                 ParentBody = objectToConnectTo;
-                ParentBody.NetworkRigidbodyConnections.Add(this);
+                ParentBody.NetworkTransformConnections.Add(NetworkTransform);
                 if (teleportObject)
                 {
                     NetworkTransform.SetState(teleportDisabled: false);
@@ -829,7 +829,7 @@ namespace Unity.Netcode.Components
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void RemoveFromParentBody()
         {
-            ParentBody.NetworkRigidbodyConnections.Remove(this);
+            ParentBody.NetworkTransformConnections.Remove(NetworkTransform);
             ParentBody = null;
         }
 
@@ -870,6 +870,80 @@ namespace Unity.Netcode.Components
                     ResetInterpolation();
                     RemoveFromParentBody();
                 }
+            }
+        }
+
+        /// <summary>
+        /// For custom joint (i.e. <see cref="UnityEngine.FixedJoint"/>, <see cref="ConfigurableJoint"/>, etc) solutions where you
+        /// want to keep the state updates of joint attached bodies tick synchronized with the root (parent).
+        /// </summary>
+        /// <remarks>
+        /// Requires that both bodies be:
+        /// - Spawned
+        /// - Owned by the same client
+        /// - Have <see cref="UseRigidBodyForMotion"/> set to true
+        /// - Non-kinematic
+        /// To avoid recursion, the body being added cannot already have a reference to the body it is trying to be
+        /// added to for tick synchronization.
+        /// </remarks>
+        /// <param name="networkRigidbodyBase">the <see cref="NetworkRigidbodyBase"/> component of the attached body</param>
+        /// <returns>true if added and false if there was an issue while trying to add</returns>
+        public bool AddToTickSynchronizedUpdates(NetworkRigidbodyBase networkRigidbodyBase)
+        {
+            if (!IsSpawned)
+            {
+                Debug.LogError($"[{GetType().Name}] Adding to tick synchronization requires that {name} be spawned first.");
+                return false;
+            }
+
+            if (!networkRigidbodyBase.IsSpawned)
+            {
+                Debug.LogError($"[{networkRigidbodyBase.GetType().Name}] Adding to tick synchronization requires that {networkRigidbodyBase.name} be spawned first.");
+                return false;
+            }
+
+            if (OwnerClientId != networkRigidbodyBase.OwnerClientId)
+            {
+                Debug.LogError($"[{networkRigidbodyBase.GetType().Name}][Not Implemented] Tick synchronizing two bodies owned by different clients is not yet supported!");
+                return false;
+            }
+
+            if (!UseRigidBodyForMotion)
+            {
+                Debug.LogError($"[{GetType().Name}] {name} does not have {nameof(UseRigidBodyForMotion)} set and this action requires it to be set first!");
+                return false;
+            }
+
+            if (IsKinematic())
+            {
+                Debug.LogError($"[{GetType().Name}] Requires {name} to be non-kinematic but it is currently kinematic!");
+                return false;
+            }
+
+            if (networkRigidbodyBase.IsKinematic())
+            {
+                Debug.LogError($"[{networkRigidbodyBase.GetType().Name}] Requires {networkRigidbodyBase.name} to be non-kinematic but it is currently kinematic!");
+                return false;
+            }
+
+            if (networkRigidbodyBase.NetworkTransformConnections.Contains(NetworkTransform))
+            {
+                Debug.LogError($"[{networkRigidbodyBase.GetType().Name}][Circular Reference] {networkRigidbodyBase.name} already has {name} included for tick synchronization! Remove {name} prior to adding {networkRigidbodyBase.name}.");
+                return false;
+            }
+
+            if (!NetworkTransformConnections.Contains(networkRigidbodyBase.NetworkTransform))
+            {
+                NetworkTransformConnections.Add(networkRigidbodyBase.NetworkTransform);
+            }
+            return true;
+        }
+
+        public void RemoveFromTickSynchronizedUpdates(NetworkRigidbodyBase networkRigidbodyBase)
+        {
+            if (networkRigidbodyBase && networkRigidbodyBase.NetworkTransform)
+            {
+                NetworkTransformConnections.Remove(networkRigidbodyBase.NetworkTransform);
             }
         }
     }

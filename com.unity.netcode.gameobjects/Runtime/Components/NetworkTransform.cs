@@ -1665,11 +1665,11 @@ namespace Unity.Netcode.Components
 
 #if COM_UNITY_MODULES_PHYSICS || COM_UNITY_MODULES_PHYSICS2D
                 // We handle updating attached bodies when the "parent" body has a state update in order to keep their delta state updates tick synchronized.
-                if (m_UseRigidbodyForMotion && m_NetworkRigidbodyInternal.NetworkRigidbodyConnections.Count > 0)
+                if (m_UseRigidbodyForMotion && m_NetworkRigidbodyInternal.NetworkTransformConnections.Count > 0)
                 {
-                    foreach (var childRigidbody in m_NetworkRigidbodyInternal.NetworkRigidbodyConnections)
+                    foreach (var child in m_NetworkRigidbodyInternal.NetworkTransformConnections)
                     {
-                        childRigidbody.NetworkTransform.OnNetworkTick(true);
+                        child.OnNetworkTick(true);
                     }
                 }
 #endif
