@@ -815,6 +815,13 @@ namespace Unity.Netcode
             {
                 Debug.LogException(e);
             }
+
+            // Deinitialize all NetworkVariables in the event the associated
+            // NetworkObject is recylced (in-scene placed or pooled).
+            for (int i = 0; i < NetworkVariableFields.Count; i++)
+            {
+                NetworkVariableFields[i].Deinitialize();
+            }
         }
 
         /// <summary>
@@ -918,10 +925,30 @@ namespace Unity.Netcode
             variable.Name = varName;
         }
 
+        /// <summary>
+        /// Does a first pass initialization for RPCs and NetworkVariables
+        /// If already initialized, then it just re-initializes the NetworkVariables.
+        /// </summary>
         internal void InitializeVariables()
         {
             if (m_VarInit)
             {
+                // If the primary initialization has already been done, then go ahead
+                // and re-initialize each NetworkVariable in the event it is an in-scene
+                // placed NetworkObject in an already loaded scene that has already been
+                // used within a network session =or= if this is a pooled NetworkObject
+                // that is being repurposed.
+                for (int i = 0; i < NetworkVariableFields.Count; i++)
+                {
+                    // If already initialized, then skip
+                    if (NetworkVariableFields[i].HasBeenInitialized)
+                    {
+                        continue;
+                    }
+                    NetworkVariableFields[i].Initialize(this);
+                }
+                // Exit early as we don't need to run through the rest of this initialization
+                // process
                 return;
             }
 
