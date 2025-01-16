@@ -1,0 +1,33 @@
+# This workflow runs Renovate against the current repo and will create PRs with outdated dependencies.
+name: Renovate
+
+on:
+  workflow_dispatch:
+    inputs:
+      log-level:
+        type: choice
+        description: Select log level for Renovate
+        options:
+          - trace
+          - debug
+          - info
+          - warn
+          - error
+        default: info
+        required: false
+  schedule:
+    # Every 6 hours at the 6th minute.
+    - cron: '06 */6 * * *'
+
+jobs:
+  renovate:
+    # The reusable workflow will be updated by renovate if there's a new version
+    uses: Unity-Technologies/renovate-workflows/.github/workflows/run.yml@v5.0.0
+    with:
+      # This is the image that contains our custom renovate and will be auto
+      # updated by Renovate itself.
+      image: europe-docker.pkg.dev/unity-cds-services-prd/ds-docker/renovate:10.1.3@sha256:fdeed7bb524bd67611eb91ee1a5e990c8c73ed62c84a0cd5ef66c87eb5fd0d70
+      log-level: ${{ github.event.inputs.log-level }}
+    secrets:
+      renovate-auth-secret: ${{ secrets.RENOVATE_AUTH_SECRET }}
+      github-com-token: ${{ secrets.GH_COM_TOKEN }}
