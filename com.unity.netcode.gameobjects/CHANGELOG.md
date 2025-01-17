@@ -12,6 +12,7 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Fixed
 
+- Fixed issue where a `NetworkObject` with nested `NetworkTransform` components of varying authority modes was not being taken into consideration and would break both the initial `NetworkTransform` synchronization and fail to properly handle synchronized state updates of the nested `NetworkTransform` components. (#3209)
 - Fixed issue where a spawned `NetworkObject` that was registered with a prefab handler and owned by a client would invoke destroy more than once on the host-server side if the client disconnected while the `NetworkObject` was still spawned. (#3200)
 
 ### Changed
