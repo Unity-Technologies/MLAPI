@@ -3089,32 +3089,15 @@ namespace Unity.Netcode.Components
             // This is a special case for client-server where a server is spawning an owner authoritative NetworkObject but has yet to serialize anything.
             // When the server detects that:
             // - We are not in a distributed authority session (DAHost check).
-            // - This is the first/root NetworkTransform.
             // - We are in owner authoritative mode.
             // - The NetworkObject is not owned by the server.
             // - The SynchronizeState.IsSynchronizing is set to false.
             // Then we want to:
             // - Force the "IsSynchronizing" flag so the NetworkTransform has its state updated properly and runs through the initialization again.
             // - Make sure the SynchronizingState is updated to the instantiated prefab's default flags/settings.
-            //if (NetworkManager.IsServer && !NetworkManager.DistributedAuthorityMode && m_IsFirstNetworkTransform && !OnIsServerAuthoritative() && !IsOwner && !SynchronizeState.IsSynchronizing)
-            //{
-            //    // Assure the first/root NetworkTransform has the synchronizing flag set so the server runs through the final post initialization steps
-            //    SynchronizeState.IsSynchronizing = true;
-            //    // Assure the SynchronizeState matches the initial prefab's values for each associated NetworkTransfrom (this includes root + all children)
-            //    foreach (var child in NetworkObject.NetworkTransforms)
-            //    {
-            //        // Don't ApplyPlayerTransformState to any nested NetworkTransform with a different authority mode
-            //        if (child != this && child.AuthorityMode != AuthorityMode)
-            //        {
-            //            continue;
-            //        }
-            //        child.ApplyPlayerTransformState();
-            //    }
-            //    // Now fall through to the final synchronization portion of the spawning for NetworkTransform
-            //}
-
             if (NetworkManager.IsServer && !NetworkManager.DistributedAuthorityMode && !IsOwner && !OnIsServerAuthoritative() && !SynchronizeState.IsSynchronizing)
             {
+                // Handle the first/root NetworkTransform slightly differently to have a sequenced synchronization of like authority nested NetworkTransform components
                 if (m_IsFirstNetworkTransform)
                 {
                     // Assure the NetworkTransform has the synchronizing flag set so the server runs through the final post initialization steps
@@ -3139,6 +3122,7 @@ namespace Unity.Netcode.Components
                 // Now fall through to the final synchronization portion of the spawning for NetworkTransform
             }
 
+            // Standard non-authority synchronization is handled here
             if (!CanCommitToTransform && NetworkManager.IsConnectedClient && SynchronizeState.IsSynchronizing)
             {
                 NonAuthorityFinalizeSynchronization();
