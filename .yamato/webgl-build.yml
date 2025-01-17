@@ -54,6 +54,7 @@ webgl_build_{{ project.name }}_{{ platform }}_{{ editor }}:
         - {{ project.path }}/Builds/*.log
         - build/test-results/**/*
         - build/players/**
+        - artifacts/**/*
   variables:
     CI: true
     ENABLE_BURST_COMPILATION: False

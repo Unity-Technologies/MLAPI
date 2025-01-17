@@ -83,12 +83,12 @@ run_{{ project.name }}_tests_{{ platform.name }}_{{ editor }}:
       set ANDROID_DEVICE_CONNECTION=%BOKKEN_DEVICE_IP%
       start %ANDROID_SDK_ROOT%\platform-tools\adb.exe connect %BOKKEN_DEVICE_IP%
       start %ANDROID_SDK_ROOT%\platform-tools\adb.exe devices
-      utr --suite=playmode --platform={{ platform.standalone }} --testproject={{ project.path }} --architecture={{ platform.architecture }} --scripting-backend=il2cpp --editor-location=.Editor --artifacts_path=artifacts --player-load-path=build/players --extra-editor-arg=-testCategory --extra-editor-arg=!Performance  --player-connection-ip=%BOKKEN_HOST_IP% --testfilter=Unity.Netcode.RuntimeTests --reruncount=1 --clean-library-on-rerun
+      utr --suite=playmode --platform={{ platform.standalone }} --artifacts_path=artifacts --player-load-path=build/players --extra-editor-arg=-testCategory --extra-editor-arg=!Performance  --player-connection-ip=%BOKKEN_HOST_IP% --testfilter=Unity.Netcode.RuntimeTests --reruncount=1 --clean-library-on-rerun
 {% else %}
     # Download standalone UnityTestRunner
     - curl -s https://artifactory.prd.it.unity3d.com/artifactory/unity-tools-local/utr-standalone/utr --output utr && chmod +x utr
     # Run tests
-    - ./utr --suite=playmode --platform={{ platform.standalone }} --testproject={{ project.path }} --architecture={{ platform.architecture }} --scripting-backend=il2cpp --editor-location=.Editor --artifacts_path=artifacts --player-load-path=build/players --extra-editor-arg=-testCategory --extra-editor-arg=!Performance  --player-connection-ip=%BOKKEN_HOST_IP% --testfilter=Unity.Netcode.RuntimeTests --reruncount=1 --clean-library-on-rerun
+    - ./utr --suite=playmode --platform={{ platform.standalone }} --artifacts_path=artifacts --player-load-path=build/players --extra-editor-arg=-testCategory --extra-editor-arg=!Performance  --player-connection-ip=%BOKKEN_HOST_IP% --testfilter=Unity.Netcode.RuntimeTests --reruncount=1 --clean-library-on-rerun
 {% endif %}
   artifacts:
     logs:
