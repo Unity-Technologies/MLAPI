@@ -3038,19 +3038,20 @@ namespace Unity.Netcode.Components
                 {
                     foreach (var child in NetworkObject.NetworkTransforms)
                     {
-                        // Don't initialize any nested NetworkTransform with a different authority mode
+                        // Don't initialize any nested NetworkTransforms that this instance has authority over
                         if (child.CanCommitToTransform)
                         {
                             continue;
                         }
                         child.ApplySynchronization();
 
-                        // For all nested (under the root/same NetworkObject) child NetworkTransforms, we need to run through
+                        // For all like-authority nested (under the root/same NetworkObject) child NetworkTransforms, we need to run through
                         // initialization once more to assure any values applied or stored are relative to the Root's transform.
                         child.InternalInitialization();
                     }
                 }
-                else if (!CanCommitToTransform)
+                else // Otherwise, just run through standard synchronization of this instance
+                if (!CanCommitToTransform)
                 {
                     ApplySynchronization();
                     InternalInitialization();
