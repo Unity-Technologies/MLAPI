@@ -1679,8 +1679,8 @@ namespace Unity.Netcode.Components
                     // Synchronize any nested NetworkTransforms with the parent's
                     foreach (var childNetworkTransform in NetworkObject.NetworkTransforms)
                     {
-                        // Don't update the same instance
-                        if (childNetworkTransform == this)
+                        // Don't update the same instance or any nested NetworkTransform with a different authority mode
+                        if (childNetworkTransform == this || childNetworkTransform.AuthorityMode != AuthorityMode)
                         {
                             continue;
                         }
@@ -2908,8 +2908,8 @@ namespace Unity.Netcode.Components
                 // Synchronize any nested NetworkTransforms with the parent's
                 foreach (var childNetworkTransform in NetworkObject.NetworkTransforms)
                 {
-                    // Don't update the same instance
-                    if (childNetworkTransform == this)
+                    // Don't update the same instance or any nested NetworkTransform with a different authority mode
+                    if (childNetworkTransform == this || childNetworkTransform.AuthorityMode != AuthorityMode)
                     {
                         continue;
                     }
@@ -3032,15 +3032,28 @@ namespace Unity.Netcode.Components
             // For all child NetworkTransforms nested under the same NetworkObject,
             // we apply the initial synchronization based on their parented/ordered
             // heirarchy.
-            if (SynchronizeState.IsSynchronizing && m_IsFirstNetworkTransform)
+            if (SynchronizeState.IsSynchronizing)
             {
-                foreach (var child in NetworkObject.NetworkTransforms)
+                if (m_IsFirstNetworkTransform)
                 {
-                    child.ApplySynchronization();
+                    foreach (var child in NetworkObject.NetworkTransforms)
+                    {
+                        // Don't initialize any nested NetworkTransform with a different authority mode
+                        if (child.CanCommitToTransform)
+                        {
+                            continue;
+                        }
+                        child.ApplySynchronization();
 
-                    // For all nested (under the root/same NetworkObject) child NetworkTransforms, we need to run through
-                    // initialization once more to assure any values applied or stored are relative to the Root's transform.
-                    child.InternalInitialization();
+                        // For all nested (under the root/same NetworkObject) child NetworkTransforms, we need to run through
+                        // initialization once more to assure any values applied or stored are relative to the Root's transform.
+                        child.InternalInitialization();
+                    }
+                }
+                else if (!CanCommitToTransform)
+                {
+                    ApplySynchronization();
+                    InternalInitialization();
                 }
             }
         }
@@ -3082,15 +3095,46 @@ namespace Unity.Netcode.Components
             // Then we want to:
             // - Force the "IsSynchronizing" flag so the NetworkTransform has its state updated properly and runs through the initialization again.
             // - Make sure the SynchronizingState is updated to the instantiated prefab's default flags/settings.
-            if (NetworkManager.IsServer && !NetworkManager.DistributedAuthorityMode && m_IsFirstNetworkTransform && !OnIsServerAuthoritative() && !IsOwner && !SynchronizeState.IsSynchronizing)
+            //if (NetworkManager.IsServer && !NetworkManager.DistributedAuthorityMode && m_IsFirstNetworkTransform && !OnIsServerAuthoritative() && !IsOwner && !SynchronizeState.IsSynchronizing)
+            //{
+            //    // Assure the first/root NetworkTransform has the synchronizing flag set so the server runs through the final post initialization steps
+            //    SynchronizeState.IsSynchronizing = true;
+            //    // Assure the SynchronizeState matches the initial prefab's values for each associated NetworkTransfrom (this includes root + all children)
+            //    foreach (var child in NetworkObject.NetworkTransforms)
+            //    {
+            //        // Don't ApplyPlayerTransformState to any nested NetworkTransform with a different authority mode
+            //        if (child != this && child.AuthorityMode != AuthorityMode)
+            //        {
+            //            continue;
+            //        }
+            //        child.ApplyPlayerTransformState();
+            //    }
+            //    // Now fall through to the final synchronization portion of the spawning for NetworkTransform
+            //}
+
+            if (NetworkManager.IsServer && !NetworkManager.DistributedAuthorityMode && !IsOwner && !OnIsServerAuthoritative() && !SynchronizeState.IsSynchronizing)
             {
-                // Assure the first/root NetworkTransform has the synchronizing flag set so the server runs through the final post initialization steps
-                SynchronizeState.IsSynchronizing = true;
-                // Assure the SynchronizeState matches the initial prefab's values for each associated NetworkTransfrom (this includes root + all children)
-                foreach (var child in NetworkObject.NetworkTransforms)
+                if (m_IsFirstNetworkTransform)
                 {
-                    child.ApplyPlayerTransformState();
+                    // Assure the NetworkTransform has the synchronizing flag set so the server runs through the final post initialization steps
+                    SynchronizeState.IsSynchronizing = true;
+
+                    // Assure the SynchronizeState matches the initial prefab's values for each associated NetworkTransfrom (this includes root + all children)
+                    foreach (var child in NetworkObject.NetworkTransforms)
+                    {
+                        // Don't ApplyPlayerTransformState to any nested NetworkTransform with a different authority mode
+                        if (child != this && child.AuthorityMode != AuthorityMode)
+                        {
+                            continue;
+                        }
+                        child.ApplyPlayerTransformState();
+                    }
                 }
+                else
+                {
+                    ApplyPlayerTransformState();
+                }
+
                 // Now fall through to the final synchronization portion of the spawning for NetworkTransform
             }
 
