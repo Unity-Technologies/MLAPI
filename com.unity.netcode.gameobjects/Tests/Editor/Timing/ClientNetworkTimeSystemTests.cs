@@ -27,7 +27,7 @@ namespace Unity.Netcode.EditorTests
             Assert.True(timeSystem.LocalTime > 2);
 
             var steps = TimingTestHelper.GetRandomTimeSteps(100f, 0.01f, baseRtt, 42);
-            var rttSteps = TimingTestHelper.GetRandomTimeSteps(1000f, baseRtt - 0.05f, baseRtt + 0.05f, 42); // 10ms jitter            
+            var rttSteps = TimingTestHelper.GetRandomTimeSteps(1000f, baseRtt - 0.05f, baseRtt + 0.05f, 42); // 10ms jitter
 
             // run for a while so that we reach regular RTT offset
             TimingTestHelper.ApplySteps(timeSystem, tickSystem, steps, delegate (int step)
