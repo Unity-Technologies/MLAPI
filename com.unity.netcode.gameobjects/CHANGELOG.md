@@ -18,6 +18,8 @@ Additional documentation and release notes are available at [Multiplayer Documen
 
 ### Changed
 
+- Changed the `NetworkTimeSystem.Sync` method to use half RTT to calculate the desired local time offset as opposed to the full RTT. (#3206)
+
 ## [1.12.0] - 2024-11-19
 
 ### Added
